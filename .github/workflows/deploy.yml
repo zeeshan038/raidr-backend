@@ -1,0 +1,22 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches:
+      - main
+      - zeeshan
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into Hetzner & Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /root/Wondertrip-backend
+            git pull origin zeeshan
+            docker compose up -d --build
