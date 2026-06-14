@@ -5,13 +5,13 @@ dotenv.config();
 
 // Create a robust Redis connection pool
 export const redis = new Redis(process.env.REDIS_URL, {
-  maxRetriesPerRequest: null, // Required by BullMQ
+  maxRetriesPerRequest: null, 
 });
 
 redis.on("connect", () => {
-  console.log("🔥 Connected to Redis successfully!");
+  console.log(" Connected to Redis successfully!");
 });
 
 redis.on("error", (error) => {
-  console.error("❌ Redis connection error:", error);
+  console.error(" Redis connection error:", error);
 });
