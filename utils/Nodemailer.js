@@ -1,26 +1,19 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_EMAIL,
-        pass: process.env.GMAIL_PASSWORD,
-      },
+    const data = await resend.emails.send({
+      from: 'no-reply@softmintlabs.tech',
+      to: [to],
+      subject: subject,
+      text: text,
+      html: html
     });
 
-    const mailOptions = {
-      from: process.env.GMAIL_EMAIL,
-      to,
-      subject,
-      text,
-      html,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent: ' + info.response);
-    return info;
+    console.log('Email sent via Resend:', data);
+    return data;
   } catch (error) {
     console.error('Error sending email:', error);
     throw error;
@@ -28,3 +21,4 @@ const sendEmail = async ({ to, subject, text, html }) => {
 };
 
 export default sendEmail;
+ 
