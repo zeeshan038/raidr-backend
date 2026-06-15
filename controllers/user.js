@@ -559,3 +559,40 @@ export const resetPassword = async (req, res) => {
         });
     }
 };
+
+/**
+ * @Description Update Avatar Url 
+ * @Route POST api/user/update-avatar
+ * @Access Public
+ */
+export const updateAvatarUrl = async (req, res) => {
+    const {id} = req.user;
+    const {avatarUrl,avatarBackUrl} = req.body;
+    try {
+        const user = await prisma.user.findUnique({ where: { id: id } });
+        if (!user) {
+            return res.status(404).json({
+                status: false,
+                msg: "User not found"
+            });
+        }
+        const updatedUser = await prisma.user.update({
+            where: { id: id },
+            data: {
+                avatarUrl: avatarUrl,
+                avatarBackUrl: avatarBackUrl,
+                avatarUpdatedAt: new Date()
+            }
+        });
+        res.status(200).json({
+            status: true,
+            msg: "Avatar updated successfully",
+            user: updatedUser
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
