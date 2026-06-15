@@ -38,28 +38,47 @@ export const registerUser = async (req, res) => {
     }
     try {
         const existingUser = await prisma.user.findUnique({ where: { email: payload.email } });
-        if (existingUser) {
-            return res.status(400).json({
-                status: false,
-                msg: "User already exists"
-            })
-        }
+        
         const hashedPassword = await bcrypt.hash(payload.password, 10);
         const otp = await generateOTP();
         const otpExpireTime = new Date(Date.now() + 10 * 60 * 1000);
 
-        const user = await prisma.user.create({
-            data: {
-                name: payload.name,
-                email: payload.email,
-                password: hashedPassword,
-                isVerified: false,
-                otpCode: otp,
-                otpCreatedAt: new Date(),
-                otpUpdatedAt: new Date(),
-                otpCodeExpireTime: otpExpireTime
+        let user;
+
+        if (existingUser) {
+            if (existingUser.isVerified) {
+                return res.status(400).json({
+                    status: false,
+                    msg: "User already exists"
+                });
+            } else {
+                // User exists but is not verified yet, so we update their OTP and password instead of crashing
+                user = await prisma.user.update({
+                    where: { email: payload.email },
+                    data: {
+                        password: hashedPassword,
+                        otpCode: otp,
+                        otpCreatedAt: new Date(),
+                        otpUpdatedAt: new Date(),
+                        otpCodeExpireTime: otpExpireTime
+                    }
+                });
             }
-        });
+        } else {
+            // New User
+            user = await prisma.user.create({
+                data: {
+                    name: payload.name,
+                    email: payload.email,
+                    password: hashedPassword,
+                    isVerified: false,
+                    otpCode: otp,
+                    otpCreatedAt: new Date(),
+                    otpUpdatedAt: new Date(),
+                    otpCodeExpireTime: otpExpireTime
+                }
+            });
+        }
 
         await sendEmail({
             to: payload.email,

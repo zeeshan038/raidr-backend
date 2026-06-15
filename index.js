@@ -20,13 +20,18 @@ ConnectDB();
 // Read the swagger.json file
 const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf8'));
 
-// Serve Swagger UI
-app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
 // Serve raw JSON for the mobile dev
 app.get('/swagger.json', (req, res) => {
   res.json(swaggerDocument);
 });
+
+// Serve Swagger UI and display the JSON URL at the top
+const swaggerOptions = {
+  swaggerOptions: {
+    url: '/swagger.json'
+  }
+};
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(null, swaggerOptions));
 
 app.use("/api",Routes);
 
