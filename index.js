@@ -4,6 +4,10 @@ import cors from "cors";
 import dotenv from "dotenv"
 import Routes from "./routes/index.js";
 import "./config/firebase.js";
+import swaggerUi from "swagger-ui-express";
+import fs from "fs";
+
+
 dotenv.config();
 const app = express();
 
@@ -13,9 +17,25 @@ app.use(express.json());
 
 ConnectDB();
 
+// Read the swagger.json file
+const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf8'));
+
+// Serve Swagger UI
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Serve raw JSON for the mobile dev
+app.get('/swagger.json', (req, res) => {
+  res.json(swaggerDocument);
+});
+
 app.use("/api",Routes);
+
+app.get("/health",(req,res)=>{
+  res.send("OK");
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Your app is running on PORT ${PORT}`);
 });
+ 
