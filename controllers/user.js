@@ -1,6 +1,7 @@
 // NPM packages
 import bcrypt from "bcrypt";
 import { getAuth } from "firebase-admin/auth";
+import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 // Prisma Client
 import { prisma } from "../config/db.js";
@@ -38,7 +39,7 @@ export const registerUser = async (req, res) => {
     }
     try {
         const existingUser = await prisma.user.findUnique({ where: { email: payload.email } });
-        
+
         const hashedPassword = await bcrypt.hash(payload.password, 10);
         const otp = await generateOTP();
         const otpExpireTime = new Date(Date.now() + 10 * 60 * 1000);
@@ -138,36 +139,42 @@ export const loginUser = async (req, res) => {
             })
         }
 
-        const otp = await generateOTP();
-        const otpExpireTime = new Date(Date.now() + 10 * 60 * 1000);
-        
-        const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                otpCode: otp,
-                otpCreatedAt: new Date(),
-                otpUpdatedAt: new Date(),
-                otpCodeExpireTime: otpExpireTime
-            }
-        });
+        // const otp = await generateOTP();
+        // const otpExpireTime = new Date(Date.now() + 10 * 60 * 1000);
 
-        await sendEmail({
-            to: payload.email,
-            subject: "Your Login OTP for Raidr",
-            text: `Your OTP to login to Raidr is ${otp}. It will expire in 10 minutes.`
-        });
+        // const updatedUser = await prisma.user.update({
+        //     where: { id: user.id },
+        //     data: {
+        //         otpCode: otp,
+        //         otpCreatedAt: new Date(),
+        //         otpUpdatedAt: new Date(),
+        //         otpCodeExpireTime: otpExpireTime
+        //     }
+        // });
 
-        const token = generateToken(updatedUser);
+        // await sendEmail({
+        //     to: payload.email,
+        //     subject: "Your Login OTP for Raidr",
+        //     text: `Your OTP to login to Raidr is ${otp}. It will expire in 10 minutes.`
+        // });
+
+        const token = generateToken(user);
+
+        const userResponse = { ...user, _id: user.id };
+        delete userResponse.password;
+        delete userResponse.otpCode;
+        delete userResponse.firebaseUid;
+        delete userResponse.avatarUpdatedAt;
+        delete userResponse.selectedAvatarId;
+        delete userResponse.has_seen_level_welcome;
+        delete userResponse.otpCreatedAt;
+        delete userResponse.otpUpdatedAt;
+        delete userResponse.otpCodeExpireTime;
 
         res.status(200).json({
             status: true,
-            msg: "OTP sent successfully. Please verify to login.",
-            user: {
-                _id: updatedUser.id,
-                name: updatedUser.name,
-                email: updatedUser.email,
-                isVerified: updatedUser.isVerified
-            },
+            msg: "User logged in successfully.",
+            user: userResponse,
             token
         })
     } catch (error) {
@@ -195,7 +202,7 @@ export const sendOTP = async (req, res) => {
         }
         const otp = await generateOTP();
         const otpExpireTime = new Date(Date.now() + 10 * 60 * 1000);
-        
+
         const updatedUser = await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -284,7 +291,7 @@ export const verifyOTP = async (req, res) => {
 
         // Use updatedUser to generate token
         const token = generateToken(updatedUser);
-        
+
         const userResponse = {
             ...updatedUser,
             _id: updatedUser.id
@@ -348,7 +355,7 @@ export const signInWithGoogle = async (req, res) => {
         }
 
         const token = generateToken(user);
-        
+
         const userResponse = {
             ...user,
             _id: user.id
@@ -383,7 +390,7 @@ export const getUserProfile = async (req, res) => {
                 msg: "User not found"
             });
         }
-        
+
         const userResponse = { ...user, _id: user.id };
 
         res.status(200).json({
@@ -428,7 +435,7 @@ export const updateUser = async (req, res) => {
             where: { id: id },
             data: payload
         });
-        
+
         const userResponse = { ...user, _id: user.id };
 
         res.status(200).json({
@@ -460,7 +467,7 @@ export const deleteUser = async (req, res) => {
             });
         }
         const user = await prisma.user.delete({ where: { id: id } });
-        
+
         const userResponse = { ...user, _id: user.id };
 
         res.status(200).json({
@@ -501,7 +508,7 @@ export const forgotPassword = async (req, res) => {
 
         const otp = await generateOTP();
         const otpExpireTime = new Date(Date.now() + 10 * 60 * 1000);
-        
+
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -553,9 +560,7 @@ export const resetPassword = async (req, res) => {
             });
         }
 
-
         const hashedPassword = await bcrypt.hash(payload.newPassword, 10);
-        
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -585,8 +590,8 @@ export const resetPassword = async (req, res) => {
  * @Access Public
  */
 export const updateAvatarUrl = async (req, res) => {
-    const {id} = req.user;
-    const {avatarUrl,avatarBackUrl} = req.body;
+    const { id } = req.user;
+    const { avatarUrl, avatarBackUrl } = req.body;
     try {
         const user = await prisma.user.findUnique({ where: { id: id } });
         if (!user) {
@@ -607,6 +612,44 @@ export const updateAvatarUrl = async (req, res) => {
             status: true,
             msg: "Avatar updated successfully",
             user: updatedUser
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+
+/**
+ * @Description Get Avatars From DB  
+ * @Route GET api/user/avatars
+ * @Access Private
+ */
+export const getAvatars = async (req, res) => {
+    try {
+        const userLevel = req.user?.level || 1;
+        
+        const avatarsData = await prisma.avatar.findMany({
+            orderBy: { avatarNumber: 'asc' }
+        });
+
+        const groupedAvatars = {};
+
+        avatarsData.forEach(avatar => {
+            const avatarKey = `avatar${avatar.avatarNumber}`;
+            groupedAvatars[avatarKey] = {
+                front: avatar.frontUrl,
+                back: avatar.backUrl,
+                locked: userLevel < avatar.requiredLevel
+            };
+        });
+
+        res.status(200).json({
+            status: true,
+            msg: "Avatars fetched successfully",
+            avatars: groupedAvatars
         });
     } catch (error) {
         res.status(500).json({

@@ -89,3 +89,13 @@ model Trip {
   @@index([isShared])
   @@index([userId, lastLocationUpdatedAt(sort: Desc)])
 }
+
+model Avatar {
+  id              String   @id @default(uuid())
+  avatarNumber    Int      @unique
+  frontUrl        String
+  backUrl         String
+  requiredLevel   Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
