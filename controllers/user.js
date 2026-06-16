@@ -1,7 +1,6 @@
 // NPM packages
 import bcrypt from "bcrypt";
 import { getAuth } from "firebase-admin/auth";
-import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 // Prisma Client
 import { prisma } from "../config/db.js";
@@ -324,8 +323,8 @@ export const signInWithGoogle = async (req, res) => {
             status: false,
             msg: "Firebase token is required"
         });
-    }
-    try {
+    } 
+    try { 
         // Decode the Firebase token
         const decodedToken = await getAuth().verifyIdToken(firebaseToken);
         const { uid, email, name, picture } = decodedToken;

@@ -38,3 +38,41 @@ export const PlanYourTripSchema = (payload) => {
     
     return schema.validate(payload);
 }
+
+
+export const SkipTripSchema = (payload) => {
+    const schema = Joi.object({
+        startLat: Joi.number().optional().messages({
+            'number.base': 'startLat must be a number'
+        }),
+        startLng: Joi.number().optional().messages({
+            'number.base': 'startLng must be a number'
+        }),
+        radiusKm: Joi.number().optional().messages({
+            'number.base': 'radiusKm must be a number'
+        }),
+        intenseMode: Joi.boolean().optional().messages({
+            'boolean.base': 'intenseMode must be a boolean'
+        }),
+        tags: Joi.array().items(Joi.string()).optional().messages({
+            'array.base': 'tags must be an array of strings'
+        })
+    }).unknown(true);
+    
+    return schema.validate(payload);
+}
+
+
+export const ToggleTripStatusSchema = (payload) => {
+    const schema = Joi.object({
+        tripId: Joi.string().required().messages({
+            'any.required': 'tripId is required'
+        }),
+        navStatus: Joi.string().valid('idle', 'navigating', 'paused').required().messages({
+            'any.required': 'navStatus is required',
+            'any.only': 'navStatus must be one of [idle, navigating, paused]'
+        })
+    });
+    
+    return schema.validate(payload);
+}

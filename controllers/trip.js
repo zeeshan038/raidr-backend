@@ -1,5 +1,5 @@
 //Schema 
-import { PlanYourTripSchema } from "../schema/Trip.js"
+import { PlanYourTripSchema, SkipTripSchema, ToggleTripStatusSchema } from "../schema/Trip.js"
 
 // Prisma
 import { prisma } from "../config/db.js"
@@ -8,12 +8,17 @@ import { prisma } from "../config/db.js"
 import { searchRouteBreakpoints } from "../services/googlePlaces.js"
 
 //Utils
-import { rankPlanCandidatesChunked } from "../utils/Openai.js"
+import { rankPlanCandidatesChunked, rankLocationsWithAI } from "../utils/Openai.js"
 import {
     expandTags,
     fairInterleavedSearchKeywords,
     buildPlanFlowMasterPool,
-    partitionPlanFlowPoolIntoDays
+    partitionPlanFlowPoolIntoDays,
+    isRealPoi,
+    mixedCandidatesForSkipAiBatch,
+    randomDestination,
+    isNonTouristRoutePlace,
+    buildRouteItems
 } from "../utils/tripUtils.js"
 
 
@@ -49,7 +54,7 @@ export const PlanYourTrip = async (req, res) => {
         // Handle travelWith array (e.g., ["Family"])
         const familyPartyPlan = payload.travelWith && payload.travelWith.includes("Family");
 
-        // 1. Google Places Search
+        // Google Places Search
         let rawLocations = await searchRouteBreakpoints({
             startLat,
             startLng,
@@ -63,13 +68,13 @@ export const PlanYourTrip = async (req, res) => {
         // Limit candidates to send to AI
         rawLocations = rawLocations.slice(0, 130);
 
-        // 2. OpenAI Ranking
+        // OpenAI Ranking
         const rankedCandidates = await rankPlanCandidatesChunked(rawLocations, keywordTags, likedTitles.length > 1, intenseMode);
 
-        // 3. Build Master Pool
+        // Build Master Pool
         const masterPool = buildPlanFlowMasterPool(rankedCandidates, likedTitles, visibleK);
 
-        // 4. Partition into Days
+        // Partition into Days
         const { planDayTaggedStops, planFlowRefreshQueue } = partitionPlanFlowPoolIntoDays(masterPool, totalDays, visibleK);
 
         // Map routes
@@ -80,7 +85,6 @@ export const PlanYourTrip = async (req, res) => {
 
         const createTrip = await prisma.trip.create({
             data: {
-                id,
                 destination: payload.destination,
                 hotelLocation: payload.hotelLocation,
                 tripDates: payload.tripDates,
@@ -173,6 +177,265 @@ export const GetCityWeather = async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+/**
+ * @Description Skip Your Trip (Quick 1-day trip from current GPS)
+ * @Route POST /trip/skip-trip
+ * @Access Private
+ */
+export const SkipYourTrip = async (req, res) => {
+    const { id } = req.user;
+    const payload = req.body;
+
+    const result = SkipTripSchema(payload);
+    if (result.error) {
+        return res.status(400).json({
+            status: false,
+            msg: result.error.message
+        });
+    }
+
+    try {
+        const startLat = payload.startLat || 25.20;
+        const startLng = payload.startLng || 55.27;
+        const intenseMode = payload.intenseMode || true;
+        const radiusKm = payload.radiusKm || 2.0;
+        const tags = payload.tags || [];
+        const visibleK = intenseMode ? 6 : 3;
+
+        // Extract vibe strings
+        const keywords = expandTags(tags.length ? tags : ['Nightlife', 'Nature', 'Shopping', 'Children', 'Culinary']);
+
+        // Google Places Search
+        let rawLocations = await searchRouteBreakpoints({
+            startLat,
+            startLng,
+            radiusKm,
+            numBreakpoints: visibleK,
+            keywords,
+            targetPoolSize: 20
+        });
+
+        // Filter locations
+        rawLocations = rawLocations.filter(l => !isNonTouristRoutePlace(l));
+
+        // AI Batching Strategy
+        const skipSingleHomeVibe = tags.length === 1 && ['Shopping', 'Party', 'Nature', 'Culinary'].includes(tags[0])
+            ? tags[0] : null;
+
+        const aiBatch = skipSingleHomeVibe
+            ? mixedCandidatesForSkipAiBatch(rawLocations, 42, skipSingleHomeVibe)
+            : rawLocations.slice(0, 30);
+
+        // OpenAI Ranking
+        let ranked = await rankLocationsWithAI({
+            candidates: aiBatch,
+            userTags: keywords,
+            intenseMode: intenseMode
+        });
+
+        // Pool Backfilling
+        let pool = ranked.filter(isRealPoi).slice(0, 20);
+        if (pool.length < 15) {
+            const used = new Set(pool.map(l => `${l.name}_${l.lat}_${l.lng}`));
+            for (const loc of rawLocations) {
+                if (pool.length >= 20) break;
+                if (!isRealPoi(loc) || isNonTouristRoutePlace(loc)) continue;
+                const k = `${loc.name}_${loc.lat}_${loc.lng}`;
+                if (!used.has(k)) { 
+                    used.add(k); 
+                    pool.push(loc); 
+                }
+            }
+        }
+
+        const skipFlowPlacePool = pool;
+        const itineraryStops = skipFlowPlacePool.slice(0, visibleK);
+        const routeItems = buildRouteItems(itineraryStops);
+
+        const generatedStartPoint = { lat: startLat, lng: startLng };
+        const generatedDestinationPoint = itineraryStops.length
+            ? { lat: itineraryStops[itineraryStops.length - 1].lat, lng: itineraryStops[itineraryStops.length - 1].lng }
+            : randomDestination(startLat, startLng, 1);
+
+        // Map routes (Skip flow is always 1 day -> day 0)
+        const dayRoutes = { 0: routeItems };
+
+        // Save Trip
+        const createTrip = await prisma.trip.create({
+            data: {
+                destination: "Skip Adventure",
+                hotelLocation: "Current Location",
+                tripDates: [new Date()],
+                radiusKm: radiusKm,
+                tripPace: intenseMode,
+                travelWith: "Solo", 
+                interestedVibes: tags,
+                imageUrls: [],
+                user: {
+                    connect: {
+                        id: id
+                    }
+                }
+            }
+        });
+
+        return res.status(201).json({
+            status: true,
+            msg: "Skip Trip generated successfully",
+            trip: createTrip,
+            skipFlowPlacePool,
+            itineraryStops,
+            generatedStartPoint,
+            generatedDestinationPoint,
+            dayRoutes
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+/**
+ * @Description Save Journey    
+ * @Route POST /trip/save-journey
+ * @Access Private
+ */
+export const SaveJourney = async (req, res) => {
+    const { id: userId } = req.user;
+    const { tripId, routeTitle } = req.body;
+    
+    if (!tripId || !routeTitle) {
+        return res.status(400).json({ status: false, msg: "tripId and routeTitle are required" });
+    }
+
+    try {
+        const trip = await prisma.trip.findFirst({
+            where: { id: tripId, userId: userId }
+        });
+
+        if (!trip) {
+            return res.status(404).json({ status: false, msg: "Trip not found" });
+        }
+
+        // Determine status based on dates
+        let calculatedStatus = "upcoming";
+        if (trip.tripDates && trip.tripDates.length > 0) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const startDate = new Date(trip.tripDates[0]);
+            startDate.setHours(0, 0, 0, 0);
+            
+            if (startDate.getTime() <= today.getTime()) {
+                calculatedStatus = "in-progress";
+            }
+        }
+
+        const updateTrip = await prisma.trip.update({
+            where: { id: tripId },
+            data: {
+                routeTitle: routeTitle,
+                status: calculatedStatus
+            }
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: "Journey saved successfully",
+            trip: updateTrip
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+/**
+ * @Description Get My Trips    
+ * @Route GET /trip/get-my-trips
+ * @Access Private
+ */
+export const GetMyTrips = async (req, res) => {
+    const { id: userId } = req.user;
+    const {status} = req.query;
+    
+    try {
+        const trips = await prisma.trip.findMany({
+            where: { userId: userId, status: status },
+            orderBy: { createdAt: 'desc' }
+        });
+        
+        return res.status(200).json({
+            status: true,
+            msg: "My trips fetched successfully",
+            trips
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+/**
+ * @Description Toggle the Navigation Status of a Trip (e.g. Start/Pause Journey)
+ * @Route POST /trip/toggle-status
+ * @Access Private
+ */
+export const ToggleTripStatus = async (req, res) => {
+    const { id: userId } = req.user;
+    const payload = req.body;
+
+    const result = ToggleTripStatusSchema(payload);
+    if (result.error) {
+        return res.status(400).json({
+            status: false,
+            msg: result.error.message
+        });
+    }
+
+    try {
+        const { tripId, navStatus } = payload;
+
+        // Verify the trip belongs to the user
+        const trip = await prisma.trip.findFirst({
+            where: { id: tripId, userId: userId }
+        });
+
+        if (!trip) {
+            return res.status(404).json({ status: false, msg: "Trip not found" });
+        }
+
+        // Update the navStatus
+        const updatedTrip = await prisma.trip.update({
+            where: { id: tripId },
+            data: {
+                navStatus: navStatus
+            }
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: `Trip navigation status updated to ${navStatus}`,
+            trip: updatedTrip
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
             status: false,
             msg: error.message
         });
