@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20
 
 # Set working directory
 WORKDIR /app
@@ -13,8 +13,8 @@ COPY . .
 # Generate the Prisma client for database access
 RUN npx prisma generate
 
-# Expose the API port
 EXPOSE 5001
+EXPOSE 3001
 
 # Start the server
 CMD ["npm", "start"]
