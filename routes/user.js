@@ -13,12 +13,12 @@ import {
     deleteUser,
     forgotPassword,
     resetPassword,
-    updateAvatarUrl
+    updateAvatarUrl,
+    getAvatars
 } from '../controllers/user.js';
 
 //middlewares
 import { verifyUser } from '../middlewares/verifyUser.js';
-
 
 
 router.post('/register' , registerUser);
@@ -30,6 +30,7 @@ router.post('/forgot-password' , forgotPassword);
 router.post('/reset-password' , resetPassword);
 
 router.use(verifyUser);
+router.get('/avatars' , getAvatars);
 router.put('/update' , updateUser);
 router.get('/whoami' , getUserProfile);
 router.delete('/delete' , deleteUser);

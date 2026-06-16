@@ -34,9 +34,10 @@ async function uploadFile(filePath, fileName) {
   
   const params = {
     Bucket: BUCKET_NAME,
-    Key: `avatars/${fileName}`, // Uploads them into an "avatars" folder in the bucket
+    Key: `avatars/${fileName}`, 
     Body: fileContent,
-    ContentType: 'image/png', // We know they are all PNGs
+    ContentType: 'image/png', 
+    ACL: 'public-read'
   };
 
   try {

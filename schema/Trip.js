@@ -30,8 +30,11 @@ export const PlanYourTripSchema = (payload) => {
         imageUrls: Joi.array().items(Joi.string()).required().messages({
             'any.required': 'Image URLs are required',
             'array.empty': 'Image URLs cannot be empty'
-        })
-    }).unknown(false);
+        }),
+        startLat: Joi.number().optional(),
+        startLng: Joi.number().optional(),
+        intenseMode: Joi.boolean().optional().default(false)
+    }).unknown(true); // Allow unknown fields so client can send extra data if needed
     
     return schema.validate(payload);
 }
