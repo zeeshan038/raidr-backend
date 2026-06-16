@@ -232,3 +232,67 @@ export function buildRouteItems(stops) {
         visible: s.visible,
     }));
 }
+
+/**
+ * @Description Filter out places with bad names
+ * @type Function
+ */
+export function isRealPoi(l) {
+    if (!l || !l.name) return false;
+    const t = l.name.trim().toLowerCase();
+    return t && t !== 'unknown' && !t.includes('no location') && !t.includes('no nearby');
+}
+
+/**
+ * @Description Mix candidates by category for single home vibe
+ * @type Function
+ */
+export function mixedCandidatesForSkipAiBatch(locations, maxCount, vibe) {
+    const buckets = {};
+    for (const loc of locations) {
+        const cat = loc.category || 'other';
+        if (!buckets[cat]) buckets[cat] = [];
+        buckets[cat].push(loc);
+    }
+    
+    const categories = Object.keys(buckets);
+    const result = [];
+    let progressed = true;
+    
+    while (progressed && result.length < maxCount) {
+        progressed = false;
+        for (const cat of categories) {
+            if (result.length >= maxCount) break;
+            if (buckets[cat].length > 0) {
+                result.push(buckets[cat].shift());
+                progressed = true;
+            }
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * @Description Generate a random destination coordinate within radius
+ * @type Function
+ */
+export function randomDestination(startLat, startLng, radiusKm) {
+    const r = radiusKm / 6371; 
+    const lat = startLat * (Math.PI / 180);
+    const lng = startLng * (Math.PI / 180);
+
+    const randomAngle = Math.random() * 2 * Math.PI;
+    const randomRadius = r * (0.5 + Math.random() * 0.5);
+
+    const newLat = Math.asin(Math.sin(lat) * Math.cos(randomRadius) +
+        Math.cos(lat) * Math.sin(randomRadius) * Math.cos(randomAngle));
+
+    const newLng = lng + Math.atan2(Math.sin(randomAngle) * Math.sin(randomRadius) * Math.cos(lat),
+        Math.cos(randomRadius) - Math.sin(lat) * Math.sin(newLat));
+
+    return {
+        lat: newLat * (180 / Math.PI),
+        lng: newLng * (180 / Math.PI)
+    };
+}

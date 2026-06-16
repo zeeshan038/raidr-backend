@@ -1,11 +1,12 @@
 import express from "express";
 import ConnectDB from "./config/db.js";
 import cors from "cors";
-import dotenv from "dotenv"
 import Routes from "./routes/index.js";
+import { startCleanupCron } from "./cron/cleanupTrips.js";
 import "./config/firebase.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
+import dotenv from "dotenv";
 
 
 dotenv.config();
@@ -16,6 +17,20 @@ app.use(cors());
 app.use(express.json());
 
 ConnectDB();
+startCleanupCron();
+
+// Start Live Tracking architecture (Wrapped in try/catch in case dependencies aren't installed yet)
+const initializeLiveTracking = async () => {
+    try {
+        const { startWebSocketServer } = await import("./sockets/liveTracking.js");
+        const { startGpsWorker } = await import("./workers/gpsWorker.js");
+        startWebSocketServer();
+        startGpsWorker();
+    } catch (err) {
+        console.log('[App] Scalable live tracking architecture failed to start. Error:', err);
+    }
+};
+initializeLiveTracking();
 
 // Read the swagger.json file
 const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf8'));
