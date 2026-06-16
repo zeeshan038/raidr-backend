@@ -20,7 +20,6 @@ import {
 //middlewares
 import { verifyUser } from '../middlewares/verifyUser.js';
 
-
 router.post('/register' , registerUser);
 router.post('/login' , loginUser);
 router.post('/send-otp' , sendOTP);
