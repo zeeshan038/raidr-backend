@@ -22,6 +22,8 @@
     <input type="text" id="tripId" placeholder="Trip ID (optional)" />
     
     <button id="connectBtn" onclick="connect()">Connect & Start Driving</button>
+    <button id="collectBtn" onclick="collectBox()" disabled style="background-color: #ffd700; color: #000; margin-top: 10px;">🎁 Collect Green Box (+50 XP)</button>
+    <button id="syncDistanceBtn" onclick="syncDistance()" disabled style="background-color: #4fc3f7; color: #000; margin-top: 10px;">🛣️ Sync Distance (+1.5 km)</button>
     <button id="disconnectBtn" onclick="disconnect()" disabled style="background-color: #ff5252; color: white;">Stop</button>
 
     <div id="log">Logs will appear here...<br/></div>
@@ -52,6 +54,8 @@
                 log('✅ Connected to WebSocket!', 'success');
                 document.getElementById('connectBtn').disabled = true;
                 document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('collectBtn').disabled = false;
+                document.getElementById('syncDistanceBtn').disabled = false;
 
                 // Simulate driving by changing coordinates every 2 seconds
                 let lat = 25.2048;
@@ -84,11 +88,44 @@
             };
         }
 
+        function collectBox() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Error: Must be connected to collect a box!', 'error');
+                return;
+            }
+            
+            const payload = {
+                type: 'box_collected',
+                boxType: 'green',
+                xpAmount: 50
+            };
+            
+            ws.send(JSON.stringify(payload));
+            log(`🎁 Collected Box! Sent: ${JSON.stringify(payload)}`, 'success');
+        }
+
+        function syncDistance() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Error: Must be connected to sync distance!', 'error');
+                return;
+            }
+            
+            const payload = {
+                type: 'sync_distance',
+                distanceCoveredKm: 1.5
+            };
+            
+            ws.send(JSON.stringify(payload));
+            log(`🛣️ Synced Distance! Sent: ${JSON.stringify(payload)}`, 'success');
+        }
+
         function disconnect() {
             if (ws) ws.close();
             clearInterval(interval);
             document.getElementById('connectBtn').disabled = false;
             document.getElementById('disconnectBtn').disabled = true;
+            document.getElementById('collectBtn').disabled = true;
+            document.getElementById('syncDistanceBtn').disabled = true;
         }
     </script>
 </body>
