@@ -1,5 +1,5 @@
 //Utils
-import {  tagWikiKeywords, isNonTouristRoutePlace } from '../utils/tripUtils.js';
+import { tagWikiKeywords, isNonTouristRoutePlace } from '../utils/tripUtils.js';
 
 /**
  * @Description This function is used to calculate the distance between two points.
@@ -54,14 +54,14 @@ function ingestPlace(place, tag) {
     const id = place.place_id;
     const loc = place.geometry?.location;
     if (!loc) return null;
-    
+
     const lat = Number(loc.lat);
     const lng = Number(loc.lng);
     if (lat === 0 && lng === 0) return null;
-    
+
     const name = (place.name || 'Unknown').trim();
     const key = id || `${name.toLowerCase()}_${lat.toFixed(5)}_${lng.toFixed(5)}`;
-    
+
     return {
         key,
         tagged: {
@@ -145,12 +145,12 @@ export async function searchRouteBreakpoints({
     const sortedRadii = [...new Set([
         Math.min(Math.max(baseRadiusM, 1500), 50000),
         12000, 20000, 35000, 50000,
-    ].map(r => Math.min(Math.max(r, 500), 50000)))].sort((a,b) => a-b);
+    ].map(r => Math.min(Math.max(r, 500), 50000)))].sort((a, b) => a - b);
 
-    const expandedKeywords = [...new Set(keywords)]; 
+    const expandedKeywords = [...new Set(keywords)];
     const onlyFoodBase = keywords.every(isFoodKeyword);
     const nearbyKeywordOrder = expandedKeywords;
-    
+
     const minCandidates = minCandidatesOverride ?? Math.min(Math.max(targetPoolSize * 2, 36), 60);
     const uniqueByPlaceId = new Map();
 
@@ -159,7 +159,7 @@ export async function searchRouteBreakpoints({
             const parsed = ingestPlace(place, tag);
             if (!parsed || uniqueByPlaceId.has(parsed.key)) continue;
             if (excludePlaceKeys && excludePlaceKeys.has(parsed.key)) continue;
-            
+
             // Do not ingest if it's not a valid tourist route place
             if (isNonTouristRoutePlace(parsed.tagged)) continue;
 
@@ -197,7 +197,7 @@ export async function searchRouteBreakpoints({
             ...foodTextBoost,
             'popular attraction', 'best places to visit'
         ];
-        
+
         const textResponses = await Promise.all(
             textQueries.map(q => placesTextSearchBiased(startLat, startLng, q, 20000))
         );
@@ -207,6 +207,6 @@ export async function searchRouteBreakpoints({
     const allLocations = [...uniqueByPlaceId.values()].sort(
         (a, b) => haversine(startLat, startLng, a.lat, a.lng) - haversine(startLat, startLng, b.lat, b.lng)
     );
-    
+
     return allLocations;
 }

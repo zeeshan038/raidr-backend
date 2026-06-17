@@ -505,7 +505,7 @@
         }
       }
     },
-    "/trip/toggle-status": {
+    "/trip/start-pause-trip": {
       "post": {
         "tags": [
           "Trip"

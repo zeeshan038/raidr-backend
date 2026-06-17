@@ -63,7 +63,7 @@ export const SkipTripSchema = (payload) => {
 }
 
 
-export const ToggleTripStatusSchema = (payload) => {
+export const StartAndPauseTripSchema = (payload) => {
     const schema = Joi.object({
         tripId: Joi.string().required().messages({
             'any.required': 'tripId is required'
