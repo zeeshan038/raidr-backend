@@ -449,7 +449,14 @@
                         "properties": {
                           "front": { "type": "string" },
                           "back": { "type": "string" },
-                          "locked": { "type": "boolean" }
+                          "locked": { 
+                            "type": "boolean",
+                            "description": "True if the avatar is locked (user level is too low). False if unlocked."
+                          },
+                          "requiredLevel": {
+                            "type": "integer",
+                            "description": "The user level required to unlock this avatar"
+                          }
                         }
                       }
                     }

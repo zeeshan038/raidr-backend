@@ -411,7 +411,6 @@ export const ToggleTripStatus = async (req, res) => {
     try {
         const { tripId, navStatus } = payload;
 
-        // Verify the trip belongs to the user
         const trip = await prisma.trip.findFirst({
             where: { id: tripId, userId: userId }
         });

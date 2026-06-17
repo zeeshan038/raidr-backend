@@ -18,23 +18,20 @@ export const startWebSocketServer = () => {
         maxPayloadLength: 16 * 1024 * 1024,
         idleTimeout: 60,
 
-        /* Handshake phase (authenticate user via query param) */
         upgrade: (res, req, context) => {
             const token = req.getQuery('token');
-            const squadId = req.getQuery('squadId'); // Optional squad channel
-            
+            const squadId = req.getQuery('squadId');
+
             let isAborted = false;
             res.onAborted(() => { isAborted = true; });
 
             try {
                 if (!token) throw new Error('No token provided');
-                
-                // Verify JWT token
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 
                 if (!isAborted) {
                     res.upgrade(
-                        { userId: decoded.id, squadId },
+                        { userId: decoded.user?.id || decoded.user?._id || decoded.id, squadId },
                         req.getHeader('sec-websocket-key'),
                         req.getHeader('sec-websocket-protocol'),
                         req.getHeader('sec-websocket-extensions'),
@@ -51,7 +48,6 @@ export const startWebSocketServer = () => {
         /* On connection */
         open: (ws) => {
             console.log(`[uWS] User ${ws.userId} connected to live tracking`);
-            // If they are in a squad, subscribe them to their squad's Redis channel
             if (ws.squadId) {
                 ws.subscribe(`squad:${ws.squadId}`);
             }
@@ -60,38 +56,62 @@ export const startWebSocketServer = () => {
         /* On message received */
         message: async (ws, message, isBinary) => {
             try {
-                // Parse the GPS payload: { tripId, lat, lng, heading }
+                // Parse the payload
                 const payload = JSON.parse(Buffer.from(message).toString());
                 payload.userId = ws.userId;
 
-                // 1. Hot GPS: Write to Redis instantly (expires in 60s)
-                await redis.set(`user:${ws.userId}:gps`, JSON.stringify(payload), 'EX', 60);
-
-                // 2. Pub/Sub: Broadcast to squad members instantly
-                if (ws.squadId) {
-                    app.publish(`squad:${ws.squadId}`, JSON.stringify(payload));
-                }
-
-                // 3. Batch Writer: Add to BullMQ queue for Postgres bulk update
-                if (payload.tripId && payload.lat && payload.lng) {
-                    gpsQueue.add('gps_update', {
-                        trips: [{ 
-                            tripId: payload.tripId, 
-                            lat: payload.lat, 
-                            lng: payload.lng, 
-                            heading: payload.heading 
-                        }]
+                // Handle Box Collection Events
+                if (payload.type === 'box_collected') {
+                    gpsQueue.add('box_collected', {
+                        userId: ws.userId,
+                        boxType: payload.boxType,
+                        xpAmount: payload.xpAmount,
+                        distanceCoveredKm: payload.distanceCoveredKm || 0
                     }, {
                         removeOnComplete: true,
                         removeOnFail: 100
                     });
+                    return;
+                }
+
+                // Handle Distance Sync Events
+                if (payload.type === 'sync_distance') {
+                    if (payload.distanceCoveredKm > 0) {
+                        gpsQueue.add('sync_distance', {
+                            userId: ws.userId,
+                            distanceCoveredKm: payload.distanceCoveredKm
+                        }, {
+                            removeOnComplete: true,
+                            removeOnFail: 100
+                        });
+                    }
+                    return; 
+                }
+
+                //  Hot GPS: Write to Redis instantly (expires in 60s)
+                await redis.set(`user:${ws.userId}:gps`, JSON.stringify(payload), 'EX', 60);
+
+                //  Pub/Sub: Broadcast to squad members instantly
+                if (ws.squadId) {
+                    app.publish(`squad:${ws.squadId}`, JSON.stringify(payload));
+                }
+
+                //  Batch Writer: Push to Redis List for the 10-second cron job
+                if (payload.tripId && payload.lat && payload.lng) {
+                    const batchItem = {
+                        tripId: payload.tripId,
+                        lat: payload.lat,
+                        lng: payload.lng,
+                        heading: payload.heading
+                    };
+                    await redis.rpush('gps_batch_list', JSON.stringify(batchItem));
                 }
             } catch (error) {
                 console.error('[uWS] Message error:', error.message);
             }
         },
 
-        /* On closure */
+        // On closure 
         close: (ws, code, message) => {
             console.log(`[uWS] User ${ws.userId} disconnected`);
         }

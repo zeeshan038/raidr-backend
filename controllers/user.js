@@ -641,7 +641,8 @@ export const getAvatars = async (req, res) => {
             groupedAvatars[avatarKey] = {
                 front: avatar.frontUrl,
                 back: avatar.backUrl,
-                locked: userLevel < avatar.requiredLevel
+                locked: userLevel < avatar.requiredLevel,
+                requiredLevel: avatar.requiredLevel
             };
         });
 
