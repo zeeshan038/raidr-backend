@@ -50,7 +50,7 @@ app.use('/swagger', swaggerUi.serve, swaggerUi.setup(null, swaggerOptions));
 
 app.use("/api",Routes);
 
-app.get("/health",(req,res)=>{
+app.get("/check-server",(req,res)=>{
   res.send("OK");
 });
 

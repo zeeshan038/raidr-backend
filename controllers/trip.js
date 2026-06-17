@@ -1,5 +1,5 @@
 //Schema 
-import { PlanYourTripSchema, SkipTripSchema, ToggleTripStatusSchema } from "../schema/Trip.js"
+import { PlanYourTripSchema, SkipTripSchema, StartAndPauseTripSchema } from "../schema/Trip.js"
 
 // Prisma
 import { prisma } from "../config/db.js"
@@ -396,11 +396,12 @@ export const GetMyTrips = async (req, res) => {
  * @Route POST /trip/toggle-status
  * @Access Private
  */
-export const ToggleTripStatus = async (req, res) => {
+export const StartAndPauseTrip = async (req, res) => {
     const { id: userId } = req.user;
+    console.log("id",userId)
     const payload = req.body;
 
-    const result = ToggleTripStatusSchema(payload);
+    const result = StartAndPauseTripSchema(payload);
     if (result.error) {
         return res.status(400).json({
             status: false,
