@@ -76,3 +76,33 @@ export const StartAndPauseTripSchema = (payload) => {
     
     return schema.validate(payload);
 }
+
+export const SaveJourneySchema = (payload) => {
+    const locationItemSchema = Joi.object({
+        index: Joi.number().integer().required(),
+        category: Joi.string().required(),
+        name: Joi.string().required(),
+        lat: Joi.number().required(),
+        lng: Joi.number().required(),
+        visible: Joi.boolean().required()
+    }).unknown(true);
+
+    const schema = Joi.object({
+        tripId: Joi.string().required().messages({
+            'any.required': 'tripId is required',
+            'string.empty': 'tripId cannot be empty'
+        }),
+        routeTitle: Joi.string().required().messages({
+            'any.required': 'routeTitle is required',
+            'string.empty': 'routeTitle cannot be empty'
+        }),
+        routesByDate: Joi.object().pattern(
+            Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/),
+            Joi.array().items(locationItemSchema)
+        ).optional().messages({
+            'object.base': 'routesByDate must be an object with YYYY-MM-DD keys'
+        })
+    });
+    
+    return schema.validate(payload);
+}

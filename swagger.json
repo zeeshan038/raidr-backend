@@ -100,6 +100,7 @@
           "email": { "type": "string" },
           "name": { "type": "string" },
           "isVerified": { "type": "boolean" },
+          "isNewUser": { "type": "boolean" },
           "authProvider": { "type": "string", "enum": ["email", "google", "apple"] },
           "photoUrl": { "type": "string", "nullable": true },
           "avatarUrl": { "type": "string", "nullable": true },
@@ -493,6 +494,47 @@
         }
       }
     },
+    "/user/get-all-keys": {
+      "get": {
+        "tags": ["User Profile"],
+        "summary": "Get all environment keys for maps and AI",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Keys fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Keys fetched successfully" },
+                    "keys": {
+                      "type": "object",
+                      "properties": {
+                        "googleApiKey": { "type": "string" },
+                        "openWeatherApiKey": { "type": "string" },
+                        "openRouterApiKey": { "type": "string" },
+                        "openAiApiKey": { "type": "string" },
+                        "mapboxToken": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/trip/weather": {
       "get": {
         "tags": ["Trip"],
@@ -637,7 +679,29 @@
                 "type": "object",
                 "properties": {
                   "tripId": { "type": "string", "example": "uuid-here" },
-                  "routeTitle": { "type": "string", "example": "My Awesome Trip" }
+                  "routeTitle": { "type": "string", "example": "My Awesome Trip" },
+                  "routesByDate": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "index": { "type": "integer" },
+                          "category": { "type": "string" },
+                          "name": { "type": "string" },
+                          "lat": { "type": "number" },
+                          "lng": { "type": "number" },
+                          "visible": { "type": "boolean" }
+                        }
+                      }
+                    },
+                    "example": {
+                      "2026-05-17": [
+                        { "index": 1, "category": "Amusement Park", "name": "Yaniv Fireball", "lat": 29.5498256, "lng": 34.9594078, "visible": true }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -645,7 +709,19 @@
         },
         "responses": {
           "200": {
-            "description": "Journey saved successfully"
+            "description": "Journey saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Journey saved successfully" },
+                    "trip": { "type": "object" }
+                  }
+                }
+              }
+            }
           }
         }
       }

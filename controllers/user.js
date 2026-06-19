@@ -29,6 +29,7 @@ import {
  */
 export const registerUser = async (req, res) => {
     const payload = req.body;
+
     const result = RegisterSchema(payload)
     if (result.error) {
         return res.status(400).json({
@@ -277,10 +278,13 @@ export const verifyOTP = async (req, res) => {
             })
         }
 
+        const isFirstTimeLogin = !user.isVerified;
+
         const updatedUser = await prisma.user.update({
             where: { id: user.id },
             data: {
                 isVerified: true,
+                isNewUser: isFirstTimeLogin,
                 otpCode: null,
                 otpCreatedAt: null,
                 otpUpdatedAt: null,
@@ -323,8 +327,8 @@ export const signInWithGoogle = async (req, res) => {
             status: false,
             msg: "Firebase token is required"
         });
-    } 
-    try { 
+    }
+    try {
         // Decode the Firebase token
         const decodedToken = await getAuth().verifyIdToken(firebaseToken);
         const { uid, email, name, picture } = decodedToken;
@@ -339,16 +343,18 @@ export const signInWithGoogle = async (req, res) => {
                     authProvider: "google",
                     firebaseUid: uid,
                     photoUrl: picture || "",
-                    isVerified: true
+                    isVerified: true,
+                    isNewUser: true
                 }
             });
-        } else if (!user.firebaseUid) {
+        } else {
             user = await prisma.user.update({
                 where: { id: user.id },
                 data: {
                     firebaseUid: uid,
                     photoUrl: user.photoUrl || picture,
-                    isVerified: true
+                    isVerified: true,
+                    isNewUser: false
                 }
             });
         }
@@ -629,7 +635,7 @@ export const updateAvatarUrl = async (req, res) => {
 export const getAvatars = async (req, res) => {
     try {
         const userLevel = req.user?.level || 1;
-        
+
         const avatarsData = await prisma.avatar.findMany({
             orderBy: { avatarNumber: 'asc' }
         });
@@ -658,3 +664,33 @@ export const getAvatars = async (req, res) => {
         });
     }
 }
+
+
+
+/**
+ * @Description Get All Keys i-e take out keys from the env file and send it at the api reponse
+ * @Route POST api/user/get-keys
+ * @Access Private
+ */
+export const getKeys = async (req, res) => {
+    try {
+        const allKeys = {
+            googleApiKey: process.env.GOOGLE_PLACES_API_KEY,
+            openWeatherApiKey: process.env.OPENWEATHER_API_KEY,
+            openRouterApiKey: process.env.OPENROUTER_API_KEY,
+            openAiApiKey: process.env.OPENAI_API_KEY,
+            mapboxToken: process.env.MAPBOX_TOKEN
+        };
+
+        res.status(200).json({
+            status: true,
+            msg: "Keys fetched successfully",
+            keys: allKeys
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};

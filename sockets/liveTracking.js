@@ -1,9 +1,13 @@
+//NPM Packages
 import uWS from 'uWebSockets.js';
 import jwt from 'jsonwebtoken';
-import { redis } from '../services/redis.js';
 import { Queue } from 'bullmq';
 import dotenv from 'dotenv';
 dotenv.config();
+
+//Service
+import { redis } from '../services/redis.js';
+
 
 // Create a queue producer
 let gpsQueue = null;
@@ -53,7 +57,7 @@ export const startWebSocketServer = () => {
             }
         },
 
-        /* On message received */
+        // On message received 
         message: async (ws, message, isBinary) => {
             try {
                 // Parse the payload
@@ -66,7 +70,8 @@ export const startWebSocketServer = () => {
                         userId: ws.userId,
                         boxType: payload.boxType,
                         xpAmount: payload.xpAmount,
-                        distanceCoveredKm: payload.distanceCoveredKm || 0
+                        distanceCoveredKm: payload.distanceCoveredKm || 0,
+                        source: payload.source
                     }, {
                         removeOnComplete: true,
                         removeOnFail: 100
