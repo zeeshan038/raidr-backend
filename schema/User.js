@@ -49,7 +49,7 @@ export const UpdateSchema = (payload) => {
         password: Joi.string().min(6).optional().messages({
             'string.min': 'Password must be at least 6 characters long'
         }),
-        avatarUrl: Joi.string().allow('').optional(),
+        avatarFrontUrl: Joi.string().allow('').optional(),
         avatarBackUrl: Joi.string().allow('').optional(),
         selectedAvatarId: Joi.string().allow('').optional(),
         level: Joi.number().optional(),

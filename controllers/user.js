@@ -161,6 +161,7 @@ export const loginUser = async (req, res) => {
         const token = generateToken(user);
 
         const userResponse = { ...user, _id: user.id };
+        delete userResponse.isNewUser;
         delete userResponse.password;
         delete userResponse.otpCode;
         delete userResponse.firebaseUid;
@@ -231,6 +232,7 @@ export const sendOTP = async (req, res) => {
             }
         };
         delete userResponse.id;
+        delete userResponse.isNewUser;
         delete userResponse.otpCode;
         delete userResponse.otpCreatedAt;
         delete userResponse.otpUpdatedAt;
@@ -299,6 +301,7 @@ export const verifyOTP = async (req, res) => {
             ...updatedUser,
             _id: updatedUser.id
         };
+        delete userResponse.isNewUser;
 
         res.status(200).json({
             status: true,
@@ -397,6 +400,7 @@ export const getUserProfile = async (req, res) => {
         }
 
         const userResponse = { ...user, _id: user.id };
+        delete userResponse.isNewUser;
 
         res.status(200).json({
             status: true,
@@ -442,6 +446,7 @@ export const updateUser = async (req, res) => {
         });
 
         const userResponse = { ...user, _id: user.id };
+        delete userResponse.isNewUser;
 
         res.status(200).json({
             status: true,
@@ -474,6 +479,7 @@ export const deleteUser = async (req, res) => {
         const user = await prisma.user.delete({ where: { id: id } });
 
         const userResponse = { ...user, _id: user.id };
+        delete userResponse.isNewUser;
 
         res.status(200).json({
             status: true,
@@ -596,7 +602,7 @@ export const resetPassword = async (req, res) => {
  */
 export const updateAvatarUrl = async (req, res) => {
     const { id } = req.user;
-    const { avatarUrl, avatarBackUrl } = req.body;
+    const { avatarFrontUrl, avatarBackUrl } = req.body;
     try {
         const user = await prisma.user.findUnique({ where: { id: id } });
         if (!user) {
@@ -608,7 +614,7 @@ export const updateAvatarUrl = async (req, res) => {
         const updatedUser = await prisma.user.update({
             where: { id: id },
             data: {
-                avatarUrl: avatarUrl,
+                avatarFrontUrl: avatarFrontUrl,
                 avatarBackUrl: avatarBackUrl,
                 avatarUpdatedAt: new Date()
             }
@@ -633,9 +639,16 @@ export const updateAvatarUrl = async (req, res) => {
  * @Access Private
  */
 export const getAvatars = async (req, res) => {
+    const {id} = req.user;
     try {
-        const userLevel = req.user?.level || 1;
-
+        const user = await prisma.user.findUnique({ where: { id: id } });
+        if (!user) {
+            return res.status(404).json({
+                status: false,
+                msg: "User not found"
+            });
+        }
+        const userLevel = user.level;
         const avatarsData = await prisma.avatar.findMany({
             orderBy: { avatarNumber: 'asc' }
         });
@@ -655,6 +668,7 @@ export const getAvatars = async (req, res) => {
         res.status(200).json({
             status: true,
             msg: "Avatars fetched successfully",
+            currentLevel: userLevel,
             avatars: groupedAvatars
         });
     } catch (error) {
