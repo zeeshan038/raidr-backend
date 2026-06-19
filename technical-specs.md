@@ -267,7 +267,7 @@ updatedAt: Date,
 codeExpireTime: Date
 },
 // Avatar (URLs pointing to Hetzner)
-avatarUrl: String, // front view
+avatarFrontUrl: String, // front view
 avatarBackUrl: String, // map navigation back view
 avatarUpdatedAt: Date,
 selectedAvatarId: String, // "1".."10" - optional convenience
@@ -578,7 +578,7 @@ Revoke all sessions
 (recommended)
 Purpose
 Full profile + progression stats
-Save { avatarUrl,
+Save { avatarFrontUrl,
 avatarBackUrl, avatarId }
 Set has_seen_level_welcome:
 true
@@ -734,7 +734,7 @@ trip:nav:status { tripId, status:
 "idle"\|"navigating"\|"paused",
 currentStopIndex }
 trip:stop:reached { tripId, stopIndex, lat, lng } squad:join { inviteToken } squad:presence { tripId, displayName?,
-avatarUrl? }
+avatarFrontUrl? }
 7.3 Server -> Client events
 Event Payload trip:location:broadcast { userId, lat, lng, heading,
 timestamp }

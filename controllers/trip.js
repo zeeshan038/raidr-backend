@@ -125,16 +125,15 @@ export const PlanYourTrip = async (req, res) => {
  * @Access Private
  */
 export const GetCityWeather = async (req, res) => {
-    const { city } = req.body;
+    const { lat, lng } = req.body;
 
-    if (!city) {
-        return res.status(400).json({ status: false, msg: "City name is required" });
+    if (!lat || !lng) {
+        return res.status(400).json({ status: false, msg: "Latitude and longitude are required" });
     }
 
     try {
-        // Fetch weather from OpenWeatherMap
         const weatherApiKey = process.env.OPENWEATHER_API_KEY;
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${weatherApiKey}&units=metric`;
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${weatherApiKey}&units=metric`;
 
         const weatherRes = await fetch(weatherUrl);
         const weatherData = await weatherRes.json();
@@ -146,7 +145,7 @@ export const GetCityWeather = async (req, res) => {
         const placesApiKey = process.env.GOOGLE_PLACES_API_KEY;
         let imageUrls = [];
 
-        const query = city || weatherData.name;
+        const query = weatherData.name;
         const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent("popular tourist attractions in " + query)}&key=${placesApiKey}`;
 
         const placesRes = await fetch(placesUrl);

@@ -25,7 +25,7 @@ model User {
   otpUpdatedAt      DateTime?
   otpCodeExpireTime DateTime?
 
-  avatarUrl        String    @default("")
+  avatarFrontUrl        String    @default("")
   avatarBackUrl    String    @default("")
   avatarUpdatedAt  DateTime?
   selectedAvatarId String    @default("")
