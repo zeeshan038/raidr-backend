@@ -14,7 +14,8 @@ import {
     forgotPassword,
     resetPassword,
     updateAvatarUrl,
-    getAvatars
+    getAvatars,
+    getKeys
 } from '../controllers/user.js';
 
 //middlewares
@@ -34,5 +35,6 @@ router.put('/update' , updateUser);
 router.get('/whoami' , getUserProfile);
 router.delete('/delete' , deleteUser);
 router.patch('/update-photo-url' , updateAvatarUrl);
+router.get('/get-all-keys' , getKeys);
  
 export default router;

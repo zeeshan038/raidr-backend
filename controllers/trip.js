@@ -1,5 +1,5 @@
 //Schema 
-import { PlanYourTripSchema, SkipTripSchema, StartAndPauseTripSchema } from "../schema/Trip.js"
+import { PlanYourTripSchema, SkipTripSchema, StartAndPauseTripSchema, SaveJourneySchema } from "../schema/Trip.js"
 
 // Prisma
 import { prisma } from "../config/db.js"
@@ -312,11 +312,14 @@ export const SkipYourTrip = async (req, res) => {
  */
 export const SaveJourney = async (req, res) => {
     const { id: userId } = req.user;
-    const { tripId, routeTitle } = req.body;
+    const payload = req.body;
     
-    if (!tripId || !routeTitle) {
-        return res.status(400).json({ status: false, msg: "tripId and routeTitle are required" });
+    const result = SaveJourneySchema(payload);
+    if (result.error) {
+        return res.status(400).json({ status: false, msg: result.error.details[0].message });
     }
+
+    const { tripId, routeTitle, routesByDate } = payload;
 
     try {
         const trip = await prisma.trip.findFirst({
@@ -341,13 +344,25 @@ export const SaveJourney = async (req, res) => {
             }
         }
 
+        const updateData = {
+            routeTitle: routeTitle,
+            status: calculatedStatus
+        };
+
+        console.log("PAYLOAD ROUTES BY DATE:", routesByDate);
+
+        if (routesByDate !== undefined) {
+            updateData.routesByDate = routesByDate;
+        }
+
+        console.log("UPDATE DATA:", updateData);
+
         const updateTrip = await prisma.trip.update({
             where: { id: tripId },
-            data: {
-                routeTitle: routeTitle,
-                status: calculatedStatus
-            }
+            data: updateData
         });
+
+        console.log("UPDATED TRIP ROUTES:", updateTrip.routesByDate);
 
         return res.status(200).json({
             status: true,
@@ -377,7 +392,7 @@ export const GetMyTrips = async (req, res) => {
             where: { userId: userId, status: status },
             orderBy: { createdAt: 'desc' }
         });
-        
+        console.log("Trip" , trips);
         return res.status(200).json({
             status: true,
             msg: "My trips fetched successfully",

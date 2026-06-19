@@ -56,10 +56,10 @@ export const startGpsWorker = () => {
             }
         } 
         else if (job.name === 'box_collected') {
-            const { userId, boxType, xpAmount, distanceCoveredKm } = job.data;
+            const { userId, boxType, xpAmount, distanceCoveredKm, source } = job.data;
             if (!userId || !boxType || typeof xpAmount !== 'number') return;
 
-            console.log(`[BullMQ] Processing box collection for ${userId} (${boxType}: +${xpAmount} XP, +${distanceCoveredKm}km)`);
+            console.log(`[BullMQ] Processing box collection for ${userId} (${boxType}: +${xpAmount} XP, +${distanceCoveredKm}km, source: ${source})`);
 
             try {
                 await prisma.$transaction(async (tx) => {

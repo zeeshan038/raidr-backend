@@ -97,7 +97,8 @@
             const payload = {
                 type: 'box_collected',
                 boxType: 'green',
-                xpAmount: 50
+                xpAmount: 50,
+                source: 'route_stop' // 'route_stop' | 'exploration_drop' | 'surprise_me'
             };
             
             ws.send(JSON.stringify(payload));
