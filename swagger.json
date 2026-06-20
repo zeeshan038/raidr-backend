@@ -168,7 +168,6 @@
           "isVerified": {
             "type": "boolean"
           },
-
           "authProvider": {
             "type": "string",
             "enum": [
@@ -467,7 +466,24 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/AuthTokenResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "type": "object",
+                          "properties": {
+                            "isNewUser": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -826,6 +842,77 @@
                           }
                         }
                       }
+                    },
+                    "currentLevel": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Avatars fetched successfully",
+                  "currentLevel": 1,
+                  "avatars": {
+                    "avatar1": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_back.png",
+                      "locked": false,
+                      "requiredLevel": 1
+                    },
+                    "avatar2": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "locked": false,
+                      "requiredLevel": 1
+                    },
+                    "avatar3": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_back.png",
+                      "locked": true,
+                      "requiredLevel": 2
+                    },
+                    "avatar4": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_back.png",
+                      "locked": true,
+                      "requiredLevel": 3
+                    },
+                    "avatar5": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/5_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/5_back.png",
+                      "locked": true,
+                      "requiredLevel": 4
+                    },
+                    "avatar6": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/6_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/6_back.png",
+                      "locked": true,
+                      "requiredLevel": 5
+                    },
+                    "avatar7": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/7_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/7_back.png",
+                      "locked": true,
+                      "requiredLevel": 6
+                    },
+                    "avatar8": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/8_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/8_back.png",
+                      "locked": true,
+                      "requiredLevel": 7
+                    },
+                    "avatar9": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/9_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/9_back.png",
+                      "locked": true,
+                      "requiredLevel": 8
+                    },
+                    "avatar10": {
+                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/10_front.png",
+                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/10_back.png",
+                      "locked": true,
+                      "requiredLevel": 9
                     }
                   }
                 }

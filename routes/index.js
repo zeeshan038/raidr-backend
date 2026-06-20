@@ -6,10 +6,13 @@ import UserRoutes from "./user.js"
 import TripRoutes from "./trip.js"
 
 //Merchant 
-import MerchantRoutes from "./merchant.js"
+import MerchantRoutes from "./Merchant/merchant.js"
+import AdsRoutes from "./Merchant/ads.js"
 
 //Merchant Routes
 router.use('/merchant',MerchantRoutes);
+router.use('/ads',AdsRoutes);
+
 
 //User Routes
 router.use("/user",UserRoutes);
