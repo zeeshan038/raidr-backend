@@ -573,6 +573,16 @@
                       "type": "array",
                       "items": { "type": "string", "format": "uri" },
                       "description": "Array of image URLs from Google Places API"
+                    },
+                    "factText": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "3 creative lifestyle suggestions"
+                    },
+                    "loadingText": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "10 short loading screen messages"
                     }
                   }
                 }
@@ -794,6 +804,18 @@
             "name": "status",
             "schema": { "type": "string" },
             "description": "Filter trips by status (e.g. 'upcoming')"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "default": 1 },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "type": "integer", "default": 10 },
+            "description": "Number of items per page"
           }
         ],
         "responses": {
@@ -806,9 +828,18 @@
                   "properties": {
                     "status": { "type": "boolean" },
                     "msg": { "type": "string" },
-                    "trips": {
+                    "data": {
                       "type": "array",
                       "items": { "$ref": "#/components/schemas/TripDto" }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "total": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
                     }
                   }
                 }

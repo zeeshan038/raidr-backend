@@ -8,7 +8,7 @@ import { prisma } from "../config/db.js"
 import { searchRouteBreakpoints } from "../services/googlePlaces.js"
 
 //Utils
-import { rankPlanCandidatesChunked, rankLocationsWithAI } from "../utils/Openai.js"
+import { rankPlanCandidatesChunked, rankLocationsWithAI, generateCityVibeSuggestions, generateLoadingTexts } from "../utils/Openai.js"
 import {
     expandTags,
     fairInterleavedSearchKeywords,
@@ -166,11 +166,27 @@ export const GetCityWeather = async (req, res) => {
             });
         }
 
+        // Run OpenAI tasks in parallel without waiting for images first
+        const [factText, loadingText] = await Promise.all([
+            generateCityVibeSuggestions({
+                city: weatherData.name,
+                country: weatherData.sys?.country || '',
+                interestedVibes: ['food', 'nightlife', 'coffee'],
+                languageCode: 'en'
+            }),
+            generateLoadingTexts({
+                userVibes: [],
+                languageCode: 'en'
+            })
+        ]);
+
         return res.status(200).json({
             status: true,
             msg: "Weather and images fetched successfully",
             weather: weatherData,
-            images: imageUrls
+            images: imageUrls,
+            factText,
+            loadingText
         });
 
     } catch (error) {
@@ -385,17 +401,33 @@ export const SaveJourney = async (req, res) => {
 export const GetMyTrips = async (req, res) => {
     const { id: userId } = req.user;
     const {status} = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     
     try {
+
         const trips = await prisma.trip.findMany({
             where: { userId: userId, status: status },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            skip: skip,
+            take: limit
         });
-        console.log("Trip" , trips);
+
+        const total = await prisma.trip.count({
+            where: { userId: userId, status: status }
+        });
+       
         return res.status(200).json({
             status: true,
             msg: "My trips fetched successfully",
-            trips
+            data: trips,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
         });
     } catch (error) {
         res.status(500).json({

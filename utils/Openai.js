@@ -106,3 +106,145 @@ export async function rankPlanCandidatesChunked(rawCandidates, keywordTags, mult
     const parts = await Promise.all(futures);
     return parts.flat();
 }
+
+
+const LANGUAGE_NAMES = {
+  en: 'English', he: 'Hebrew', es: 'Spanish',
+  de: 'German', ru: 'Russian', ar: 'Arabic',
+};
+
+function outputLanguageInstruction(code) {
+  const lang = (code || 'en').toLowerCase().split(/[-_]/)[0];
+  const name = LANGUAGE_NAMES[lang];
+  if (name) {
+    return `Output language: ${name} ONLY. Every string in the JSON array must be written entirely in ${name}.
+Do not mix languages. Do not include English (unless the target is English).`;
+  }
+  return `Output language: use the primary language for BCP-47 locale "${code}".
+Write every string in that language only; do not mix in English unless it is the target language.`;
+}
+
+export async function generateCityVibeSuggestions({ city, country, interestedVibes = [], languageCode = 'en' }) {
+  const prompt = `
+Generate 3 creative lifestyle suggestions.
+
+Context:
+City: ${city}
+Country: ${country}
+Interests: ${interestedVibes.join(', ')}
+
+${outputLanguageInstruction(languageCode)}
+
+Rules:
+- Return EXACTLY 3 results
+- Each result must be 1 lines
+- Mix city atmosphere + local culture + interests
+- Response MUST be a JSON array of strings
+- No explanation text
+
+Example format:
+["line1 \\n line2", "line1 \\n line2", "line1 \\n line2"]
+`.trim();
+
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: "gpt-4o-mini",
+            temperature: 0.8,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 200,
+        })
+    });
+
+    const data = await res.json();
+    if (data.choices && data.choices.length > 0) {
+        let content = data.choices[0].message.content.trim();
+        // Strip markdown code blocks if any
+        if (content.startsWith('\`\`\`json')) {
+            content = content.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
+        } else if (content.startsWith('\`\`\`')) {
+            content = content.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim();
+        }
+        return JSON.parse(content);
+    }
+  } catch (error) {
+    console.error("generateCityVibeSuggestions error:", error);
+  }
+
+  // Fallback
+  const interests = interestedVibes.slice(0, 3).join(', ');
+  const ctx = interests ? ` — ${interests}` : '';
+  return [
+    `Explore ${city} with local flair${ctx}.`,
+    `Blend neighborhoods, flavors, and pace that fit you.`,
+    `Your creative route is almost ready — enjoy ${country}.`,
+  ];
+}
+
+export async function generateLoadingTexts({ userVibes = [], languageCode = 'en' }) {
+  const prompt = `
+User interests: ${userVibes.join(', ')}
+
+${outputLanguageInstruction(languageCode)}
+
+Generate 10 short, friendly loading screen messages.
+Each message must be:
+- 1 line only
+- Under 6 words (or short equivalent in the output language)
+- Travel / route related
+- Casual & positive
+
+Return ONLY a JSON array of strings.
+Example:
+[
+  "Finding cozy cafes...",
+  "Matching your vibe...",
+  "Building scenic routes...",
+  "Almost ready..."
+]
+`.trim();
+
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            temperature: 0.6,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 120,
+        })
+    });
+
+    const data = await res.json();
+    if (data.choices && data.choices.length > 0) {
+        let content = data.choices[0].message.content.trim();
+        if (content.startsWith('\`\`\`json')) {
+            content = content.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
+        } else if (content.startsWith('\`\`\`')) {
+            content = content.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim();
+        }
+        return JSON.parse(content);
+    }
+  } catch (error) {
+    console.error("generateLoadingTexts error:", error);
+  }
+
+  // Fallback
+  return [
+    'Preparing your trip...', 
+    'Finding best routes...', 
+    'Matching your vibe...', 
+    'Almost ready...'
+  ];
+}
