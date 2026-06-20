@@ -26,219 +26,218 @@
     "schemas": {
       "RegisterRequest": {
         "type": "object",
-        "required": [
-          "name",
-          "email",
-          "password"
-        ],
+        "required": ["name", "email", "password"],
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "password": {
-            "type": "string",
-            "minLength": 6
-          }
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6 }
         }
       },
       "LoginRequest": {
         "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
+        "required": ["email", "password"],
         "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "password": {
-            "type": "string"
-          }
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
         }
       },
       "SendOtpRequest": {
         "type": "object",
-        "required": [
-          "email"
-        ],
+        "required": ["email"],
         "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          }
+          "email": { "type": "string", "format": "email" }
         }
       },
       "VerifyOtpRequest": {
         "type": "object",
-        "required": [
-          "email",
-          "otp"
-        ],
+        "required": ["email", "otp"],
         "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "otp": {
-            "type": "string"
-          }
+          "email": { "type": "string", "format": "email" },
+          "otp": { "type": "string" }
         }
       },
       "GoogleSignInRequest": {
         "type": "object",
-        "required": [
-          "firebaseToken"
-        ],
+        "required": ["firebaseToken"],
         "properties": {
-          "firebaseToken": {
-            "type": "string"
-          }
+          "firebaseToken": { "type": "string" }
         }
       },
       "ResetPasswordRequest": {
         "type": "object",
-        "required": [
-          "email",
-          "newPassword"
-        ],
+        "required": ["email", "newPassword"],
         "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "newPassword": {
-            "type": "string",
-            "minLength": 6
-          }
+          "email": { "type": "string", "format": "email" },
+          "newPassword": { "type": "string", "minLength": 6 }
         }
       },
       "UpdateUserRequest": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "fcmToken": {
-            "type": "string"
-          },
-          "location": {
-            "type": "string"
-          }
+          "name": { "type": "string" },
+          "fcmToken": { "type": "string" },
+          "location": { "type": "string" }
         }
       },
       "UpdatePhotoUrlRequest": {
         "type": "object",
         "properties": {
-          "avatarFrontUrl": {
-            "type": "string"
-          },
-          "avatarBackUrl": {
-            "type": "string"
-          }
+          "avatarFrontUrl": { "type": "string" },
+          "avatarBackUrl": { "type": "string" }
         }
       },
       "MessageResponse": {
         "type": "object",
         "properties": {
-          "status": {
-            "type": "boolean"
-          },
-          "msg": {
-            "type": "string"
-          }
+          "status": { "type": "boolean" },
+          "msg": { "type": "string" }
         }
       },
       "UserDto": {
         "type": "object",
         "properties": {
-          "_id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "isVerified": {
-            "type": "boolean"
-          },
-          "authProvider": {
-            "type": "string",
-            "enum": [
-              "email",
-              "google",
-              "apple"
-            ]
-          },
-          "photoUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "avatarFrontUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "avatarBackUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "level": {
-            "type": "integer"
-          },
-          "xp_earned": {
-            "type": "number"
-          },
-          "xp_progress": {
-            "type": "number"
-          },
-          "green_boxes_count": {
-            "type": "integer"
-          },
-          "golden_boxes_count": {
-            "type": "integer"
-          },
-          "purple_boxes_count": {
-            "type": "integer"
-          },
-          "distance_covered_km": {
-            "type": "number"
-          }
+          "_id": { "type": "string" },
+          "email": { "type": "string" },
+          "name": { "type": "string" },
+          "isVerified": { "type": "boolean" },
+          "authProvider": { "type": "string", "enum": ["email", "google", "apple"] },
+          "photoUrl": { "type": "string", "nullable": true },
+          "avatarFrontUrl": { "type": "string", "nullable": true },
+          "avatarBackUrl": { "type": "string", "nullable": true },
+          "level": { "type": "integer" },
+          "xp_earned": { "type": "number" },
+          "xp_progress": { "type": "number" },
+          "green_boxes_count": { "type": "integer" },
+          "golden_boxes_count": { "type": "integer" },
+          "purple_boxes_count": { "type": "integer" },
+          "distance_covered_km": { "type": "number" }
         }
       },
       "AuthTokenResponse": {
         "type": "object",
         "properties": {
-          "status": {
-            "type": "boolean"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "token": {
-            "type": "string"
-          },
-          "user": {
-            "$ref": "#/components/schemas/UserDto"
-          }
+          "status": { "type": "boolean" },
+          "msg": { "type": "string" },
+          "token": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/UserDto" }
         }
       },
       "ApiError": {
         "type": "object",
         "properties": {
-          "status": {
-            "type": "boolean",
-            "example": false
+          "status": { "type": "boolean", "example": false },
+          "msg": { "type": "string", "example": "Something went wrong" }
+        }
+      },
+      "TripDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "ownerUid": { "type": "string", "nullable": true },
+          "routeTitle": { "type": "string", "nullable": true },
+          "destination": { "type": "string" },
+          "hotelLocation": { "type": "string" },
+          "tripDates": {
+            "type": "array",
+            "items": { "type": "string", "format": "date-time" }
           },
-          "msg": {
-            "type": "string",
-            "example": "Something went wrong"
+          "status": { "type": "string", "nullable": true },
+          "tripPace": { "type": "boolean" },
+          "radiusKm": { "type": "number" },
+          "travelWith": { "type": "string" },
+          "interestedVibes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "imageUrls": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "routesByDate": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/RouteStopDto" }
+            }
+          },
+          "isShared": { "type": "boolean" },
+          "inviteToken": { "type": "string", "nullable": true },
+          "currentLatitude": { "type": "number", "nullable": true },
+          "currentLongitude": { "type": "number", "nullable": true },
+          "lastLocationUpdatedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "heading": { "type": "number", "nullable": true },
+          "navStatus": { "type": "string", "nullable": true, "enum": ["idle", "navigating", "paused"] },
+          "flowKind": { "type": "string", "nullable": true },
+          "generatedStartLat": { "type": "number", "nullable": true },
+          "generatedStartLng": { "type": "number", "nullable": true },
+          "generatedDestLat": { "type": "number", "nullable": true },
+          "generatedDestLng": { "type": "number", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RouteStopDto": {
+        "type": "object",
+        "properties": {
+          "index": { "type": "integer" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "visible": { "type": "boolean" },
+          "isSurprise": { "type": "boolean" },
+          "googleTypes": {
+            "type": "array",
+            "items": { "type": "string" }
           }
+        }
+      },
+      "GeneratedRoutesDto": {
+        "type": "object",
+        "properties": {
+          "dayRoutes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/RouteStopDto" }
+            }
+          },
+          "refreshQueue": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PlacePoolItemDto" }
+          }
+        }
+      },
+      "GeoPointDto": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" }
+        }
+      },
+      "PlacePoolItemDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "category": { "type": "string" },
+          "rating": { "type": "number" },
+          "photos": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" }
+          }
+        }
+      },
+      "AvatarItemDto": {
+        "type": "object",
+        "properties": {
+          "front": { "type": "string" },
+          "back": { "type": "string" },
+          "locked": { "type": "boolean", "description": "True if the avatar is locked (user level too low)" },
+          "requiredLevel": { "type": "integer", "description": "User level required to unlock this avatar" }
         }
       }
     }
@@ -246,17 +245,13 @@
   "paths": {
     "/user/register": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Register a new user",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
             }
           }
         },
@@ -265,200 +260,71 @@
             "description": "User registered successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
-                }
+                "schema": { "$ref": "#/components/schemas/AuthTokenResponse" }
               }
             }
           },
-          "400": {
-            "description": "Validation Error or User exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "400": { "description": "Validation Error or User exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/login": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Login user",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "OTP sent successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "Login successful", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
+          "400": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/send-otp": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Send OTP to user email",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendOtpRequest"
-              }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendOtpRequest" } } }
         },
         "responses": {
-          "200": {
-            "description": "OTP sent",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "OTP sent", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "400": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/verify-otp": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Verify OTP",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyOtpRequest"
-              }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyOtpRequest" } } }
         },
         "responses": {
-          "200": {
-            "description": "OTP verified successfully. Returns JWT token.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid or expired OTP",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "OTP verified successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
+          "400": { "description": "Invalid or expired OTP", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/signin-with-google": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Sign in with Google Firebase Token",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleSignInRequest"
-              }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GoogleSignInRequest" } } }
         },
         "responses": {
           "200": {
@@ -467,18 +333,14 @@
               "application/json": {
                 "schema": {
                   "allOf": [
-                    {
-                      "$ref": "#/components/schemas/AuthTokenResponse"
-                    },
+                    { "$ref": "#/components/schemas/AuthTokenResponse" },
                     {
                       "type": "object",
                       "properties": {
                         "user": {
                           "type": "object",
                           "properties": {
-                            "isNewUser": {
-                              "type": "boolean"
-                            }
+                            "isNewUser": { "type": "boolean" }
                           }
                         }
                       }
@@ -488,325 +350,92 @@
               }
             }
           },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/forgot-password": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Request a password reset OTP",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendOtpRequest"
-              }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendOtpRequest" } } }
         },
         "responses": {
-          "200": {
-            "description": "Password reset OTP sent",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "Password reset OTP sent", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/reset-password": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Reset password using OTP",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetPasswordRequest"
-              }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResetPasswordRequest" } } }
         },
         "responses": {
-          "200": {
-            "description": "Password reset successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "Password reset successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/update": {
       "put": {
-        "tags": [
-          "User Profile"
-        ],
+        "tags": ["User Profile"],
         "summary": "Update user details",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserRequest"
-              }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateUserRequest" } } }
         },
         "responses": {
-          "200": {
-            "description": "User updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "User updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/whoami": {
       "get": {
-        "tags": [
-          "User Profile"
-        ],
+        "tags": ["User Profile"],
         "summary": "Get current user profile",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "responses": {
-          "200": {
-            "description": "User profile fetched successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "User profile fetched successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/update-photo-url": {
       "patch": {
-        "tags": [
-          "User Profile"
-        ],
+        "tags": ["User Profile"],
         "summary": "Update User Avatar/Background URLs",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdatePhotoUrlRequest"
-              }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePhotoUrlRequest" } } }
         },
         "responses": {
-          "200": {
-            "description": "Avatar updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "Avatar updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/avatars": {
       "get": {
-        "tags": [
-          "User Profile"
-        ],
+        "tags": ["User Profile"],
         "summary": "Get all avatars and their lock status based on user level",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
             "description": "Avatars fetched successfully",
@@ -815,209 +444,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "currentLevel": { "type": "integer" },
                     "avatars": {
                       "type": "object",
-                      "additionalProperties": {
-                        "type": "object",
-                        "properties": {
-                          "front": {
-                            "type": "string"
-                          },
-                          "back": {
-                            "type": "string"
-                          },
-                          "locked": {
-                            "type": "boolean",
-                            "description": "True if the avatar is locked (user level is too low). False if unlocked."
-                          },
-                          "requiredLevel": {
-                            "type": "integer",
-                            "description": "The user level required to unlock this avatar"
-                          }
-                        }
-                      }
-                    },
-                    "currentLevel": {
-                      "type": "integer",
-                      "example": 1
-                    }
-                  }
-                },
-                "example": {
-                  "status": true,
-                  "msg": "Avatars fetched successfully",
-                  "currentLevel": 1,
-                  "avatars": {
-                    "avatar1": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_back.png",
-                      "locked": false,
-                      "requiredLevel": 1
-                    },
-                    "avatar2": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "locked": false,
-                      "requiredLevel": 1
-                    },
-                    "avatar3": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_back.png",
-                      "locked": true,
-                      "requiredLevel": 2
-                    },
-                    "avatar4": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_back.png",
-                      "locked": true,
-                      "requiredLevel": 3
-                    },
-                    "avatar5": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/5_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/5_back.png",
-                      "locked": true,
-                      "requiredLevel": 4
-                    },
-                    "avatar6": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/6_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/6_back.png",
-                      "locked": true,
-                      "requiredLevel": 5
-                    },
-                    "avatar7": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/7_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/7_back.png",
-                      "locked": true,
-                      "requiredLevel": 6
-                    },
-                    "avatar8": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/8_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/8_back.png",
-                      "locked": true,
-                      "requiredLevel": 7
-                    },
-                    "avatar9": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/9_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/9_back.png",
-                      "locked": true,
-                      "requiredLevel": 8
-                    },
-                    "avatar10": {
-                      "front": "https://hel1.your-objectstorage.com/raidr-assets/avatars/10_front.png",
-                      "back": "https://hel1.your-objectstorage.com/raidr-assets/avatars/10_back.png",
-                      "locked": true,
-                      "requiredLevel": 9
+                      "additionalProperties": { "$ref": "#/components/schemas/AvatarItemDto" }
                     }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/delete": {
       "delete": {
-        "tags": [
-          "User Profile"
-        ],
+        "tags": ["User Profile"],
         "summary": "Delete user account",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "responses": {
-          "200": {
-            "description": "User deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "200": { "description": "User deleted successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/user/get-all-keys": {
       "get": {
-        "tags": [
-          "User Profile"
-        ],
+        "tags": ["User Profile"],
         "summary": "Get all environment keys for maps and AI",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
             "description": "Keys fetched successfully",
@@ -1026,32 +486,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "msg": {
-                      "type": "string",
-                      "example": "Keys fetched successfully"
-                    },
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
                     "keys": {
                       "type": "object",
                       "properties": {
-                        "googleApiKey": {
-                          "type": "string"
-                        },
-                        "openWeatherApiKey": {
-                          "type": "string"
-                        },
-                        "openRouterApiKey": {
-                          "type": "string"
-                        },
-                        "openAiApiKey": {
-                          "type": "string"
-                        },
-                        "mapboxToken": {
-                          "type": "string"
-                        }
+                        "googleApiKey": { "type": "string" },
+                        "openWeatherApiKey": { "type": "string" },
+                        "openRouterApiKey": { "type": "string" },
+                        "openAiApiKey": { "type": "string" },
+                        "mapboxToken": { "type": "string" }
                       }
                     }
                   }
@@ -1059,50 +503,16 @@
               }
             }
           },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/trip/weather": {
       "get": {
-        "tags": [
-          "Trip"
-        ],
+        "tags": ["Trip"],
         "summary": "Get city weather and pictures",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
             "description": "Weather and images fetched successfully",
@@ -1111,155 +521,86 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "msg": {
-                      "type": "string",
-                      "example": "Weather and images fetched successfully"
-                    },
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
                     "weather": {
                       "type": "object",
-                      "description": "Object containing detailed weather data (from OpenWeather API)"
+                      "description": "Detailed weather data from OpenWeather API",
+                      "properties": {
+                        "coord": {
+                          "type": "object",
+                          "properties": {
+                            "lon": { "type": "number" },
+                            "lat": { "type": "number" }
+                          }
+                        },
+                        "weather": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "integer" },
+                              "main": { "type": "string" },
+                              "description": { "type": "string" },
+                              "icon": { "type": "string" }
+                            }
+                          }
+                        },
+                        "main": {
+                          "type": "object",
+                          "properties": {
+                            "temp": { "type": "number" },
+                            "feels_like": { "type": "number" },
+                            "temp_min": { "type": "number" },
+                            "temp_max": { "type": "number" },
+                            "pressure": { "type": "integer" },
+                            "humidity": { "type": "integer" }
+                          }
+                        },
+                        "wind": {
+                          "type": "object",
+                          "properties": {
+                            "speed": { "type": "number" },
+                            "deg": { "type": "integer" },
+                            "gust": { "type": "number" }
+                          }
+                        },
+                        "visibility": { "type": "integer" },
+                        "name": { "type": "string" }
+                      }
                     },
                     "images": {
                       "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "Array of beautiful image URLs of the location (from Google Places API)"
+                      "items": { "type": "string", "format": "uri" },
+                      "description": "Array of image URLs from Google Places API"
                     }
                   }
-                },
-                "example": {
-                  "status": true,
-                  "msg": "Weather and images fetched successfully",
-                  "weather": {
-                    "coord": {
-                      "lon": 55.2708,
-                      "lat": 25.2048
-                    },
-                    "weather": [
-                      {
-                        "id": 800,
-                        "main": "Clear",
-                        "description": "clear sky",
-                        "icon": "01d"
-                      }
-                    ],
-                    "base": "stations",
-                    "main": {
-                      "temp": 35.92,
-                      "feels_like": 42.06,
-                      "temp_min": 35.92,
-                      "temp_max": 35.92,
-                      "pressure": 1002,
-                      "humidity": 48,
-                      "sea_level": 1002,
-                      "grnd_level": 1001
-                    },
-                    "visibility": 10000,
-                    "wind": {
-                      "speed": 6.35,
-                      "deg": 337,
-                      "gust": 6.95
-                    },
-                    "clouds": {
-                      "all": 0
-                    },
-                    "dt": 1781871240,
-                    "sys": {
-                      "country": "AE",
-                      "sunrise": 1781832543,
-                      "sunset": 1781881881
-                    },
-                    "timezone": 14400,
-                    "id": 290845,
-                    "name": "Ash Shindaghah",
-                    "cod": 200
-                  },
-                  "images": [
-                    "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=AaVGc3m7NEzH8tinS1sf2bVm7DjH7Ek3_pPYk86s5sdDKkdgTkKaQZfAAEmCaB7yH0UEg9GtjGNtrducrYmBX1nSrMJlLvsmKkJa_tKWbvWqwOuoMa759t0uxZc-3fSrwYHugCPqr65YPdnWSle6W3hoIMjOC-j0BxxMIZH07Cpc5ij6q8V7qlOYd00gisT2Qmx7fjrR0b-vKR3vFMSb2bpa6G9Mm10pEMFcUzKrOqlG5jckAfpTlXCQG2XtmSGaRGduKaM_4wopubtoc6JI2n9cRZRcNX2mbnKxavCPIQIydGo79j8eL1hU7po-020I3JwZHmiQPLQvBQvo7yvQLvrVC2LwardpHAVm-m1ZIS6HatU0iKQlkaYhrQ1MvEzBxlKCda9npgFV_hx5HBNszZimWkmScdHsLjR7Gbly4VNVO_jFuWs0hc4C0TdQAVKORA&key=AIzaSyAGmI01HuB2bKwmDhLcCKQCahtSQZoZ9Yc",
-                    "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=AaVGc3l2RmJG_1altPOPQGnlcIBqwUppU32v08XMMDyrc35r1gjFk-FhebqRdm_Qgs7qg-iU_gUCutwchAALS3RS7yApWMwy0nX9DBMxI1uSqY-AWV2CoxFCbot8w4DBZ3DRzln-LJw7n1EoPDsAEgmc3p3uN9FA0NihZPvQkCTUoVx0mgLd83gv9RZ2uYO8Xspj23rWN5CmxiAiKb3pEX-9Gl-e8BXzI4jmZSsDdVM5Z0JSuweSYXTU15egvX6hcZtKwgo52G-R1QW-4YAnmjp_nSLEF3FGsED6gHg5s20HNSljyfkcveDZSGlF2mG2jgzYn5s9qRTMfHq2tT5GjIW1g1xyvMjui2rD850XecA1Pq9Ev5AKqMUn0VhL_m9m8tiJjYlA4zDl0grYVtU9kCSvn7j7vk4YiDEeoaqsJ--Q2OKdQw&key=AIzaSyAGmI01HuB2bKwmDhLcCKQCahtSQZoZ9Yc",
-                    "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=AaVGc3nbaWoM7d-nh5HQQdJKanJIPx9_4E2A2gY5UxTW6sYFpfA4v8GtXRbPqO52uHrv2oIuaHM5olGJAgQghcZ54BWDvlt672Dak9mIRMvDzslOPVMeJvXKQ24wLviPTH8m-VcR8sP5ujjFeXtbQVLqdoG6Uh0YjwaFGGWRaUcjRlcSWiX_H1BuXh5ylihby0SAuXSWKtLUJh2DDWw4iWGEBHYjzZ1bXSyHUo1QQg3CU_32xXh4akFoxDOYATvvKOx-39Q2seacCzrZ0bXVl61GnjmZVqe72zGCJesPeOPdP_0rmCY8PkXO5iZjJwSUBUM3A2pslVIIAnmY5RTsX8EvSfXy09KMIHbrgBonpKtGALcm3Gjr6VTf6bIwj7-MDonLo-_WOXqhrGou6XJ82qXLUGN30duNK9psVHZKqhDzhAuZAJF2-g0Qpog_cMqmiSua&key=AIzaSyAGmI01HuB2bKwmDhLcCKQCahtSQZoZ9Yc",
-                    "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=AaVGc3kx1emvBcUS8zMvnsSfn9AB9eMQUmJf_-8sfiBGPle8kJ6DEmiGrH-wfSvG9BDBrdpcRLmnlsqdmEd33kZ53YYROnyDqTX6JyT0PZhIi-aXc1-7FCyexVjv8ezk0-AD1HHH-rK2JU5c5HHsVTXEzR0dZE2PqATFDjhUy_W0NBtZS90gCNGOpFPLLZ7CbRSrWkLuaA96162KdASrKUI-pCvXc3kIRSWfOeW1c8libAxuu8ERo3iHUCTamqh_lcTcP6WoQVIWqxmYMmUO6gLBgaxndb84jedEpuINo8JbMPnj32OIA0puKdF5qjRw4WHpZDQc-8TENrjeaTt5majKACA-mjfeQt6AV3zjjS7_j33iaNreXN91eiwhcSQejMGaUzS38SuNrQmEKcKFVw7ThdmI7fXO1VX6QyHle6ec_F7H1Z0&key=AIzaSyAGmI01HuB2bKwmDhLcCKQCahtSQZoZ9Yc",
-                    "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=AaVGc3m1TI_bsxp2NnkgM46w4DUPzOuujIriMQ2RxDFM0-58a4qOwPBIQcJNXH1nXPMHR9hdnAG6ortgOd-oCCgtzz_rsyRv2f4XWbbi9y1Sm9ykpcumRNUJhuZmcqOXxQtmoCmYl3306ok19A8F1z6EejxBYvD7UMSiIcRKJD_SiyUOihTCESVAfpjHfvGGikBpFdaf7PfGoIeXf70AoX3WFscgDqbNXtE3Xh8efmd7nArn-uKhGglZkg0_TVRrPWVv2HqXIN4DtGAN02EMQao6d8eBL3DMoth1iI-LmkUt2yK07XWdIk0e3NlOl6zWxEolI2L0hmAz4yBFus3-YazoRaXHVmJlZTWw5i8-55TTHMes-FjbvRudmAsU4Dwl3HipZU1HGxp53Qhq3oxkSDrVC59lavFA0wRQejMNJuJlqwrjiDEq&key=AIzaSyAGmI01HuB2bKwmDhLcCKQCahtSQZoZ9Yc"
-                  ]
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/trip/start-pause-trip": {
       "post": {
-        "tags": [
-          "Trip"
-        ],
+        "tags": ["Trip"],
         "summary": "Toggle Trip Navigation Status",
         "description": "Updates the navStatus of a trip (e.g. 'navigating', 'paused', 'idle')",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": ["tripId", "navStatus"],
                 "properties": {
-                  "tripId": {
-                    "type": "string",
-                    "description": "ID of the trip"
-                  },
-                  "navStatus": {
-                    "type": "string",
-                    "enum": [
-                      "idle",
-                      "navigating",
-                      "paused"
-                    ],
-                    "description": "The new navigation status"
-                  }
-                },
-                "required": [
-                  "tripId",
-                  "navStatus"
-                ]
+                  "tripId": { "type": "string" },
+                  "navStatus": { "type": "string", "enum": ["idle", "navigating", "paused"] }
+                }
               }
             }
           }
@@ -1272,63 +613,26 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "msg": {
-                      "type": "string",
-                      "example": "Trip navigation status updated"
-                    },
-                    "trip": {
-                      "type": "object",
-                      "description": "The updated trip document"
-                    }
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "trip": { "$ref": "#/components/schemas/TripDto" }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Validation error"
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Trip not found"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "404": { "description": "Trip not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/trip/plan-trip": {
       "post": {
-        "tags": [
-          "Trip"
-        ],
+        "tags": ["Trip"],
         "summary": "Plan your trip",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -1336,31 +640,12 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "destination": {
-                    "type": "string"
-                  },
-                  "hotelLocation": {
-                    "type": "string"
-                  },
-                  "tripDates": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "radiusKm": {
-                    "type": "number"
-                  },
-                  "intenseMode": {
-                    "type": "boolean"
-                  },
-                  "interestedVibes": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
+                  "destination": { "type": "string" },
+                  "hotelLocation": { "type": "string" },
+                  "tripDates": { "type": "array", "items": { "type": "string", "format": "date-time" } },
+                  "radiusKm": { "type": "number" },
+                  "intenseMode": { "type": "boolean" },
+                  "interestedVibes": { "type": "array", "items": { "type": "string" } }
                 }
               }
             }
@@ -1374,177 +659,26 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "msg": {
-                      "type": "string",
-                      "example": "Trip planned successfully"
-                    },
-                    "trip": {
-                      "type": "object",
-                      "description": "The created trip document"
-                    },
-                    "generatedRoutes": {
-                      "type": "object",
-                      "properties": {
-                        "dayRoutes": {
-                          "type": "object"
-                        },
-                        "refreshQueue": {
-                          "type": "array"
-                        }
-                      }
-                    }
-                  }
-                },
-                "example": {
-                  "status": true,
-                  "msg": "Trip planned successfully",
-                  "trip": {
-                    "id": "c4c52b3f-b47e-4a91-9e71-c9daa727f34d",
-                    "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
-                    "ownerUid": null,
-                    "routeTitle": null,
-                    "destination": "Dubai, UAE",
-                    "hotelLocation": "Burj Al Arab, Dubai",
-                    "tripDates": [
-                      "2026-06-20T00:00:00.000Z",
-                      "2026-06-21T00:00:00.000Z",
-                      "2026-06-22T00:00:00.000Z"
-                    ],
-                    "status": null,
-                    "tripPace": false,
-                    "radiusKm": 15,
-                    "travelWith": "Family",
-                    "interestedVibes": [
-                      "Culinary",
-                      "Nature",
-                      "Culture"
-                    ],
-                    "imageUrls": [
-                      "https://example.com/dubai-image1.jpg",
-                      "https://example.com/dubai-image2.jpg"
-                    ],
-                    "routesByDate": null,
-                    "isShared": false,
-                    "inviteToken": null,
-                    "currentLatitude": null,
-                    "currentLongitude": null,
-                    "lastLocationUpdatedAt": null,
-                    "heading": null,
-                    "navStatus": null,
-                    "flowKind": null,
-                    "generatedStartLat": null,
-                    "generatedStartLng": null,
-                    "generatedDestLat": null,
-                    "generatedDestLng": null,
-                    "createdAt": "2026-06-19T12:48:15.283Z",
-                    "updatedAt": "2026-06-19T12:48:15.283Z"
-                  },
-                  "generatedRoutes": {
-                    "dayRoutes": {
-                      "0": [
-                        {
-                          "name": "The Restaurant at Address Sky View",
-                          "category": "restaurant",
-                          "lat": 25.2014188,
-                          "lng": 55.2706273,
-                          "visible": true,
-                          "isSurprise": false,
-                          "googleTypes": [
-                            "restaurant",
-                            "night_club",
-                            "bar",
-                            "food",
-                            "point_of_interest",
-                            "establishment"
-                          ]
-                        }
-                      ],
-                      "1": [
-                        {
-                          "name": "CÉ LA VI",
-                          "category": "restaurant",
-                          "lat": 25.202026,
-                          "lng": 55.2706755,
-                          "visible": false,
-                          "isSurprise": false,
-                          "googleTypes": [
-                            "restaurant",
-                            "food",
-                            "point_of_interest",
-                            "establishment"
-                          ]
-                        }
-                      ]
-                    },
-                    "refreshQueue": [
-                      {
-                        "name": "Social House",
-                        "category": "restaurant",
-                        "lat": 25.1961549,
-                        "lng": 55.2775404,
-                        "visible": false,
-                        "isSurprise": false,
-                        "googleTypes": [
-                          "restaurant",
-                          "food",
-                          "point_of_interest",
-                          "establishment"
-                        ]
-                      }
-                    ]
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "trip": { "$ref": "#/components/schemas/TripDto" },
+                    "generatedRoutes": { "$ref": "#/components/schemas/GeneratedRoutesDto" }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/trip/skip-trip": {
       "post": {
-        "tags": [
-          "Trip"
-        ],
+        "tags": ["Trip"],
         "summary": "Skip your trip (quick adventure generator)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -1552,31 +686,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "startLat": {
-                    "type": "number",
-                    "example": 25.2
-                  },
-                  "startLng": {
-                    "type": "number",
-                    "example": 55.27
-                  },
-                  "radiusKm": {
-                    "type": "number",
-                    "example": 2
-                  },
-                  "intenseMode": {
-                    "type": "boolean",
-                    "example": false
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "example": [
-                      "Culinary"
-                    ]
-                  }
+                  "startLat": { "type": "number" },
+                  "startLng": { "type": "number" },
+                  "radiusKm": { "type": "number" },
+                  "intenseMode": { "type": "boolean" },
+                  "tags": { "type": "array", "items": { "type": "string" } }
                 }
               }
             }
@@ -1590,178 +704,42 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "msg": {
-                      "type": "string",
-                      "example": "Skip Trip generated successfully"
-                    },
-                    "trip": {
-                      "type": "object",
-                      "description": "The created trip document"
-                    },
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "trip": { "$ref": "#/components/schemas/TripDto" },
                     "skipFlowPlacePool": {
                       "type": "array",
-                      "items": {
-                        "type": "object"
-                      }
+                      "items": { "$ref": "#/components/schemas/PlacePoolItemDto" }
                     },
                     "itineraryStops": {
                       "type": "array",
-                      "items": {
-                        "type": "object"
-                      }
+                      "items": { "$ref": "#/components/schemas/RouteStopDto" }
                     },
-                    "generatedStartPoint": {
-                      "type": "object"
-                    },
-                    "generatedDestinationPoint": {
-                      "type": "object"
-                    },
+                    "generatedStartPoint": { "$ref": "#/components/schemas/GeoPointDto" },
+                    "generatedDestinationPoint": { "$ref": "#/components/schemas/GeoPointDto" },
                     "dayRoutes": {
-                      "type": "object"
-                    }
-                  }
-                },
-                "example": {
-                  "status": true,
-                  "msg": "Skip Trip generated successfully",
-                  "trip": {
-                    "id": "c9ac1205-319c-40d0-bea7-32a5314972af",
-                    "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
-                    "ownerUid": null,
-                    "routeTitle": null,
-                    "destination": "Skip Adventure",
-                    "hotelLocation": "Current Location",
-                    "tripDates": [
-                      "2026-06-19T12:49:24.789Z"
-                    ],
-                    "status": null,
-                    "tripPace": true,
-                    "radiusKm": 2,
-                    "travelWith": "Solo",
-                    "interestedVibes": [
-                      "Culinary"
-                    ],
-                    "imageUrls": [],
-                    "routesByDate": null,
-                    "isShared": false,
-                    "inviteToken": null,
-                    "currentLatitude": null,
-                    "currentLongitude": null,
-                    "lastLocationUpdatedAt": null,
-                    "heading": null,
-                    "navStatus": null,
-                    "flowKind": null,
-                    "generatedStartLat": null,
-                    "generatedStartLng": null,
-                    "generatedDestLat": null,
-                    "generatedDestLng": null,
-                    "createdAt": "2026-06-19T12:49:24.792Z",
-                    "updatedAt": "2026-06-19T12:49:24.792Z"
-                  },
-                  "skipFlowPlacePool": [
-                    {
-                      "name": "Taj Mahal Hotel",
-                      "category": "restaurant",
-                      "lat": 34.117871,
-                      "lng": 72.4646408,
-                      "visible": false,
-                      "isSurprise": false,
-                      "googleTypes": [
-                        "restaurant",
-                        "food",
-                        "point_of_interest",
-                        "establishment"
-                      ]
-                    }
-                  ],
-                  "itineraryStops": [
-                    {
-                      "name": "Taj Mahal Hotel",
-                      "category": "restaurant",
-                      "lat": 34.117871,
-                      "lng": 72.4646408,
-                      "visible": false,
-                      "isSurprise": false,
-                      "googleTypes": [
-                        "restaurant",
-                        "food",
-                        "point_of_interest",
-                        "establishment"
-                      ]
-                    }
-                  ],
-                  "generatedStartPoint": {
-                    "lat": 34.219158,
-                    "lng": 72.347862
-                  },
-                  "generatedDestinationPoint": {
-                    "lat": 34.2102524,
-                    "lng": 72.35351299999999
-                  },
-                  "dayRoutes": {
-                    "0": [
-                      {
-                        "index": 1,
-                        "name": "Taj Mahal Hotel",
-                        "category": "restaurant",
-                        "lat": 34.117871,
-                        "lng": 72.4646408,
-                        "visible": false
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
                       }
-                    ]
+                    }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/trip/save-journey": {
       "post": {
-        "tags": [
-          "Trip"
-        ],
+        "tags": ["Trip"],
         "summary": "Save a generated journey to the database",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -1769,53 +747,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "tripId": {
-                    "type": "string",
-                    "example": "uuid-here"
-                  },
-                  "routeTitle": {
-                    "type": "string",
-                    "example": "My Awesome Trip"
-                  },
+                  "tripId": { "type": "string" },
+                  "routeTitle": { "type": "string" },
                   "routesByDate": {
                     "type": "object",
                     "additionalProperties": {
                       "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "index": {
-                            "type": "integer"
-                          },
-                          "category": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "lat": {
-                            "type": "number"
-                          },
-                          "lng": {
-                            "type": "number"
-                          },
-                          "visible": {
-                            "type": "boolean"
-                          }
-                        }
-                      }
-                    },
-                    "example": {
-                      "2026-05-17": [
-                        {
-                          "index": 1,
-                          "category": "Amusement Park",
-                          "name": "Yaniv Fireball",
-                          "lat": 29.5498256,
-                          "lng": 34.9594078,
-                          "visible": true
-                        }
-                      ]
+                      "items": { "$ref": "#/components/schemas/RouteStopDto" }
                     }
                   }
                 }
@@ -1831,147 +769,30 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "msg": {
-                      "type": "string",
-                      "example": "Journey saved successfully"
-                    },
-                    "trip": {
-                      "type": "object"
-                    }
-                  }
-                },
-                "example": {
-                  "status": true,
-                  "msg": "Journey saved successfully",
-                  "trip": {
-                    "id": "c9bde0e6-ddca-4053-9aac-ee9b89ceee47",
-                    "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
-                    "ownerUid": null,
-                    "routeTitle": "My Awesome Summer Trip",
-                    "destination": "Dubai, UAE",
-                    "hotelLocation": "Burj Al Arab, Dubai",
-                    "tripDates": [
-                      "2026-06-20T00:00:00.000Z",
-                      "2026-06-21T00:00:00.000Z",
-                      "2026-06-22T00:00:00.000Z"
-                    ],
-                    "status": "upcoming",
-                    "tripPace": false,
-                    "radiusKm": 15,
-                    "travelWith": "Family",
-                    "interestedVibes": [
-                      "Culinary",
-                      "Nature",
-                      "Culture"
-                    ],
-                    "imageUrls": [
-                      "https://example.com/dubai-image1.jpg",
-                      "https://example.com/dubai-image2.jpg"
-                    ],
-                    "routesByDate": {
-                      "2026-05-17": [
-                        {
-                          "lat": 29.5498256,
-                          "lng": 34.9594078,
-                          "name": "Yaniv Fireball",
-                          "index": 1,
-                          "visible": true,
-                          "category": "Amusement Park"
-                        },
-                        {
-                          "lat": 29.5495106,
-                          "lng": 34.9590798,
-                          "name": "מתקן כדור האש",
-                          "index": 2,
-                          "visible": true,
-                          "category": "Amusement park"
-                        }
-                      ],
-                      "2026-05-18": [
-                        {
-                          "lat": 29.5538277,
-                          "lng": 34.9619612,
-                          "name": "The Booster",
-                          "index": 1,
-                          "visible": true,
-                          "category": "Amusement Park"
-                        }
-                      ]
-                    },
-                    "isShared": false,
-                    "inviteToken": null,
-                    "currentLatitude": 25.2608,
-                    "currentLongitude": 55.3268,
-                    "lastLocationUpdatedAt": "2026-06-18T04:56:40.034Z",
-                    "heading": 90,
-                    "navStatus": "navigating",
-                    "flowKind": null,
-                    "generatedStartLat": null,
-                    "generatedStartLng": null,
-                    "generatedDestLat": null,
-                    "generatedDestLng": null,
-                    "createdAt": "2026-06-17T15:52:19.894Z",
-                    "updatedAt": "2026-06-19T10:45:30.512Z"
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "trip": { "$ref": "#/components/schemas/TripDto" }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad Request / Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     },
     "/trip/get-my-trips": {
       "get": {
-        "tags": [
-          "Trip"
-        ],
+        "tags": ["Trip"],
         "summary": "Get all trips for the authenticated user",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "query",
             "name": "status",
-            "schema": {
-              "type": "string"
-            },
+            "schema": { "type": "string" },
             "description": "Filter trips by status (e.g. 'upcoming')"
           }
         ],
@@ -1983,65 +804,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "msg": {
-                      "type": "string",
-                      "example": "My trips fetched successfully"
-                    },
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
                     "trips": {
                       "type": "array",
-                      "items": {
-                        "type": "object"
-                      }
+                      "items": { "$ref": "#/components/schemas/TripDto" }
                     }
                   }
-                },
-                "example": {
-                  "status": true,
-                  "msg": "My trips fetched successfully",
-                  "trips": [
-                    {
-                      "id": "c9bde0e6-ddca-4053-9aac-ee9b89ceee47",
-                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
-                      "routeTitle": "My Awesome Summer Trip",
-                      "destination": "Dubai, UAE",
-                      "status": "upcoming"
-                    },
-                    {
-                      "id": "74b08c3e-b24a-4435-8361-5f8252dbf4f4",
-                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
-                      "routeTitle": "swabi shiekh jana",
-                      "destination": "Dubai, UAE",
-                      "status": "upcoming"
-                    }
-                  ]
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
     }
