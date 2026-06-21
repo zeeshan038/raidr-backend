@@ -733,7 +733,7 @@ function mixedCandidatesForSkipAiBatch(distanceAscending, maxCount, vibe) {
   "flow": "planYourTrip",
   "startLat": 25.20,
   "startLng": 55.27,
-  "hotelLat": 25.21,
+  "hotelLat": 25.21, 
   "hotelLng": 55.28,
   "tags": ["Nightlife", "Culinary", "Culture"],
   "intenseMode": false,

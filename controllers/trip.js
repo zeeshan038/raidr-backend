@@ -18,7 +18,10 @@ import {
     mixedCandidatesForSkipAiBatch,
     randomDestination,
     isNonTouristRoutePlace,
-    buildRouteItems
+    isPlaceInappropriateForFamilyTrip,
+    interleavePlanRawForChunkDiversity,
+    buildRouteItems,
+    resolveStartPointForPlan
 } from "../utils/tripUtils.js"
 
 
@@ -40,8 +43,23 @@ export const PlanYourTrip = async (req, res) => {
     }
 
     try {
-        const startLat = payload.startLat || 25.20;
-        const startLng = payload.startLng || 55.27;
+        const resolvedStart = resolveStartPointForPlan({
+            hotelLat: payload.hotelLat,
+            hotelLng: payload.hotelLng,
+            destinationLat: payload.destinationLat,
+            destinationLng: payload.destinationLng,
+            startLat: payload.startLat,
+            startLng: payload.startLng,
+        });
+
+        if (!resolvedStart) {
+            return res.status(400).json({
+                status: false,
+                msg: 'At least one of hotel, destination, or start coordinates is required'
+            });
+        }
+
+        const { lat: searchLat, lng: searchLng } = resolvedStart;
         const intenseMode = payload.intenseMode || false;
         const totalDays = payload.tripDates?.length || 1;
         const visibleK = intenseMode ? 6 : 3;
@@ -56,17 +74,25 @@ export const PlanYourTrip = async (req, res) => {
 
         // Google Places Search
         let rawLocations = await searchRouteBreakpoints({
-            startLat,
-            startLng,
+            startLat: searchLat,
+            startLng: searchLng,
             radiusKm: payload.radiusKm || 10,
             keywords: searchKeywords,
             targetPoolSize: 50,
             minCandidatesOverride: familyPartyPlan ? 128 : 80,
             ensureAllKeywordsSearchedAtFirstRadius: true
         });
+        // Apply spec filters
+        rawLocations = rawLocations.filter(isRealPoi).filter(l => !isNonTouristRoutePlace(l));
+        if (familyPartyPlan) {
+            rawLocations = rawLocations.filter(l => !isPlaceInappropriateForFamilyTrip(l));
+        }
 
         // Limit candidates to send to AI
         rawLocations = rawLocations.slice(0, 130);
+
+        // Interleave for chunk diversity
+        rawLocations = interleavePlanRawForChunkDiversity(rawLocations, likedTitles);
 
         // OpenAI Ranking
         const rankedCandidates = await rankPlanCandidatesChunked(rawLocations, keywordTags, likedTitles.length > 1, intenseMode);
@@ -83,16 +109,33 @@ export const PlanYourTrip = async (req, res) => {
             dayRoutes[d] = planDayTaggedStops[d] || [];
         }
 
+        const generatedStartPoint = { lat: searchLat, lng: searchLng };
+        const generatedDestinationPoint = {
+            lat: payload.destinationLat,
+            lng: payload.destinationLng,
+        };
+
         const createTrip = await prisma.trip.create({
             data: {
                 destination: payload.destination,
                 hotelLocation: payload.hotelLocation,
-                tripDates: payload.tripDates,
+                startLat: payload.startLat ?? null,
+                startLng: payload.startLng ?? null,
+                hotelLat: payload.hotelLat,
+                hotelLng: payload.hotelLng,
+                destinationLat: payload.destinationLat,
+                destinationLng: payload.destinationLng,
+                tripDates: payload.tripDates.map(date => new Date(date).toISOString()),
                 radiusKm: payload.radiusKm,
                 tripPace: intenseMode,
                 travelWith: Array.isArray(payload.travelWith) ? payload.travelWith[0] : payload.travelWith,
                 interestedVibes: payload.interestedVibes,
                 imageUrls: payload.imageUrls,
+                flowKind: 'planYourTrip',
+                generatedStartLat: searchLat,
+                generatedStartLng: searchLng,
+                generatedDestLat: payload.destinationLat,
+                generatedDestLng: payload.destinationLng,
                 user: {
                     connect: {
                         id: id
@@ -105,6 +148,8 @@ export const PlanYourTrip = async (req, res) => {
             status: true,
             msg: "Trip planned successfully",
             trip: createTrip,
+            generatedStartPoint,
+            generatedDestinationPoint,
             generatedRoutes: {
                 dayRoutes,
                 refreshQueue: planFlowRefreshQueue
@@ -121,11 +166,11 @@ export const PlanYourTrip = async (req, res) => {
 
 /**
  * @Description Get cty Wheater and pictures
- * @Route POST /trip/city-weather
+ * @Route GET /trip/weather
  * @Access Private
  */
 export const GetCityWeather = async (req, res) => {
-    const { lat, lng } = req.body;
+    const { lat, lng } = req.query;
 
     if (!lat || !lng) {
         return res.status(400).json({ status: false, msg: "Latitude and longitude are required" });
@@ -262,9 +307,9 @@ export const SkipYourTrip = async (req, res) => {
                 if (pool.length >= 20) break;
                 if (!isRealPoi(loc) || isNonTouristRoutePlace(loc)) continue;
                 const k = `${loc.name}_${loc.lat}_${loc.lng}`;
-                if (!used.has(k)) { 
-                    used.add(k); 
-                    pool.push(loc); 
+                if (!used.has(k)) {
+                    used.add(k);
+                    pool.push(loc);
                 }
             }
         }
@@ -289,9 +334,16 @@ export const SkipYourTrip = async (req, res) => {
                 tripDates: [new Date()],
                 radiusKm: radiusKm,
                 tripPace: intenseMode,
-                travelWith: "Solo", 
+                travelWith: "Solo",
                 interestedVibes: tags,
                 imageUrls: [],
+                startLat: startLat,
+                startLng: startLng,
+                generatedStartLat: generatedStartPoint.lat,
+                generatedStartLng: generatedStartPoint.lng,
+                generatedDestLat: generatedDestinationPoint.lat,
+                generatedDestLng: generatedDestinationPoint.lng,
+                flowKind: 'skip',
                 user: {
                     connect: {
                         id: id
@@ -328,7 +380,7 @@ export const SkipYourTrip = async (req, res) => {
 export const SaveJourney = async (req, res) => {
     const { id: userId } = req.user;
     const payload = req.body;
-    
+
     const result = SaveJourneySchema(payload);
     if (result.error) {
         return res.status(400).json({ status: false, msg: result.error.details[0].message });
@@ -350,10 +402,10 @@ export const SaveJourney = async (req, res) => {
         if (trip.tripDates && trip.tripDates.length > 0) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
+
             const startDate = new Date(trip.tripDates[0]);
             startDate.setHours(0, 0, 0, 0);
-            
+
             if (startDate.getTime() <= today.getTime()) {
                 calculatedStatus = "in-progress";
             }
@@ -400,11 +452,11 @@ export const SaveJourney = async (req, res) => {
  */
 export const GetMyTrips = async (req, res) => {
     const { id: userId } = req.user;
-    const {status} = req.query;
+    const { status } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    
+
     try {
 
         const trips = await prisma.trip.findMany({
@@ -417,7 +469,7 @@ export const GetMyTrips = async (req, res) => {
         const total = await prisma.trip.count({
             where: { userId: userId, status: status }
         });
-       
+
         return res.status(200).json({
             status: true,
             msg: "My trips fetched successfully",
@@ -444,7 +496,7 @@ export const GetMyTrips = async (req, res) => {
  */
 export const StartAndPauseTrip = async (req, res) => {
     const { id: userId } = req.user;
-    console.log("id",userId)
+    console.log("id", userId)
     const payload = req.body;
 
     const result = StartAndPauseTripSchema(payload);

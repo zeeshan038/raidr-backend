@@ -11,7 +11,7 @@ import AdsRoutes from "./Merchant/ads.js"
 
 //Merchant Routes
 router.use('/merchant',MerchantRoutes);
-router.use('/ads',AdsRoutes);
+router.use('/merchant/ads',AdsRoutes);
 
 
 //User Routes

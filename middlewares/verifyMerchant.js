@@ -12,14 +12,19 @@ export const verifyMerchant = async (req, res, next) => {
     
       const decoded = jwt.verify(token.trim(), process.env.JWT_SECRET);
 
-      const merchantId = decoded.id;
+      const merchantId = decoded.user || decoded.id;
+      if (!merchantId) {
+        return res.status(401).json({ status: false, msg: "Not authorized, invalid token payload" });
+      }
+
       const merchant = await prisma.merchant.findUnique({
         where: { id: merchantId }
       });
 
       if (merchant) {
         delete merchant.password;
-        req.user = merchant; // Attaching to req.user so controllers work smoothly
+        req.user = merchant; // Attaching to req.user so some controllers work smoothly
+        req.merchant = merchant; // Specifically attach to req.merchant for merchant routes
       } else {
         return res.status(401).json({ status: false, msg: "Not authorized, merchant not found" });
       }

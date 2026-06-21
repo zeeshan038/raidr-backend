@@ -7,6 +7,7 @@ import { prisma } from "../../config/db.js";
 
 //Schema 
 import { RegisterSchema , LoginSchema} from "../../schema/Merchant/Merchant.js";
+import { generateToken } from "../../utils/methods/methods.js";
 
 
 /**
@@ -52,10 +53,13 @@ export const Register = async (req, res) => {
             }
         })
 
+        const token = await generateToken(createMerchant.id);
+        
         return res.status(201).json({
             status: true,
             msg: "Merchant registered successfully",
-            merchant: createMerchant
+            merchant: createMerchant,
+            token
         })
     } catch (error) {
         return res.status(500).json({
@@ -101,15 +105,7 @@ export const Register = async (req, res) => {
             })
         }
 
-        const token = jwt.sign(
-            {
-                id: existingMerchant.id,
-                email: existingMerchant.email,
-                role: "merchant"
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
-        );
+        const token = await generateToken(existingMerchant.id);
 
         return res.status(200).json({
             status: true,

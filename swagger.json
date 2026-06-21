@@ -138,6 +138,12 @@
           "routeTitle": { "type": "string", "nullable": true },
           "destination": { "type": "string" },
           "hotelLocation": { "type": "string" },
+          "startLat": { "type": "number", "nullable": true },
+          "startLng": { "type": "number", "nullable": true },
+          "hotelLat": { "type": "number", "nullable": true },
+          "hotelLng": { "type": "number", "nullable": true },
+          "destinationLat": { "type": "number", "nullable": true },
+          "destinationLng": { "type": "number", "nullable": true },
           "tripDates": {
             "type": "array",
             "items": { "type": "string", "format": "date-time" }
@@ -513,6 +519,22 @@
         "tags": ["Trip"],
         "summary": "Get city weather and pictures",
         "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lat",
+            "schema": { "type": "number" },
+            "required": true,
+            "description": "Latitude of the city"
+          },
+          {
+            "in": "query",
+            "name": "lng",
+            "schema": { "type": "number" },
+            "required": true,
+            "description": "Longitude of the city"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Weather and images fetched successfully",
@@ -652,10 +674,18 @@
                 "properties": {
                   "destination": { "type": "string" },
                   "hotelLocation": { "type": "string" },
+                  "startLat": { "type": "number", "description": "Optional GPS fallback for route search anchor" },
+                  "startLng": { "type": "number", "description": "Optional GPS fallback for route search anchor" },
+                  "hotelLat": { "type": "number" },
+                  "hotelLng": { "type": "number" },
+                  "destinationLat": { "type": "number" },
+                  "destinationLng": { "type": "number" },
                   "tripDates": { "type": "array", "items": { "type": "string", "format": "date-time" } },
                   "radiusKm": { "type": "number" },
                   "intenseMode": { "type": "boolean" },
-                  "interestedVibes": { "type": "array", "items": { "type": "string" } }
+                  "travelWith": { "type": "array", "items": { "type": "string" } },
+                  "interestedVibes": { "type": "array", "items": { "type": "string" } },
+                  "imageUrls": { "type": "array", "items": { "type": "string" } }
                 }
               }
             }
@@ -672,6 +702,8 @@
                     "status": { "type": "boolean" },
                     "msg": { "type": "string" },
                     "trip": { "$ref": "#/components/schemas/TripDto" },
+                    "generatedStartPoint": { "$ref": "#/components/schemas/GeoPointDto" },
+                    "generatedDestinationPoint": { "$ref": "#/components/schemas/GeoPointDto" },
                     "generatedRoutes": { "$ref": "#/components/schemas/GeneratedRoutesDto" }
                   }
                 }
@@ -793,7 +825,7 @@
         }
       }
     },
-    "/trip/get-my-trips": {
+    "/trip/my-trips": {
       "get": {
         "tags": ["Trip"],
         "summary": "Get all trips for the authenticated user",

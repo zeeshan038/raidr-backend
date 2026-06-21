@@ -6,7 +6,7 @@ import { MerchantAdsCreateSchema, MerchantAdsUpdateSchema } from "../../schema/M
 
 /**
  * @Description Create a new campaign (ad)
- * @Route POST /api/ad/create
+ * @Route POST /api/merchant/ads/create
  * @Access Private
  */
 export const createCampaign = async (req, res) => {
@@ -32,26 +32,27 @@ export const createCampaign = async (req, res) => {
 
         const newAd = await prisma.merchantAds.create({
             data: {
-                adTitle: payload.adTitle || "",
-                adCategory: (payload.adCategory || "single store campaign").toLowerCase(),
-                address: payload.address || "",
+                adName: payload.adName,
+                adTitle: payload.adTitle || payload.adName,
+                adCategory: payload.adCategory,
+                categoryName: payload.categoryName,
+                address: payload.address,
                 approvalStatus: "approved",
                 city: payload.city || "Unknown",
                 country: payload.country || "Unknown",
                 descriptionText: payload.descriptionText || "",
-                imageUrl: "",
-                logoUrl: "",
+                imageUrl: payload.adImage || "",
+                logoUrl: payload.logoUrl || "",
                 isActive: payload.isActive !== false,
                 latitude: parseFloat(payload.latitude) || 0.0,
                 longitude: parseFloat(payload.longitude) || 0.0,
                 merchantId: id,
                 merchantName: merchant.name || "Unknown Merchant",
-                placeCategory: (payload.placeCategory || "culinary").toLowerCase(),
                 radius: parseInt(payload.radius) || 0,
                 impressions: parseInt(payload.impressions) || 0,
                 boxOpens: parseInt(payload.boxOpens) || 0,
                 rewardClaims: parseInt(payload.rewardClaims) || 0,
-                mysteryBoxReward: payload.mysteryBoxReward || "",
+                mysteryBoxReward: payload.mysteryBoxReward,
                 stockLimit: parseInt(payload.stockLimit) || 0,
             }
         });
@@ -72,12 +73,12 @@ export const createCampaign = async (req, res) => {
 
 /**
  * @Description Get Compaigns 
- * @Route GET /api/ads/get-campaigns?search=&page=&limit=&adType=
+ * @Route GET /api/merchant/ads/get-all-campaigns?search=&page=&limit=&adCategory=
  * @Access Private
  */
 export const getCampaigns = async (req, res) => {
     const { id } = req.merchant;
-    const { search, adType } = req.query;
+    const { search, adCategory } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -90,11 +91,12 @@ export const getCampaigns = async (req, res) => {
         if (search) {
             matchQuery.OR = [
                 { adTitle: { contains: search, mode: "insensitive" } },
+                { adName: { contains: search, mode: "insensitive" } },
                 { descriptionText: { contains: search, mode: "insensitive" } },
             ]
         }
-        if (adType) {
-            matchQuery.adType = adType;
+        if (adCategory) {
+            matchQuery.adCategory = adCategory;
         }
 
         const [totalCount, data] = await Promise.all([
@@ -134,7 +136,7 @@ export const getCampaigns = async (req, res) => {
  */
 export const getCampaignById = async (req, res) => {
     const { id } = req.merchant;
-    const { campaignId } = req.params;
+    const { id: campaignId } = req.params;
     try {
         const ad = await prisma.merchantAds.findFirst({
             where: { id: campaignId, merchantId: id }
@@ -189,16 +191,19 @@ export const updateCampaign = async (req, res) => {
         const updatedAd = await prisma.merchantAds.update({
             where: { id },
             data: {
-                adTitle: payload.adTitle || ad.adTitle,
-                adCategory: payload.adCategory ? payload.adCategory.toLowerCase() : ad.adCategory,
+                adName: payload.adName || ad.adName,
+                adTitle: payload.adTitle || payload.adName || ad.adTitle,
+                adCategory: payload.adCategory || ad.adCategory,
+                categoryName: payload.categoryName || ad.categoryName,
                 address: payload.address || ad.address,
                 city: payload.city || ad.city,
                 country: payload.country || ad.country,
-                descriptionText: payload.descriptionText || ad.descriptionText,
+                descriptionText: payload.descriptionText !== undefined ? payload.descriptionText : ad.descriptionText,
+                imageUrl: payload.adImage || ad.imageUrl,
+                logoUrl: payload.logoUrl || ad.logoUrl,
                 isActive: payload.isActive !== undefined ? payload.isActive : ad.isActive,
                 latitude: payload.latitude !== undefined ? parseFloat(payload.latitude) : ad.latitude,
                 longitude: payload.longitude !== undefined ? parseFloat(payload.longitude) : ad.longitude,
-                placeCategory: payload.placeCategory ? payload.placeCategory.toLowerCase() : ad.placeCategory,
                 radius: payload.radius !== undefined ? parseInt(payload.radius) : ad.radius,
                 mysteryBoxReward: payload.mysteryBoxReward || ad.mysteryBoxReward,
                 stockLimit: payload.stockLimit !== undefined ? parseInt(payload.stockLimit) : ad.stockLimit,
@@ -265,7 +270,7 @@ export const deleteCampaign = async (req, res) => {
  */
 export const toggleCampaignStatus = async (req, res) => {
     const { id } = req.merchant
-    const { adId } = req.params;
+    const { id: adId } = req.params;
     const { isActive } = req.body;
 
     try {
@@ -283,7 +288,7 @@ export const toggleCampaignStatus = async (req, res) => {
         }
 
         const updatedAd = await prisma.merchantAds.update({
-            where: { id },
+            where: { id: adId },
             data: { isActive }
         });
 
