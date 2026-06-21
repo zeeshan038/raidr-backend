@@ -3,7 +3,7 @@ import Joi from 'joi';
 
 export const PlanYourTripSchema = (payload) => {
     const schema = Joi.object({
-    destination: Joi.string().required().messages({
+        destination: Joi.string().required().messages({
             'any.required': 'Destination is required',
             'string.empty': 'Destination cannot be empty'
         }),
@@ -27,15 +27,34 @@ export const PlanYourTripSchema = (payload) => {
             'any.required': 'Interested Vibes are required',
             'array.empty': 'Interested Vibes cannot be empty'
         }),
-        imageUrls: Joi.array().items(Joi.string()).required().messages({
-            'any.required': 'Image URLs are required',
-            'array.empty': 'Image URLs cannot be empty'
+        imageUrls: Joi.array().items(Joi.string()).messages({
+            'array.base': 'Image URLs must be an array of strings'
         }),
-        startLat: Joi.number().optional(),
-        startLng: Joi.number().optional(),
+        startLat: Joi.number().optional().messages({
+            'number.base': 'startLat must be a number'
+        }),
+        startLng: Joi.number().optional().messages({
+            'number.base': 'startLng must be a number'
+        }),
+        hotelLat: Joi.number().required().messages({
+            'any.required': 'Hotel latitude is required',
+            'number.base': 'hotelLat must be a number'
+        }),
+        hotelLng: Joi.number().required().messages({
+            'any.required': 'Hotel longitude is required',
+            'number.base': 'hotelLng must be a number'
+        }),
+        destinationLat: Joi.number().required().messages({
+            'any.required': 'Destination latitude is required',
+            'number.base': 'destinationLat must be a number'
+        }),
+        destinationLng: Joi.number().required().messages({
+            'any.required': 'Destination longitude is required',
+            'number.base': 'destinationLng must be a number'
+        }),
         intenseMode: Joi.boolean().optional().default(false)
     }).unknown(true); // Allow unknown fields so client can send extra data if needed
-    
+
     return schema.validate(payload);
 }
 
@@ -58,7 +77,7 @@ export const SkipTripSchema = (payload) => {
             'array.base': 'tags must be an array of strings'
         })
     }).unknown(true);
-    
+
     return schema.validate(payload);
 }
 
@@ -73,7 +92,7 @@ export const StartAndPauseTripSchema = (payload) => {
             'any.only': 'navStatus must be one of [idle, navigating, paused]'
         })
     });
-    
+
     return schema.validate(payload);
 }
 
@@ -103,6 +122,6 @@ export const SaveJourneySchema = (payload) => {
             'object.base': 'routesByDate must be an object with YYYY-MM-DD keys'
         })
     });
-    
+
     return schema.validate(payload);
 }

@@ -57,6 +57,12 @@ model Trip {
   routeTitle      String?
   destination     String?
   hotelLocation   String?
+  startLat        Float?
+  startLng        Float?
+  hotelLat        Float?
+  hotelLng        Float?
+  destinationLat  Float?
+  destinationLng  Float?
   tripDates       DateTime[]
   status          String? // "in-progress", "upcoming", "completed"
   tripPace        Boolean? // false=relaxed, true=intense
@@ -122,9 +128,10 @@ model Merchant {
 //Merchant Ads
 model MerchantAds {
   id               String         @id @default(uuid())
+  adName           String
   adCategory       String
+  categoryName     String
   adTitle          String
-  adType           String
   address          String
   approvalStatus   String         @default("pending")
   boxOpens         Int            @default(0)
@@ -141,7 +148,6 @@ model MerchantAds {
   merchant         Merchant       @relation(fields: [merchantId], references: [id])
   merchantName     String
   mysteryBoxReward String
-  placeCategory    String
   radius           Int            @default(0)
   rewardClaims     Int            @default(0)
   stockLimit       Int            @default(0)

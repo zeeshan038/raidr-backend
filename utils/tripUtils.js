@@ -32,6 +32,23 @@ export function expandTags(parentTags) {
  * @input likedTitles - Array
  * @returns response - Array
  */
+/**
+ * Plan flow start anchor: hotel → destination → explicit start/GPS fallback.
+ */
+export function resolveStartPointForPlan({ hotelLat, hotelLng, destinationLat, destinationLng, startLat, startLng }) {
+    if (hotelLat != null && hotelLng != null) {
+        return { lat: hotelLat, lng: hotelLng };
+    }
+    if (destinationLat != null && destinationLng != null) {
+        return { lat: destinationLat, lng: destinationLng };
+    }
+    if (startLat != null && startLng != null) {
+        return { lat: startLat, lng: startLng };
+    }
+    return null;
+}
+
+
 export function fairInterleavedSearchKeywords(likedTitles) {
     const groups = likedTitles.map(t => expandTags([t])).filter(g => g.length);
     if (!groups.length) {
@@ -126,6 +143,38 @@ function shuffleArray(array) {
     return array;
 }
 
+/**
+ * @Description Interleave raw plan candidates by vibe to ensure chunk diversity for AI
+ * @type Function
+ * @input raw - Array
+ * @input likedTitles - Array
+ * @returns response - Array
+ */
+export function interleavePlanRawForChunkDiversity(raw, likedTitles) {
+    if (!likedTitles || likedTitles.length === 0) return raw;
+    
+    const buckets = {};
+    for (const vibe of likedTitles) buckets[vibe] = [];
+    
+    for (const loc of raw) {
+        const v = primaryVibeForPlace(loc, likedTitles);
+        if (buckets[v]) buckets[v].push(loc);
+    }
+    
+    const interleaved = [];
+    let progressed = true;
+    while (progressed) {
+        progressed = false;
+        for (const vibe of likedTitles) {
+            if (buckets[vibe] && buckets[vibe].length > 0) {
+                interleaved.push(buckets[vibe].shift());
+                progressed = true;
+            }
+        }
+    }
+    
+    return interleaved;
+}
 
 /**
  * @Description This function is used to build the master pool ensuring vibe diversity

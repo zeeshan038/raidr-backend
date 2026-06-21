@@ -1,5 +1,6 @@
 import Joi from "joi";
 
+//Register
 export const RegisterSchema = (payload) => {
     const schema = Joi.object({
         email: Joi.string().email().required().messages({
@@ -40,6 +41,7 @@ export const RegisterSchema = (payload) => {
     return schema.validate(payload);
 }
 
+//Login 
 export const LoginSchema = (payload) => {
     const schema = Joi.object({
         email: Joi.string().email().required().messages({
