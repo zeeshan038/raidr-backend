@@ -8,7 +8,6 @@ datasource db {
 }
 
 //User
-
 model User {
   id           String  @id @default(uuid())
   name         String
@@ -47,18 +46,16 @@ model User {
 
   trips         Trip[]
   adImpressions AdImpression[]
+  adClaims      MerchantAdClaim[]
 }
 
 model Trip {
   id              String     @id @default(uuid())
   userId          String
   user            User       @relation(fields: [userId], references: [id])
-  ownerUid        String?
   routeTitle      String?
   destination     String?
   hotelLocation   String?
-  startLat        Float?
-  startLng        Float?
   hotelLat        Float?
   hotelLng        Float?
   destinationLat  Float?
@@ -69,12 +66,10 @@ model Trip {
   radiusKm        Float?
   travelWith      String? // "Solo", "Couple", "Friends", "Family"
   interestedVibes String[]
-  imageUrls       String[]
-
+  
   // JSON field for dynamic "yyyy-MM-dd" keys
   routesByDate Json?
-
-  // Squad sharing
+  
   isShared    Boolean @default(false)
   inviteToken String?
 
@@ -82,16 +77,10 @@ model Trip {
   currentLatitude       Float?
   currentLongitude      Float?
   lastLocationUpdatedAt DateTime?
-  heading               Float?
   navStatus             String? // "idle", "navigating", "paused"
 
   // Flow metadata
   flowKind          String? // "skip", "planYourTrip"
-  generatedStartLat Float?
-  generatedStartLng Float?
-  generatedDestLat  Float?
-  generatedDestLng  Float?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -128,7 +117,6 @@ model Merchant {
 //Merchant Ads
 model MerchantAds {
   id               String         @id @default(uuid())
-  adName           String
   adCategory       String
   categoryName     String
   adTitle          String
@@ -154,6 +142,7 @@ model MerchantAds {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   adImpressions    AdImpression[]
+  adClaims         MerchantAdClaim[]
 }
 
 model AdImpression {
@@ -164,6 +153,20 @@ model AdImpression {
   user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt DateTime    @default(now())
 
+  @@index([adId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model MerchantAdClaim {
+  id        String      @id @default(uuid())
+  adId      String
+  ad        MerchantAds @relation(fields: [adId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, adId])
   @@index([adId])
   @@index([userId])
   @@index([createdAt])

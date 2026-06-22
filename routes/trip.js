@@ -2,7 +2,18 @@
 import express from 'express';
 const router = express.Router();
 
-import { GetCityWeather, PlanYourTrip, SkipYourTrip, SaveJourney, GetMyTrips, StartAndPauseTrip } from '../controllers/trip.js';
+import {
+    GetCityWeather,
+    PlanYourTrip,
+    SkipYourTrip,
+    SaveJourney,
+    GetMyTrips,
+    StartAndPauseTrip,
+    getTripDetails,
+    getMerchantAds,
+    recordAdImpression,
+    claimReward
+} from '../controllers/trip.js';
 import { verifyUser } from '../middlewares/verifyUser.js';
 
 router.use(verifyUser);
@@ -12,5 +23,9 @@ router.post('/skip-trip', SkipYourTrip);
 router.post('/save-journey', SaveJourney);
 router.post('/start-pause-trip', StartAndPauseTrip);
 router.get("/my-trips", GetMyTrips);
+router.get('/trip-details/:tripId', getTripDetails);
+router.get("/banner", getMerchantAds);
+router.post('/impression/:adId', recordAdImpression);
+router.post('/banner/claim/:adId', claimReward);
 
 export default router;

@@ -1,7 +1,7 @@
 //Schema 
 import { PlanYourTripSchema, SkipTripSchema, StartAndPauseTripSchema, SaveJourneySchema } from "../schema/Trip.js"
 
-// Prisma
+// Prisma Client
 import { prisma } from "../config/db.js"
 
 //Service
@@ -16,13 +16,12 @@ import {
     partitionPlanFlowPoolIntoDays,
     isRealPoi,
     mixedCandidatesForSkipAiBatch,
-    randomDestination,
     isNonTouristRoutePlace,
     isPlaceInappropriateForFamilyTrip,
     interleavePlanRawForChunkDiversity,
-    buildRouteItems,
     resolveStartPointForPlan
 } from "../utils/tripUtils.js"
+import { haversineDistance } from "../utils/methods/methods.js"
 
 
 /**
@@ -48,20 +47,30 @@ export const PlanYourTrip = async (req, res) => {
             hotelLng: payload.hotelLng,
             destinationLat: payload.destinationLat,
             destinationLng: payload.destinationLng,
-            startLat: payload.startLat,
-            startLng: payload.startLng,
         });
 
         if (!resolvedStart) {
             return res.status(400).json({
                 status: false,
-                msg: 'At least one of hotel, destination, or start coordinates is required'
+                msg: 'At least one of hotel or destination coordinates is required'
             });
         }
 
         const { lat: searchLat, lng: searchLng } = resolvedStart;
         const intenseMode = payload.intenseMode || false;
-        const totalDays = payload.tripDates?.length || 1;
+
+        const tripFromDate = new Date(payload.tripFrom);
+        const tripToDate = new Date(payload.tripTo);
+        const timeDiff = Math.abs(tripToDate.getTime() - tripFromDate.getTime());
+        const totalDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+        const generatedDates = [];
+        for (let i = 0; i < totalDays; i++) {
+            const nextDate = new Date(tripFromDate);
+            nextDate.setDate(tripFromDate.getDate() + i);
+            generatedDates.push(nextDate.toISOString());
+        }
+
         const visibleK = intenseMode ? 6 : 3;
 
         // Extract vibe strings
@@ -69,7 +78,7 @@ export const PlanYourTrip = async (req, res) => {
         const keywordTags = expandTags(likedTitles);
         const searchKeywords = fairInterleavedSearchKeywords(likedTitles);
 
-        // Handle travelWith array (e.g., ["Family"])
+        // Handle travelWith array 
         const familyPartyPlan = payload.travelWith && payload.travelWith.includes("Family");
 
         // Google Places Search
@@ -106,36 +115,43 @@ export const PlanYourTrip = async (req, res) => {
         // Map routes
         const dayRoutes = {};
         for (let d = 0; d < totalDays; d++) {
-            dayRoutes[d] = planDayTaggedStops[d] || [];
+            dayRoutes[d] = (planDayTaggedStops[d] || []).map((s, i) => ({
+                index: i + 1,
+                name: s.name,
+                category: s.category,
+                lat: s.lat,
+                lng: s.lng,
+                visible: s.visible ?? false,
+                isSurprise: s.isSurprise ?? false,
+                isAchieved: false
+            }));
         }
 
-        const generatedStartPoint = { lat: searchLat, lng: searchLng };
-        const generatedDestinationPoint = {
-            lat: payload.destinationLat,
-            lng: payload.destinationLng,
-        };
+        const formattedRefreshQueue = planFlowRefreshQueue.map((s, i) => ({
+            index: i + 1,
+            name: s.name,
+            category: s.category,
+            lat: s.lat,
+            lng: s.lng,
+            visible: false,
+            isSurprise: s.isSurprise ?? false,
+            isAchieved: false
+        }));
 
         const createTrip = await prisma.trip.create({
             data: {
                 destination: payload.destination,
                 hotelLocation: payload.hotelLocation,
-                startLat: payload.startLat ?? null,
-                startLng: payload.startLng ?? null,
                 hotelLat: payload.hotelLat,
                 hotelLng: payload.hotelLng,
                 destinationLat: payload.destinationLat,
                 destinationLng: payload.destinationLng,
-                tripDates: payload.tripDates.map(date => new Date(date).toISOString()),
+                tripDates: generatedDates,
                 radiusKm: payload.radiusKm,
                 tripPace: intenseMode,
                 travelWith: Array.isArray(payload.travelWith) ? payload.travelWith[0] : payload.travelWith,
                 interestedVibes: payload.interestedVibes,
-                imageUrls: payload.imageUrls,
                 flowKind: 'planYourTrip',
-                generatedStartLat: searchLat,
-                generatedStartLng: searchLng,
-                generatedDestLat: payload.destinationLat,
-                generatedDestLng: payload.destinationLng,
                 user: {
                     connect: {
                         id: id
@@ -144,15 +160,15 @@ export const PlanYourTrip = async (req, res) => {
             }
         })
 
+        const { currentLatitude, currentLongitude, lastLocationUpdatedAt, ...tripData } = createTrip;
+
         return res.status(201).json({
             status: true,
             msg: "Trip planned successfully",
-            trip: createTrip,
-            generatedStartPoint,
-            generatedDestinationPoint,
+            trip: tripData,
             generatedRoutes: {
                 dayRoutes,
-                refreshQueue: planFlowRefreshQueue
+                refreshQueue: formattedRefreshQueue
             }
         })
     } catch (error) {
@@ -316,15 +332,31 @@ export const SkipYourTrip = async (req, res) => {
 
         const skipFlowPlacePool = pool;
         const itineraryStops = skipFlowPlacePool.slice(0, visibleK);
-        const routeItems = buildRouteItems(itineraryStops);
+        const standbyStops = skipFlowPlacePool.slice(visibleK);
 
-        const generatedStartPoint = { lat: startLat, lng: startLng };
-        const generatedDestinationPoint = itineraryStops.length
-            ? { lat: itineraryStops[itineraryStops.length - 1].lat, lng: itineraryStops[itineraryStops.length - 1].lng }
-            : randomDestination(startLat, startLng, 1);
+        const dayRoutes = {
+            0: itineraryStops.map((s, i) => ({
+                index: i + 1,
+                name: s.name,
+                category: s.category,
+                lat: s.lat,
+                lng: s.lng,
+                visible: true,
+                isSurprise: s.isSurprise ?? false,
+                isAchieved: false
+            }))
+        };
 
-        // Map routes (Skip flow is always 1 day -> day 0)
-        const dayRoutes = { 0: routeItems };
+        const formattedRefreshQueue = standbyStops.map((s, i) => ({
+            index: i + 1,
+            name: s.name,
+            category: s.category,
+            lat: s.lat,
+            lng: s.lng,
+            visible: false,
+            isSurprise: s.isSurprise ?? false,
+            isAchieved: false
+        }));
 
         // Save Trip
         const createTrip = await prisma.trip.create({
@@ -336,13 +368,6 @@ export const SkipYourTrip = async (req, res) => {
                 tripPace: intenseMode,
                 travelWith: "Solo",
                 interestedVibes: tags,
-                imageUrls: [],
-                startLat: startLat,
-                startLng: startLng,
-                generatedStartLat: generatedStartPoint.lat,
-                generatedStartLng: generatedStartPoint.lng,
-                generatedDestLat: generatedDestinationPoint.lat,
-                generatedDestLng: generatedDestinationPoint.lng,
                 flowKind: 'skip',
                 user: {
                     connect: {
@@ -352,15 +377,16 @@ export const SkipYourTrip = async (req, res) => {
             }
         });
 
+        const { currentLatitude, currentLongitude, lastLocationUpdatedAt, ...tripData } = createTrip;
+
         return res.status(201).json({
             status: true,
-            msg: "Skip Trip generated successfully",
-            trip: createTrip,
-            skipFlowPlacePool,
-            itineraryStops,
-            generatedStartPoint,
-            generatedDestinationPoint,
-            dayRoutes
+            msg: "Trip planned successfully",
+            trip: tripData,
+            generatedRoutes: {
+                dayRoutes,
+                refreshQueue: formattedRefreshQueue
+            }
         });
 
     } catch (error) {
@@ -470,15 +496,19 @@ export const GetMyTrips = async (req, res) => {
             where: { userId: userId, status: status }
         });
 
+        const totalPages = Math.ceil(total / limit);
+        const hasNextPage = page < totalPages;
+        const nextPage = hasNextPage ? page + 1 : 0;
+
         return res.status(200).json({
             status: true,
             msg: "My trips fetched successfully",
             data: trips,
             pagination: {
-                page,
+                currentPage: page,
                 limit,
-                total,
-                totalPages: Math.ceil(total / limit)
+                hasNextPage,
+                nextPage
             }
         });
     } catch (error) {
@@ -539,3 +569,277 @@ export const StartAndPauseTrip = async (req, res) => {
         });
     }
 }
+
+
+/**
+ * @Description Trip Details
+ * @Route POST /trip/trip-details/:id
+ * @Access Private
+ */
+export const getTripDetails = async (req, res) => {
+    const { id: userId } = req.user;
+    const { tripId } = req.params;
+
+    try {
+        const trip = await prisma.trip.findFirst({
+            where: { id: tripId, userId: userId }
+        });
+
+        if (!trip) {
+            return res.status(404).json({ status: false, msg: "Trip not found" });
+        }
+
+        return res.status(200).json({
+            status: true,
+            msg: "Trip details fetched successfully",
+            data: trip
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+/**
+ * @Description Get Merchant ads banner
+ * @Route GET /trip/banner?city=&lat=&long=
+ * @Access Private
+ */
+export const getMerchantAds = async (req, res) => {
+    const { city, lat, long } = req.query;
+
+    if (!city) {
+        return res.status(400).json({
+            status: false,
+            msg: "City query parameter is required"
+        });
+    }
+
+    try {
+        const ads = await prisma.merchantAds.findMany({
+            where: {
+                city: { equals: city, mode: 'insensitive' },
+                isActive: true,
+                approvalStatus: 'approved'
+            }
+        });
+
+        if (ads.length === 0) {
+            return res.status(200).json({
+                status: true,
+                ad: null,
+                distanceM: null,
+                isClaimed: false
+            });
+        }
+
+        const userLat = lat !== undefined && lat !== "" ? parseFloat(lat) : null;
+        const userLng = long !== undefined && long !== "" ? parseFloat(long) : null;
+
+        // 2. Filter ads by stock limit and coordinate/radius matching
+        const eligibleAds = [];
+
+        for (const ad of ads) {
+            // Check stock limit
+            const hasStock = ad.stockLimit <= 0 || ad.rewardClaims < ad.stockLimit;
+            if (!hasStock) continue;
+
+            let dist = null;
+            if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
+                dist = haversineDistance(userLat, userLng, ad.latitude, ad.longitude);
+                if (ad.radius > 0 && dist > ad.radius) {
+                    continue;
+                }
+            }
+
+            eligibleAds.push({ ad, dist });
+        }
+
+        if (eligibleAds.length === 0) {
+            return res.status(200).json({
+                status: true,
+                ad: null,
+                distanceM: null,
+                isClaimed: false
+            });
+        }
+
+        let selectedAd = eligibleAds[0].ad;
+        let distanceM = null;
+
+        // 3. If coordinates are provided, sort by nearest distance
+        if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
+            eligibleAds.sort((a, b) => a.dist - b.dist);
+            selectedAd = eligibleAds[0].ad;
+            distanceM = Math.round(eligibleAds[0].dist);
+        }
+
+        const { id: userId } = req.user;
+
+        // 4. Check if the user has already claimed this ad
+        const existingClaim = await prisma.merchantAdClaim.findUnique({
+            where: {
+                userId_adId: {
+                    userId: userId,
+                    adId: selectedAd.id
+                }
+            }
+        });
+        const isClaimed = !!existingClaim;
+
+        return res.status(200).json({
+            status: true,
+            ad: selectedAd,
+            distanceM,
+            isClaimed
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
+
+/**
+ * @Description Record Merchant Ad Impression
+ * @Route POST /trip/banner/:adId/impression
+ * @Access Private
+ */
+export const recordAdImpression = async (req, res) => {
+    const { id: userId } = req.user;
+    const { adId } = req.params;
+
+    try {
+        const ad = await prisma.merchantAds.findUnique({
+            where: { id: adId }
+        });
+
+        if (!ad) {
+            return res.status(404).json({
+                status: false,
+                msg: "Campaign not found"
+            });
+        }
+
+        // Increment total ad impressions and create user impression log in a transaction
+        await prisma.$transaction([
+            prisma.merchantAds.update({
+                where: { id: adId },
+                data: { impressions: { increment: 1 } }
+            }),
+            prisma.adImpression.create({
+                data: {
+                    adId: adId,
+                    userId: userId
+                }
+            })
+        ]);
+
+        return res.status(200).json({
+            status: true,
+            msg: "Impression recorded successfully"
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
+
+/**
+ * @Description Claim Reward
+ * @Route POST /trip/banner/
+ * @Access Private
+ */
+export const claimReward = async (req, res) => {
+    const { id: userId } = req.user;
+    const adId = req.params.adId || req.body.adId;
+
+    if (!adId) {
+        return res.status(400).json({
+            status: false,
+            msg: "Ad ID is required"
+        });
+    }
+
+    try {
+        // 1. Check if the ad exists
+        const ad = await prisma.merchantAds.findUnique({
+            where: { id: adId }
+        });
+
+        if (!ad) {
+            return res.status(404).json({
+                status: false,
+                msg: "Campaign not found"
+            });
+        }
+
+        // 2. If user has already claimed the ad, return alreadyClaimed
+        const existingClaim = await prisma.merchantAdClaim.findUnique({
+            where: {
+                userId_adId: {
+                    userId,
+                    adId
+                }
+            }
+        });
+
+        if (existingClaim) {
+            return res.status(200).json({
+                status: false,
+                msg: "alreadyClaimed"
+            });
+        }
+
+        // 3. Check if rewardClaims < stockLimit (unless stockLimit <= 0)
+        const isSoldOut = ad.stockLimit > 0 && ad.rewardClaims >= ad.stockLimit;
+        if (isSoldOut) {
+            return res.status(200).json({
+                status: false,
+                msg: "soldOut"
+            });
+        }
+
+        // 4. Create claim doc + increment rewardClaims, deactivate if limit reached
+        const nextClaimsCount = ad.rewardClaims + 1;
+        const reachedStockLimit = ad.stockLimit > 0 && nextClaimsCount >= ad.stockLimit;
+
+        await prisma.$transaction([
+            prisma.merchantAdClaim.create({
+                data: {
+                    adId,
+                    userId
+                }
+            }),
+            prisma.merchantAds.update({
+                where: { id: adId },
+                data: {
+                    rewardClaims: { increment: 1 },
+                    isActive: reachedStockLimit ? false : undefined
+                }
+            })
+        ]);
+
+        return res.status(200).json({
+            status: true,
+            msg: "success"
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};

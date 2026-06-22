@@ -11,9 +11,13 @@ export const PlanYourTripSchema = (payload) => {
             'any.required': 'Hotel Location is required',
             'string.empty': 'Hotel Location cannot be empty'
         }),
-        tripDates: Joi.array().items(Joi.date()).required().messages({
-            'any.required': 'Trip Dates are required',
-            'array.empty': 'Trip Dates cannot be empty'
+        tripFrom: Joi.date().required().messages({
+            'any.required': 'Trip From date is required',
+            'date.base': 'Trip From must be a valid date'
+        }),
+        tripTo: Joi.date().required().messages({
+            'any.required': 'Trip To date is required',
+            'date.base': 'Trip To must be a valid date'
         }),
         radiusKm: Joi.number().required().messages({
             'any.required': 'Radius is required',
@@ -26,15 +30,6 @@ export const PlanYourTripSchema = (payload) => {
         interestedVibes: Joi.array().items(Joi.string()).required().messages({
             'any.required': 'Interested Vibes are required',
             'array.empty': 'Interested Vibes cannot be empty'
-        }),
-        imageUrls: Joi.array().items(Joi.string()).messages({
-            'array.base': 'Image URLs must be an array of strings'
-        }),
-        startLat: Joi.number().optional().messages({
-            'number.base': 'startLat must be a number'
-        }),
-        startLng: Joi.number().optional().messages({
-            'number.base': 'startLng must be a number'
         }),
         hotelLat: Joi.number().required().messages({
             'any.required': 'Hotel latitude is required',

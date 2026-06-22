@@ -32,8 +32,7 @@ export const createCampaign = async (req, res) => {
 
         const newAd = await prisma.merchantAds.create({
             data: {
-                adName: payload.adName,
-                adTitle: payload.adTitle || payload.adName,
+                adTitle: payload.adTitle,
                 adCategory: payload.adCategory,
                 categoryName: payload.categoryName,
                 address: payload.address,
@@ -91,7 +90,6 @@ export const getCampaigns = async (req, res) => {
         if (search) {
             matchQuery.OR = [
                 { adTitle: { contains: search, mode: "insensitive" } },
-                { adName: { contains: search, mode: "insensitive" } },
                 { descriptionText: { contains: search, mode: "insensitive" } },
             ]
         }
@@ -191,8 +189,7 @@ export const updateCampaign = async (req, res) => {
         const updatedAd = await prisma.merchantAds.update({
             where: { id },
             data: {
-                adName: payload.adName || ad.adName,
-                adTitle: payload.adTitle || payload.adName || ad.adTitle,
+                adTitle: payload.adTitle || ad.adTitle,
                 adCategory: payload.adCategory || ad.adCategory,
                 categoryName: payload.categoryName || ad.categoryName,
                 address: payload.address || ad.address,
@@ -303,3 +300,5 @@ export const toggleCampaignStatus = async (req, res) => {
         });
     }
 };
+
+// Force server restart to load updated Prisma Client
