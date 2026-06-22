@@ -134,12 +134,9 @@
         "properties": {
           "id": { "type": "string" },
           "userId": { "type": "string" },
-          "ownerUid": { "type": "string", "nullable": true },
           "routeTitle": { "type": "string", "nullable": true },
           "destination": { "type": "string" },
           "hotelLocation": { "type": "string" },
-          "startLat": { "type": "number", "nullable": true },
-          "startLng": { "type": "number", "nullable": true },
           "hotelLat": { "type": "number", "nullable": true },
           "hotelLng": { "type": "number", "nullable": true },
           "destinationLat": { "type": "number", "nullable": true },
@@ -156,16 +153,22 @@
             "type": "array",
             "items": { "type": "string" }
           },
-          "imageUrls": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
           "routesByDate": {
             "type": "object",
             "nullable": true,
-            "additionalProperties": {
-              "type": "array",
-              "items": { "$ref": "#/components/schemas/RouteStopDto" }
+            "properties": {
+              "0": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+              },
+              "1": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+              },
+              "2": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+              }
             }
           },
           "isShared": { "type": "boolean" },
@@ -173,13 +176,8 @@
           "currentLatitude": { "type": "number", "nullable": true },
           "currentLongitude": { "type": "number", "nullable": true },
           "lastLocationUpdatedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "heading": { "type": "number", "nullable": true },
           "navStatus": { "type": "string", "nullable": true, "enum": ["idle", "navigating", "paused"] },
           "flowKind": { "type": "string", "nullable": true },
-          "generatedStartLat": { "type": "number", "nullable": true },
-          "generatedStartLng": { "type": "number", "nullable": true },
-          "generatedDestLat": { "type": "number", "nullable": true },
-          "generatedDestLng": { "type": "number", "nullable": true },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         }
@@ -194,10 +192,7 @@
           "lng": { "type": "number" },
           "visible": { "type": "boolean" },
           "isSurprise": { "type": "boolean" },
-          "googleTypes": {
-            "type": "array",
-            "items": { "type": "string" }
-          }
+          "isAchieved": { "type": "boolean" }
         }
       },
       "GeneratedRoutesDto": {
@@ -205,14 +200,24 @@
         "properties": {
           "dayRoutes": {
             "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": { "$ref": "#/components/schemas/RouteStopDto" }
+            "properties": {
+              "0": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+              },
+              "1": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+              },
+              "2": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+              }
             }
           },
           "refreshQueue": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/PlacePoolItemDto" }
+            "items": { "$ref": "#/components/schemas/RouteStopDto" }
           }
         }
       },
@@ -244,6 +249,76 @@
           "back": { "type": "string" },
           "locked": { "type": "boolean", "description": "True if the avatar is locked (user level too low)" },
           "requiredLevel": { "type": "integer", "description": "User level required to unlock this avatar" }
+        }
+      },
+      "MerchantAdDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "adCategory": { "type": "string" },
+          "categoryName": { "type": "string" },
+          "adTitle": { "type": "string" },
+          "address": { "type": "string" },
+          "approvalStatus": { "type": "string" },
+          "boxOpens": { "type": "integer" },
+          "city": { "type": "string" },
+          "country": { "type": "string" },
+          "descriptionText": { "type": "string" },
+          "imageUrl": { "type": "string" },
+          "impressions": { "type": "integer" },
+          "isActive": { "type": "boolean" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" },
+          "logoUrl": { "type": "string" },
+          "merchantId": { "type": "string" },
+          "merchantName": { "type": "string" },
+          "mysteryBoxReward": { "type": "string" },
+          "radius": { "type": "integer" },
+          "rewardClaims": { "type": "integer" },
+          "stockLimit": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateCampaignRequest": {
+        "type": "object",
+        "required": ["adTitle", "adCategory", "address", "latitude", "longitude", "mysteryBoxReward", "stockLimit", "adImage", "categoryName"],
+        "properties": {
+          "adTitle": { "type": "string" },
+          "adCategory": { "type": "string" },
+          "address": { "type": "string" },
+          "city": { "type": "string" },
+          "country": { "type": "string" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" },
+          "mysteryBoxReward": { "type": "string" },
+          "stockLimit": { "type": "integer" },
+          "adImage": { "type": "string" },
+          "descriptionText": { "type": "string" },
+          "categoryName": { "type": "string" },
+          "logoUrl": { "type": "string" },
+          "isActive": { "type": "boolean" },
+          "radius": { "type": "integer" }
+        }
+      },
+      "UpdateCampaignRequest": {
+        "type": "object",
+        "properties": {
+          "adTitle": { "type": "string" },
+          "adCategory": { "type": "string" },
+          "address": { "type": "string" },
+          "city": { "type": "string" },
+          "country": { "type": "string" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" },
+          "mysteryBoxReward": { "type": "string" },
+          "stockLimit": { "type": "integer" },
+          "adImage": { "type": "string" },
+          "descriptionText": { "type": "string" },
+          "categoryName": { "type": "string" },
+          "logoUrl": { "type": "string" },
+          "isActive": { "type": "boolean" },
+          "radius": { "type": "integer" }
         }
       }
     }
@@ -674,18 +749,16 @@
                 "properties": {
                   "destination": { "type": "string" },
                   "hotelLocation": { "type": "string" },
-                  "startLat": { "type": "number", "description": "Optional GPS fallback for route search anchor" },
-                  "startLng": { "type": "number", "description": "Optional GPS fallback for route search anchor" },
                   "hotelLat": { "type": "number" },
                   "hotelLng": { "type": "number" },
                   "destinationLat": { "type": "number" },
                   "destinationLng": { "type": "number" },
-                  "tripDates": { "type": "array", "items": { "type": "string", "format": "date-time" } },
+                  "tripFrom": { "type": "string", "format": "date" },
+                  "tripTo": { "type": "string", "format": "date" },
                   "radiusKm": { "type": "number" },
                   "intenseMode": { "type": "boolean" },
                   "travelWith": { "type": "array", "items": { "type": "string" } },
-                  "interestedVibes": { "type": "array", "items": { "type": "string" } },
-                  "imageUrls": { "type": "array", "items": { "type": "string" } }
+                  "interestedVibes": { "type": "array", "items": { "type": "string" } }
                 }
               }
             }
@@ -702,8 +775,6 @@
                     "status": { "type": "boolean" },
                     "msg": { "type": "string" },
                     "trip": { "$ref": "#/components/schemas/TripDto" },
-                    "generatedStartPoint": { "$ref": "#/components/schemas/GeoPointDto" },
-                    "generatedDestinationPoint": { "$ref": "#/components/schemas/GeoPointDto" },
                     "generatedRoutes": { "$ref": "#/components/schemas/GeneratedRoutesDto" }
                   }
                 }
@@ -740,7 +811,7 @@
         },
         "responses": {
           "201": {
-            "description": "Skip Trip generated successfully",
+            "description": "Trip planned successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -749,23 +820,7 @@
                     "status": { "type": "boolean" },
                     "msg": { "type": "string" },
                     "trip": { "$ref": "#/components/schemas/TripDto" },
-                    "skipFlowPlacePool": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/PlacePoolItemDto" }
-                    },
-                    "itineraryStops": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/RouteStopDto" }
-                    },
-                    "generatedStartPoint": { "$ref": "#/components/schemas/GeoPointDto" },
-                    "generatedDestinationPoint": { "$ref": "#/components/schemas/GeoPointDto" },
-                    "dayRoutes": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "array",
-                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
-                      }
-                    }
+                    "generatedRoutes": { "$ref": "#/components/schemas/GeneratedRoutesDto" }
                   }
                 }
               }
@@ -793,9 +848,19 @@
                   "routeTitle": { "type": "string" },
                   "routesByDate": {
                     "type": "object",
-                    "additionalProperties": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                    "properties": {
+                      "0": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                      },
+                      "1": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                      },
+                      "2": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                      }
                     }
                   }
                 }
@@ -867,10 +932,10 @@
                     "pagination": {
                       "type": "object",
                       "properties": {
-                        "page": { "type": "integer" },
+                        "currentPage": { "type": "integer" },
                         "limit": { "type": "integer" },
-                        "total": { "type": "integer" },
-                        "totalPages": { "type": "integer" }
+                        "hasNextPage": { "type": "boolean" },
+                        "nextPage": { "type": "integer" }
                       }
                     }
                   }
@@ -880,6 +945,302 @@
           },
           "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
           "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/merchant/ads/create": {
+      "post": {
+        "tags": ["Merchant Ads"],
+        "summary": "Create a new ad campaign",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCampaignRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Campaign created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad Request" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/merchant/ads/get-all-campaigns": {
+      "get": {
+        "tags": ["Merchant Ads"],
+        "summary": "Get all campaigns with pagination and search",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "search", "schema": { "type": "string" }, "description": "Search campaign by adTitle or descriptionText" },
+          { "in": "query", "name": "adCategory", "schema": { "type": "string" }, "description": "Filter by adCategory" },
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaigns retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/MerchantAdDto" } },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "currentPage": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "totalPages": { "type": "integer" },
+                        "totalCount": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/merchant/ads/get-campaign/{id}": {
+      "get": {
+        "tags": ["Merchant Ads"],
+        "summary": "Get a specific campaign by ID",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Campaign not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/merchant/ads/update-campaign/{id}": {
+      "put": {
+        "tags": ["Merchant Ads"],
+        "summary": "Update an existing campaign",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCampaignRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Campaign updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Campaign not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/merchant/ads/delete-campaign/{id}": {
+      "delete": {
+        "tags": ["Merchant Ads"],
+        "summary": "Delete a campaign",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Campaign not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/merchant/ads/toggle-campaign-status/{id}": {
+      "patch": {
+        "tags": ["Merchant Ads"],
+        "summary": "Toggle campaign active status",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["isActive"],
+                "properties": {
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Campaign status toggled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Campaign not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/trip/banner": {
+      "get": {
+        "tags": ["Trip Ads"],
+        "summary": "Retrieve an ad campaign for the specified city and coordinates",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "city", "required": true, "schema": { "type": "string" }, "description": "Filter ads by city" },
+          { "in": "query", "name": "lat", "schema": { "type": "number" }, "description": "User's latitude for proximity checks" },
+          { "in": "query", "name": "long", "schema": { "type": "number" }, "description": "User's longitude for proximity checks" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ad retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "ad": { "$ref": "#/components/schemas/MerchantAdDto", "nullable": true },
+                    "distanceM": { "type": "integer", "nullable": true },
+                    "isClaimed": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad Request" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/trip/impression/{adId}": {
+      "post": {
+        "tags": ["Trip Ads"],
+        "summary": "Record an impression for a banner ad",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "adId", "required": true, "schema": { "type": "string" }, "description": "The unique ID of the ad" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Impression recorded successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "404": { "description": "Campaign not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/trip/banner/claim/{adId}": {
+      "post": {
+        "tags": ["Trip Ads"],
+        "summary": "Claim a reward from a banner ad",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "adId", "required": true, "schema": { "type": "string" }, "description": "The unique ID of the ad" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Claim processing status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string", "enum": ["success", "alreadyClaimed", "soldOut"] }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad Request" },
+          "404": { "description": "Campaign not found" },
+          "500": { "description": "Internal Server Error" }
         }
       }
     }

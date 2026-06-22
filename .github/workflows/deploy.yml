@@ -17,6 +17,6 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /root/Wondertrip-backend
+            cd /root/raidr-backend
             git pull origin zeeshan
             docker compose up -d --build

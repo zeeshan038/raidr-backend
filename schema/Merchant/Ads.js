@@ -4,11 +4,10 @@ import Joi from 'joi';
 //Create Ad
 export const MerchantAdsCreateSchema = (payload) => {
     const schema = Joi.object({
-     adName: Joi.string().required().messages({
-        'string.empty': 'Campaign name is required',
-        'any.required': 'Campaign name is required',
+     adTitle: Joi.string().required().messages({
+        'string.empty': 'Ad title is required',
+        'any.required': 'Ad title is required',
      }),
-     adTitle: Joi.string().optional().allow(''),
      adCategory: Joi.string().required().messages({
         'string.empty': 'Ad category is required',
         'any.required': 'Ad category is required',
@@ -56,7 +55,6 @@ export const MerchantAdsCreateSchema = (payload) => {
 //Update Ad
 export const MerchantAdsUpdateSchema = (payload) => {
     const schema = Joi.object({
-        adName: Joi.string().optional().allow(''),
         adTitle: Joi.string().optional().allow(''),
         adCategory: Joi.string().optional().allow(''),
         address: Joi.string().optional().allow(''),
