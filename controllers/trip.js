@@ -630,9 +630,7 @@ export const getMerchantAds = async (req, res) => {
         if (ads.length === 0) {
             return res.status(200).json({
                 status: true,
-                ad: null,
-                distanceM: null,
-                isClaimed: false
+                ads: []
             });
         }
 
@@ -661,40 +659,36 @@ export const getMerchantAds = async (req, res) => {
         if (eligibleAds.length === 0) {
             return res.status(200).json({
                 status: true,
-                ad: null,
-                distanceM: null,
-                isClaimed: false
+                ads: []
             });
         }
-
-        let selectedAd = eligibleAds[0].ad;
-        let distanceM = null;
 
         // 3. If coordinates are provided, sort by nearest distance
         if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
             eligibleAds.sort((a, b) => a.dist - b.dist);
-            selectedAd = eligibleAds[0].ad;
-            distanceM = Math.round(eligibleAds[0].dist);
         }
 
         const { id: userId } = req.user;
 
-        // 4. Check if the user has already claimed this ad
-        const existingClaim = await prisma.merchantAdClaim.findUnique({
+        // 4. Fetch user claims for all eligible ads to determine if claimed
+        const adIds = eligibleAds.map(item => item.ad.id);
+        const userClaims = await prisma.merchantAdClaim.findMany({
             where: {
-                userId_adId: {
-                    userId: userId,
-                    adId: selectedAd.id
-                }
+                userId: userId,
+                adId: { in: adIds }
             }
         });
-        const isClaimed = !!existingClaim;
+        const claimedAdIds = new Set(userClaims.map(c => c.adId));
+
+        const results = eligibleAds.map(item => ({
+            ad: item.ad,
+            distanceM: item.dist !== null ? Math.round(item.dist) : null,
+            isClaimed: claimedAdIds.has(item.ad.id)
+        }));
 
         return res.status(200).json({
             status: true,
-            ad: selectedAd,
-            distanceM,
-            isClaimed
+            ads: results
         });
 
     } catch (error) {
@@ -833,6 +827,122 @@ export const claimReward = async (req, res) => {
         return res.status(200).json({
             status: true,
             msg: "success"
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
+
+
+
+/**
+ * @Description Surprise me 
+ * @Route GET /trip/surprise-me?city=&lat=&long=
+ * @Access Private
+ */
+export const surpriseMe = async (req, res) => {
+    const { city, lat, long } = req.query;
+
+    if (!city) {
+        return res.status(400).json({
+            status: false,
+            msg: "City query parameter is required"
+        });
+    }
+
+    if (lat === undefined || long === undefined || lat === "" || long === "") {
+        return res.status(400).json({
+            status: false,
+            msg: "lat and long query parameters are required for range checks"
+        });
+    }
+
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(long);
+
+    if (isNaN(userLat) || isNaN(userLng)) {
+        return res.status(400).json({
+            status: false,
+            msg: "Invalid latitude or longitude coordinates"
+        });
+    }
+
+    try {
+        // 1. Fetch ads in the city
+        const ads = await prisma.merchantAds.findMany({
+            where: {
+                city: { equals: city, mode: 'insensitive' },
+                isActive: true,
+                approvalStatus: 'approved'
+            }
+        });
+
+        if (ads.length === 0) {
+            return res.status(200).json({
+                status: true,
+                ad: null,
+                distanceM: null,
+                isClaimed: false
+            });
+        }
+
+        // 2. Fetch user claims for these ads to filter them out
+        const { id: userId } = req.user;
+        const adIds = ads.map(ad => ad.id);
+        const userClaims = await prisma.merchantAdClaim.findMany({
+            where: {
+                userId: userId,
+                adId: { in: adIds }
+            }
+        });
+        const claimedAdIds = new Set(userClaims.map(c => c.adId));
+
+        // 3. Filter ads by claim status, stock limit, and 2km range limit
+        const eligibleAds = [];
+
+        for (const ad of ads) {
+            // Filter out claimed ads
+            if (claimedAdIds.has(ad.id)) continue;
+
+            // Check stock limit
+            const hasStock = ad.stockLimit <= 0 || ad.rewardClaims < ad.stockLimit;
+            if (!hasStock) continue;
+
+            const dist = haversineDistance(userLat, userLng, ad.latitude, ad.longitude);
+            
+            // Enforce 2km (2000m) range limit
+            if (dist > 2000) {
+                continue;
+            }
+
+            eligibleAds.push({ ad, dist });
+        }
+
+        if (eligibleAds.length === 0) {
+            return res.status(200).json({
+                status: true,
+                ad: null,
+                distanceM: null,
+                isClaimed: false
+            });
+        }
+
+        // 4. Sort by nearest distance (nearest wins)
+        eligibleAds.sort((a, b) => a.dist - b.dist);
+
+        const selectedAd = eligibleAds[0].ad;
+        const distanceM = Math.round(eligibleAds[0].dist);
+
+        return res.status(200).json({
+            status: true,
+            ad: selectedAd,
+            distanceM,
+            isClaimed: false
         });
 
     } catch (error) {

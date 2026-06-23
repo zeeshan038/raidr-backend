@@ -157,15 +157,11 @@
             "type": "object",
             "nullable": true,
             "properties": {
-              "0": {
+              "2026-05-17": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/RouteStopDto" }
               },
-              "1": {
-                "type": "array",
-                "items": { "$ref": "#/components/schemas/RouteStopDto" }
-              },
-              "2": {
+              "2026-05-18": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/RouteStopDto" }
               }
@@ -849,15 +845,11 @@
                   "routesByDate": {
                     "type": "object",
                     "properties": {
-                      "0": {
+                      "2026-05-17": {
                         "type": "array",
                         "items": { "$ref": "#/components/schemas/RouteStopDto" }
                       },
-                      "1": {
-                        "type": "array",
-                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
-                      },
-                      "2": {
+                      "2026-05-18": {
                         "type": "array",
                         "items": { "$ref": "#/components/schemas/RouteStopDto" }
                       }
@@ -944,6 +936,42 @@
             }
           },
           "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/trip/trip-details/{tripId}": {
+      "get": {
+        "tags": ["Trip"],
+        "summary": "Get details of a specific trip",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "The unique ID of the trip"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trip details fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/TripDto" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "404": { "description": "Trip not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
           "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
         }
       }
@@ -1180,9 +1208,17 @@
                   "type": "object",
                   "properties": {
                     "status": { "type": "boolean" },
-                    "ad": { "$ref": "#/components/schemas/MerchantAdDto", "nullable": true },
-                    "distanceM": { "type": "integer", "nullable": true },
-                    "isClaimed": { "type": "boolean" }
+                    "ads": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ad": { "$ref": "#/components/schemas/MerchantAdDto" },
+                          "distanceM": { "type": "integer", "nullable": true },
+                          "isClaimed": { "type": "boolean" }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -1240,6 +1276,38 @@
           },
           "400": { "description": "Bad Request" },
           "404": { "description": "Campaign not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/trip/surprise-me": {
+      "get": {
+        "tags": ["Trip Ads"],
+        "summary": "Retrieve a surprise ad campaign within a 2km range",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "city", "required": true, "schema": { "type": "string" }, "description": "Filter ads by city" },
+          { "in": "query", "name": "lat", "required": true, "schema": { "type": "number" }, "description": "User's latitude for proximity check" },
+          { "in": "query", "name": "long", "required": true, "schema": { "type": "number" }, "description": "User's longitude for proximity check" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Surprise ad retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "ad": { "$ref": "#/components/schemas/MerchantAdDto", "nullable": true },
+                    "distanceM": { "type": "integer", "nullable": true },
+                    "isClaimed": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad Request" },
           "500": { "description": "Internal Server Error" }
         }
       }

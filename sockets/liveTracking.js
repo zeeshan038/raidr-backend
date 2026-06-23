@@ -7,6 +7,7 @@ dotenv.config();
 
 //Service
 import { redis } from '../services/redis.js';
+import { prisma } from '../config/db.js';
 
 
 // Create a queue producer
@@ -76,9 +77,65 @@ export const startWebSocketServer = () => {
                         removeOnComplete: true,
                         removeOnFail: 100
                     });
+
+                    // Mark the point as achieved in the trip
+                    const { tripId, date, index } = payload;
+                    if (tripId && index !== undefined) {
+                        try {
+                            const trip = await prisma.trip.findFirst({
+                                where: { id: tripId, userId: ws.userId }
+                            });
+
+                            if (trip && trip.routesByDate) {
+                                let routesByDate = trip.routesByDate;
+                                if (typeof routesByDate === 'string') {
+                                    routesByDate = JSON.parse(routesByDate);
+                                }
+
+                                let updated = false;
+
+                                if (date && routesByDate[date]) {
+                                    const stops = routesByDate[date];
+                                    if (Array.isArray(stops)) {
+                                        for (let i = 0; i < stops.length; i++) {
+                                            if (String(stops[i].index) === String(index)) {
+                                                stops[i].isAchieved = true;
+                                                updated = true;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Search all dates if no date parameter is supplied
+                                    for (const key of Object.keys(routesByDate)) {
+                                        const stops = routesByDate[key];
+                                        if (Array.isArray(stops)) {
+                                            for (let i = 0; i < stops.length; i++) {
+                                                if (String(stops[i].index) === String(index)) {
+                                                    stops[i].isAchieved = true;
+                                                    updated = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (updated) {
+                                    await prisma.trip.update({
+                                        where: { id: tripId },
+                                        data: {
+                                            routesByDate: routesByDate
+                                        }
+                                    });
+                                    console.log(`[uWS] Marked stop index ${index} for trip ${tripId} as achieved.`);
+                                }
+                            }
+                        } catch (dbErr) {
+                            console.error('[uWS] Database error marking stop achieved:', dbErr.message);
+                        }
+                    }
                     return;
                 }
-
+ 
                 // Handle Distance Sync Events
                 if (payload.type === 'sync_distance') {
                     if (payload.distanceCoveredKm > 0) {
