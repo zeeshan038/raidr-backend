@@ -9,6 +9,8 @@ services:
       - "3001:3001" # WebSockets port
     env_file:
       - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:
         condition: service_healthy
