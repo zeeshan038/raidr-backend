@@ -20,6 +20,8 @@
     
     <input type="text" id="token" placeholder="Paste JWT Token here..." />
     <input type="text" id="tripId" placeholder="Trip ID (optional)" />
+    <input type="number" id="stopIndex" placeholder="Stop Index to achieve (e.g. 1)" value="1" />
+    <input type="text" id="stopDate" placeholder="Stop Date (e.g. 2026-05-17) - optional" />
     
     <button id="connectBtn" onclick="connect()">Connect & Start Driving</button>
     <button id="collectBtn" onclick="collectBox()" disabled style="background-color: #ffd700; color: #000; margin-top: 10px;">🎁 Collect Green Box (+50 XP)</button>
@@ -94,11 +96,18 @@
                 return;
             }
             
+            const tripId = document.getElementById('tripId').value;
+            const index = document.getElementById('stopIndex').value;
+            const date = document.getElementById('stopDate').value;
+
             const payload = {
                 type: 'box_collected',
                 boxType: 'green',
                 xpAmount: 50,
-                source: 'route_stop' // 'route_stop' | 'exploration_drop' | 'surprise_me'
+                source: 'route_stop', // 'route_stop' | 'exploration_drop' | 'surprise_me'
+                tripId: tripId || undefined,
+                index: index !== "" ? parseInt(index) : undefined,
+                date: date || undefined
             };
             
             ws.send(JSON.stringify(payload));
