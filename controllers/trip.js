@@ -207,27 +207,29 @@ export const GetCityWeather = async (req, res) => {
         let imageUrls = [];
 
         const query = weatherData.name;
-        const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent("popular tourist attractions in " + query)}&key=${placesApiKey}`;
+        let placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent("popular tourist attractions in " + query)}&key=${placesApiKey}`;
 
-        const placesRes = await fetch(placesUrl);
-        const placesData = await placesRes.json();
+        let placesRes = await fetch(placesUrl);
+        let placesData = await placesRes.json();
+
+        if (!placesData.results || placesData.results.length === 0) {
+            placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent("popular tourist attractions")}&location=${lat},${lng}&radius=50000&key=${placesApiKey}`;
+            placesRes = await fetch(placesUrl);
+            placesData = await placesRes.json();
+        }
 
         if (placesData.results && placesData.results.length > 0) {
-            // Collect photos from the results
             const photos = [];
             placesData.results.forEach(place => {
                 if (place.photos) {
                     photos.push(...place.photos);
                 }
             });
-
-            // Get up to 5 beautiful images
             imageUrls = photos.slice(0, 5).map(photo => {
                 return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${placesApiKey}`;
             });
         }
 
-        // Run OpenAI tasks in parallel without waiting for images first
         const [factText, loadingText] = await Promise.all([
             generateCityVibeSuggestions({
                 city: weatherData.name,
