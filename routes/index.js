@@ -8,10 +8,12 @@ import TripRoutes from "./trip.js"
 //Merchant 
 import MerchantRoutes from "./Merchant/merchant.js"
 import AdsRoutes from "./Merchant/ads.js"
+import DashboardRoutes from "./Merchant/dashboard.js"
 
 //Merchant Routes
 router.use('/merchant',MerchantRoutes);
 router.use('/merchant/ads',AdsRoutes);
+router.use("/merchant/dashboard",DashboardRoutes);
 
 
 //User Routes

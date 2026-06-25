@@ -186,7 +186,6 @@
           "category": { "type": "string" },
           "lat": { "type": "number" },
           "lng": { "type": "number" },
-          "visible": { "type": "boolean" },
           "isSurprise": { "type": "boolean" },
           "isAchieved": { "type": "boolean" }
         }
@@ -212,7 +211,7 @@
             }
           },
           "refreshQueue": {
-            "type": "array",
+            "type": "array", 
             "items": { "$ref": "#/components/schemas/RouteStopDto" }
           }
         }
