@@ -53,7 +53,6 @@ export const PlanYourTripSchema = (payload) => {
     return schema.validate(payload);
 }
 
-
 export const SkipTripSchema = (payload) => {
     const schema = Joi.object({
         startLat: Joi.number().optional().messages({
