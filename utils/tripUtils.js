@@ -222,10 +222,10 @@ export function buildPlanFlowMasterPool(ranked, likedTitles, visibleK) {
 
     // Tail: round-robin drain buckets + leftovers
     let progressed = true;
-    while (progressed && pool.length < 100) {
+    while (progressed && pool.length < 50) {
         progressed = false;
         for (const vibe of shuffledVibes) {
-            if (pool.length >= 100) break;
+            if (pool.length >= 50) break;
             if (buckets[vibe].length > 0) {
                 const loc = buckets[vibe].shift();
                 if (!used.has(loc.name)) {
