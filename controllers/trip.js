@@ -121,7 +121,6 @@ export const PlanYourTrip = async (req, res) => {
                 category: s.category,
                 lat: s.lat,
                 lng: s.lng,
-                visible: s.visible ?? false,
                 isSurprise: s.isSurprise ?? false,
                 isAchieved: false
             }));
@@ -131,9 +130,8 @@ export const PlanYourTrip = async (req, res) => {
             index: i + 1,
             name: s.name,
             category: s.category,
-            lat: s.lat,
+            lat: s.lat, 
             lng: s.lng,
-            visible: false,
             isSurprise: s.isSurprise ?? false,
             isAchieved: false
         }));
@@ -343,7 +341,6 @@ export const SkipYourTrip = async (req, res) => {
                 category: s.category,
                 lat: s.lat,
                 lng: s.lng,
-                visible: true,
                 isSurprise: s.isSurprise ?? false,
                 isAchieved: false
             }))
@@ -355,7 +352,6 @@ export const SkipYourTrip = async (req, res) => {
             category: s.category,
             lat: s.lat,
             lng: s.lng,
-            visible: false,
             isSurprise: s.isSurprise ?? false,
             isAchieved: false
         }));
@@ -447,7 +443,12 @@ export const SaveJourney = async (req, res) => {
         console.log("PAYLOAD ROUTES BY DATE:", routesByDate);
 
         if (routesByDate !== undefined) {
-            updateData.routesByDate = routesByDate;
+            // Strip visible field from each stop before saving
+            const sanitizedRoutes = {};
+            for (const [day, stops] of Object.entries(routesByDate)) {
+                sanitizedRoutes[day] = stops.map(({ visible, ...stop }) => stop);
+            }
+            updateData.routesByDate = sanitizedRoutes;
         }
 
         console.log("UPDATE DATA:", updateData);
@@ -455,7 +456,7 @@ export const SaveJourney = async (req, res) => {
         const updateTrip = await prisma.trip.update({
             where: { id: tripId },
             data: updateData
-        });
+        });     
 
         console.log("UPDATED TRIP ROUTES:", updateTrip.routesByDate);
 

@@ -120,3 +120,10 @@ export const Register = async (req, res) => {
         })
     }
 }
+
+
+/**
+ *  @Decription Update Merchant Profile Picture
+ * @Route POST /api/merchant/register
+ * @Access Public
+ */
