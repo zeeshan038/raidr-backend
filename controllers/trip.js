@@ -5,7 +5,7 @@ import { PlanYourTripSchema, SkipTripSchema, StartAndPauseTripSchema, SaveJourne
 import { prisma } from "../config/db.js"
 
 //Service
-import { searchRouteBreakpoints } from "../services/googlePlaces.js"
+import { searchRouteBreakpoints, fetchSurpriseNearbyCandidates } from "../services/googlePlaces.js"
 
 //Utils
 import { rankPlanCandidatesChunked, rankLocationsWithAI, generateCityVibeSuggestions, generateLoadingTexts } from "../utils/Openai.js"
@@ -845,11 +845,11 @@ export const claimReward = async (req, res) => {
 
 /**
  * @Description Surprise me 
- * @Route GET /trip/surprise-me?city=&lat=&long=
+ * @Route GET /trip/surprise-me?city=&lat=&long=&vibeTitle=
  * @Access Private
  */
 export const surpriseMe = async (req, res) => {
-    const { city, lat, long } = req.query;
+    const { city, lat, long, vibeTitle } = req.query;
 
     if (!city) {
         return res.status(400).json({
@@ -885,67 +885,73 @@ export const surpriseMe = async (req, res) => {
             }
         });
 
-        if (ads.length === 0) {
-            return res.status(200).json({
-                status: true,
-                ad: null,
-                distanceM: null,
-                isClaimed: false
+        let eligibleAds = [];
+
+        if (ads.length > 0) {
+            // 2. Fetch user claims for these ads to filter them out
+            const { id: userId } = req.user;
+            const adIds = ads.map(ad => ad.id);
+            const userClaims = await prisma.merchantAdClaim.findMany({
+                where: {
+                    userId: userId,
+                    adId: { in: adIds }
+                }
             });
-        }
+            const claimedAdIds = new Set(userClaims.map(c => c.adId));
 
-        // 2. Fetch user claims for these ads to filter them out
-        const { id: userId } = req.user;
-        const adIds = ads.map(ad => ad.id);
-        const userClaims = await prisma.merchantAdClaim.findMany({
-            where: {
-                userId: userId,
-                adId: { in: adIds }
+            // 3. Filter ads by claim status, stock limit, and 2km range limit
+            for (const ad of ads) {
+                // Filter out claimed ads
+                if (claimedAdIds.has(ad.id)) continue;
+
+                // Check stock limit
+                const hasStock = ad.stockLimit <= 0 || ad.rewardClaims < ad.stockLimit;
+                if (!hasStock) continue;
+
+                const dist = haversineDistance(userLat, userLng, ad.latitude, ad.longitude);
+                
+                // Enforce 2km (2000m) range limit
+                if (dist > 2000) {
+                    continue;
+                }
+
+                eligibleAds.push({ ad, dist });
             }
-        });
-        const claimedAdIds = new Set(userClaims.map(c => c.adId));
+        }
 
-        // 3. Filter ads by claim status, stock limit, and 2km range limit
-        const eligibleAds = [];
+        let selectedAd = null;
+        let distanceM = null;
+        let isFallback = false;
 
-        for (const ad of ads) {
-            // Filter out claimed ads
-            if (claimedAdIds.has(ad.id)) continue;
-
-            // Check stock limit
-            const hasStock = ad.stockLimit <= 0 || ad.rewardClaims < ad.stockLimit;
-            if (!hasStock) continue;
-
-            const dist = haversineDistance(userLat, userLng, ad.latitude, ad.longitude);
-            
-            // Enforce 2km (2000m) range limit
-            if (dist > 2000) {
-                continue;
+        if (eligibleAds.length > 0) {
+            // 4. Sort by nearest distance (nearest wins)
+            eligibleAds.sort((a, b) => a.dist - b.dist);
+            selectedAd = eligibleAds[0].ad;
+            distanceM = Math.round(eligibleAds[0].dist);
+        } else {
+            // Fallback to Google Places
+            const candidates = await fetchSurpriseNearbyCandidates(userLat, userLng, vibeTitle);
+            if (candidates && candidates.length > 0) {
+                const best = candidates[0];
+                selectedAd = {
+                    id: best.place_id,
+                    title: best.name,
+                    category: best.category,
+                    latitude: best.lat,
+                    longitude: best.lng,
+                    city: city
+                };
+                distanceM = Math.round(best.dist);
+                isFallback = true;
             }
-
-            eligibleAds.push({ ad, dist });
         }
-
-        if (eligibleAds.length === 0) {
-            return res.status(200).json({
-                status: true,
-                ad: null,
-                distanceM: null,
-                isClaimed: false
-            });
-        }
-
-        // 4. Sort by nearest distance (nearest wins)
-        eligibleAds.sort((a, b) => a.dist - b.dist);
-
-        const selectedAd = eligibleAds[0].ad;
-        const distanceM = Math.round(eligibleAds[0].dist);
 
         return res.status(200).json({
             status: true,
             ad: selectedAd,
             distanceM,
-            isClaimed: false
+            isClaimed: false,
+            isFallback
         });
 
     } catch (error) {

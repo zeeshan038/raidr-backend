@@ -1287,7 +1287,8 @@
         "parameters": [
           { "in": "query", "name": "city", "required": true, "schema": { "type": "string" }, "description": "Filter ads by city" },
           { "in": "query", "name": "lat", "required": true, "schema": { "type": "number" }, "description": "User's latitude for proximity check" },
-          { "in": "query", "name": "long", "required": true, "schema": { "type": "number" }, "description": "User's longitude for proximity check" }
+          { "in": "query", "name": "long", "required": true, "schema": { "type": "number" }, "description": "User's longitude for proximity check" },
+          { "in": "query", "name": "vibeTitle", "required": false, "schema": { "type": "string" }, "description": "Vibe title to fallback to Google Places" }
         ],
         "responses": {
           "200": {
@@ -1300,7 +1301,8 @@
                     "status": { "type": "boolean" },
                     "ad": { "$ref": "#/components/schemas/MerchantAdDto", "nullable": true },
                     "distanceM": { "type": "integer", "nullable": true },
-                    "isClaimed": { "type": "boolean" }
+                    "isClaimed": { "type": "boolean" },
+                    "isFallback": { "type": "boolean" }
                   }
                 }
               }
