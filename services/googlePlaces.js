@@ -210,3 +210,62 @@ export async function searchRouteBreakpoints({
 
     return allLocations;
 }
+
+/**
+ * @Description Get a Google Places search keyword string for a given vibe/category
+ * @type Function
+ * @input categoryKey - String
+ * @returns response - String
+ */
+export function surpriseKeywordForCategory(categoryKey) {
+    const map = {
+        'shopping': 'shopping mall clothing store',
+        'party': 'night club bar lounge',
+        'nature': 'park hiking trail garden',
+        'culinary': 'restaurant cafe dining',
+    };
+    return map[(categoryKey || '').toLowerCase()] || 'popular attraction';
+}
+
+/**
+ * @Description Search for surprise fallback candidates via Google Places
+ * @type Function
+ * @input originLat - Number
+ * @input originLng - Number
+ * @input categoryKey - String
+ * @input keywordOverride - String
+ * @returns response - Array
+ */
+export async function fetchSurpriseNearbyCandidates(originLat, originLng, categoryKey, keywordOverride = null) {
+    const keyword = keywordOverride || surpriseKeywordForCategory(categoryKey);
+    const seen = new Set();
+    const buf = [];
+    const radii = [1800, 4000, 8000];
+
+    for (const radius of radii) {
+        const results = await placesNearby(originLat, originLng, radius, keyword);
+        for (const place of results) {
+            const loc = place.geometry?.location;
+            if (!loc) continue;
+
+            const lat = Number(loc.lat);
+            const lng = Number(loc.lng);
+            if (lat === 0 && lng === 0) continue;
+
+            if (!seen.has(place.place_id)) {
+                seen.add(place.place_id);
+                buf.push({
+                    place_id: place.place_id,
+                    name: place.name,
+                    lat,
+                    lng,
+                    category: categoryKey || 'Surprise',
+                    dist: haversine(originLat, originLng, lat, lng)
+                });
+            }
+        }
+        if (buf.length >= 12) break;
+    }
+
+    return buf.sort((a, b) => a.dist - b.dist);
+}
