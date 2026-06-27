@@ -35,7 +35,14 @@ export function expandTags(parentTags) {
 /**
  * Plan flow start anchor: hotel → destination → explicit start/GPS fallback.
  */
-export function resolveStartPointForPlan({ hotelLat, hotelLng, destinationLat, destinationLng, startLat, startLng }) {
+export function resolveStartPointForPlan({ 
+    hotelLat,
+     hotelLng, 
+     destinationLat,
+      destinationLng, 
+      startLat, 
+      startLng
+     }) {
     if (hotelLat != null && hotelLng != null) {
         return { lat: hotelLat, lng: hotelLng };
     }

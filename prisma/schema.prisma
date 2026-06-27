@@ -143,6 +143,7 @@ model MerchantAds {
   updatedAt        DateTime       @updatedAt
   adImpressions    AdImpression[]
   adClaims         MerchantAdClaim[]
+  adCodes          MerchantAdCode[]
 }
 
 model AdImpression {
@@ -165,9 +166,24 @@ model MerchantAdClaim {
   userId    String
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())
+  code      MerchantAdCode?
 
   @@unique([userId, adId])
   @@index([adId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model MerchantAdCode {
+  id        String      @id @default(uuid())
+  adId      String
+  ad        MerchantAds @relation(fields: [adId], references: [id], onDelete: Cascade)
+  code      String      @unique
+  isClaimed Boolean     @default(false)
+  claimId   String?     @unique
+  claim     MerchantAdClaim? @relation(fields: [claimId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@index([adId])
+  @@index([isClaimed])
 }

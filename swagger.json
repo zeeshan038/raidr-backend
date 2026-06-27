@@ -186,7 +186,7 @@
           "category": { "type": "string" },
           "lat": { "type": "number" },
           "lng": { "type": "number" },
-          "isSurprise": { "type": "boolean" },
+          "xpReward": { "type": "number" },
           "isAchieved": { "type": "boolean" }
         }
       },
@@ -1302,7 +1302,8 @@
                     "ad": { "$ref": "#/components/schemas/MerchantAdDto", "nullable": true },
                     "distanceM": { "type": "integer", "nullable": true },
                     "isClaimed": { "type": "boolean" },
-                    "isFallback": { "type": "boolean" }
+                    "isFallback": { "type": "boolean" },
+                    "xpReward": { "type": "number" }
                   }
                 }
               }
