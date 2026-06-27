@@ -391,7 +391,17 @@ export const signInWithGoogle = async (req, res) => {
 export const getUserProfile = async (req, res) => {
     const { id } = req.user;
     try {
-        const user = await prisma.user.findUnique({ where: { id: id } });
+        const user = await prisma.user.findUnique({ 
+            where: { id: id },
+            include: {
+                adClaims: {
+                    include: {
+                        ad: true,
+                        code: true
+                    }
+                }
+            }
+        });
         if (!user) {
             return res.status(404).json({
                 status: false,

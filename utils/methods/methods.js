@@ -9,8 +9,6 @@ export const generateOTP = async () => {
     return OTP.toString();
 };
 
-
-
 export function haversineDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3; // metres
     const φ1 = lat1 * Math.PI / 180;
@@ -25,3 +23,12 @@ export function haversineDistance(lat1, lon1, lat2, lon2) {
 
     return R * c; // in metres
 }
+
+//Generate random XPs
+export const generateDynamicXP = (isSurprise) => {
+    if (isSurprise) {
+        return Math.floor(Math.random() * (100 - 40 + 1)) + 40;
+    } else {
+        return Math.floor(Math.random() * (60 - 20 + 1)) + 20;
+    }
+};

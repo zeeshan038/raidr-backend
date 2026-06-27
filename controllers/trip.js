@@ -1,5 +1,10 @@
-//Schema 
+//NPM Pkgs
+
+import crypto from "crypto";
+
+//Schema
 import { PlanYourTripSchema, SkipTripSchema, StartAndPauseTripSchema, SaveJourneySchema } from "../schema/Trip.js"
+
 
 // Prisma Client
 import { prisma } from "../config/db.js"
@@ -21,7 +26,7 @@ import {
     interleavePlanRawForChunkDiversity,
     resolveStartPointForPlan
 } from "../utils/tripUtils.js"
-import { haversineDistance } from "../utils/methods/methods.js"
+import { haversineDistance, generateDynamicXP } from "../utils/methods/methods.js"
 
 
 /**
@@ -121,19 +126,19 @@ export const PlanYourTrip = async (req, res) => {
                 category: s.category,
                 lat: s.lat,
                 lng: s.lng,
-                isSurprise: s.isSurprise ?? false,
-                isAchieved: false
+                isAchieved: false,
+                xpReward: generateDynamicXP(s.isSurprise ?? false)
             }));
         }
 
-        const formattedRefreshQueue = planFlowRefreshQueue.map((s, i) => ({
+        const formattedRefreshQueue = planFlowRefreshQueue.slice(0, 20).map((s, i) => ({
             index: i + 1,
             name: s.name,
             category: s.category,
             lat: s.lat, 
             lng: s.lng,
-            isSurprise: s.isSurprise ?? false,
-            isAchieved: false
+            isAchieved: false,
+            xpReward: generateDynamicXP(s.isSurprise ?? false)
         }));
 
         const createTrip = await prisma.trip.create({
@@ -341,19 +346,19 @@ export const SkipYourTrip = async (req, res) => {
                 category: s.category,
                 lat: s.lat,
                 lng: s.lng,
-                isSurprise: s.isSurprise ?? false,
-                isAchieved: false
+                isAchieved: false,
+                xpReward: generateDynamicXP(s.isSurprise ?? false)
             }))
         };
 
-        const formattedRefreshQueue = standbyStops.map((s, i) => ({
+        const formattedRefreshQueue = standbyStops.slice(0, 20).map((s, i) => ({
             index: i + 1,
             name: s.name,
             category: s.category,
             lat: s.lat,
             lng: s.lng,
-            isSurprise: s.isSurprise ?? false,
-            isAchieved: false
+            isAchieved: false,
+            xpReward: generateDynamicXP(s.isSurprise ?? false)
         }));
 
         // Save Trip
@@ -759,8 +764,8 @@ export const recordAdImpression = async (req, res) => {
  */
 export const claimReward = async (req, res) => {
     const { id: userId } = req.user;
-    const adId = req.params.adId || req.body.adId;
-
+    const adId = req.params.adId;
+    console.log("adId : ", adId)
     if (!adId) {
         return res.status(400).json({
             status: false,
@@ -807,29 +812,76 @@ export const claimReward = async (req, res) => {
             });
         }
 
-        // 4. Create claim doc + increment rewardClaims, deactivate if limit reached
-        const nextClaimsCount = ad.rewardClaims + 1;
-        const reachedStockLimit = ad.stockLimit > 0 && nextClaimsCount >= ad.stockLimit;
+        let assignedCode = null;
 
-        await prisma.$transaction([
-            prisma.merchantAdClaim.create({
-                data: {
-                    adId,
-                    userId
+        try {
+            await prisma.$transaction(async (tx) => {
+                // Find an available code if stock limit > 0
+                if (ad.stockLimit > 0) {
+                    const availableCode = await tx.merchantAdCode.findFirst({
+                        where: { adId: ad.id, isClaimed: false }
+                    });
+
+                    if (!availableCode) {
+                        throw new Error("soldOut");
+                    }
+
+                    assignedCode = availableCode.code;
+
+                    const claimDoc = await tx.merchantAdClaim.create({
+                        data: { adId, userId }
+                    });
+
+                    await tx.merchantAdCode.update({
+                        where: { id: availableCode.id },
+                        data: {
+                            isClaimed: true,
+                            claimId: claimDoc.id
+                        }
+                    });
+                } else {
+                    // Generate a dynamic code for unlimited stock
+                    assignedCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+
+                    const claimDoc = await tx.merchantAdClaim.create({
+                        data: { adId, userId }
+                    });
+
+                    await tx.merchantAdCode.create({
+                        data: {
+                            adId,
+                            code: assignedCode,
+                            isClaimed: true,
+                            claimId: claimDoc.id
+                        }
+                    });
                 }
-            }),
-            prisma.merchantAds.update({
-                where: { id: adId },
-                data: {
-                    rewardClaims: { increment: 1 },
-                    isActive: reachedStockLimit ? false : undefined
-                }
-            })
-        ]);
+
+                const nextClaimsCount = ad.rewardClaims + 1;
+                const reachedStockLimit = ad.stockLimit > 0 && nextClaimsCount >= ad.stockLimit;
+
+                await tx.merchantAds.update({
+                    where: { id: adId },
+                    data: {
+                        rewardClaims: { increment: 1 },
+                        isActive: reachedStockLimit ? false : undefined
+                    }
+                });
+            });
+        } catch (txError) {
+            if (txError.message === "soldOut") {
+                return res.status(200).json({
+                    status: false,
+                    msg: "soldOut"
+                });
+            }
+            throw txError;
+        }
 
         return res.status(200).json({
             status: true,
-            msg: "success"
+            msg: "success",
+            code: assignedCode
         });
 
     } catch (error) {
@@ -929,8 +981,9 @@ export const surpriseMe = async (req, res) => {
             selectedAd = eligibleAds[0].ad;
             distanceM = Math.round(eligibleAds[0].dist);
         } else {
-            // Fallback to Google Places
-            const candidates = await fetchSurpriseNearbyCandidates(userLat, userLng, vibeTitle);
+            const searchKeyword = vibeTitle ? vibeTitle.split('||').map(v => v.trim()).join(' ') : undefined;
+
+            const candidates = await fetchSurpriseNearbyCandidates(userLat, userLng, searchKeyword, searchKeyword);
             if (candidates && candidates.length > 0) {
                 const best = candidates[0];
                 selectedAd = {
@@ -951,7 +1004,8 @@ export const surpriseMe = async (req, res) => {
             ad: selectedAd,
             distanceM,
             isClaimed: false,
-            isFallback
+            isFallback,
+            xpReward: generateDynamicXP(true)
         });
 
     } catch (error) {

@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db.js";
+import crypto from "crypto";
 
 //Schema
 import { MerchantAdsCreateSchema, MerchantAdsUpdateSchema } from "../../schema/Merchant/Ads.js";
@@ -30,6 +31,8 @@ export const createCampaign = async (req, res) => {
             return res.status(404).json({ status: false, msg: "Merchant not found" });
         }
 
+        const stockLimit = parseInt(payload.stockLimit) || 0;
+
         const newAd = await prisma.merchantAds.create({
             data: {
                 adTitle: payload.adTitle,
@@ -52,9 +55,20 @@ export const createCampaign = async (req, res) => {
                 boxOpens: parseInt(payload.boxOpens) || 0,
                 rewardClaims: parseInt(payload.rewardClaims) || 0,
                 mysteryBoxReward: payload.mysteryBoxReward,
-                stockLimit: parseInt(payload.stockLimit) || 0,
+                stockLimit: stockLimit,
             }
         });
+
+        // Generate unique codes for the stock limit
+        if (stockLimit > 0) {
+            const codeData = Array.from({ length: stockLimit }).map(() => ({
+                adId: newAd.id,
+                code: crypto.randomBytes(4).toString('hex').toUpperCase(),
+            }));
+            await prisma.merchantAdCode.createMany({
+                data: codeData
+            });
+        }
 
         return res.status(201).json({
             status: true,
