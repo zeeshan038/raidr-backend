@@ -4,6 +4,7 @@ const router = express.Router();
 //Paths
 import UserRoutes from "./user.js"
 import TripRoutes from "./trip.js"
+import UploadRoutes from "./upload.js"
 
 //Merchant 
 import MerchantRoutes from "./Merchant/merchant.js"
@@ -19,6 +20,7 @@ router.use("/merchant/dashboard",DashboardRoutes);
 //User Routes
 router.use("/user",UserRoutes);
 router.use("/trip",TripRoutes);
+router.use("/upload",UploadRoutes);
 
-
+ 
 export default router;

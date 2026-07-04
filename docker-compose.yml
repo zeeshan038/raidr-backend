@@ -20,7 +20,7 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: raidr_postgres
+    container_name: raidr_postgres 
     environment:
       POSTGRES_USER: raidr_user
       POSTGRES_PASSWORD: raidr_password

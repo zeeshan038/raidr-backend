@@ -46,7 +46,7 @@ export const startGpsWorker = () => {
                         data: {
                             currentLatitude: update.lat,
                             currentLongitude: update.lng,
-                            heading: update.heading,
+                            ...(update.heading !== undefined && { heading: update.heading }),
                             lastLocationUpdatedAt: new Date()
                         }
                     })
@@ -56,7 +56,7 @@ export const startGpsWorker = () => {
             }
         } 
         else if (job.name === 'box_collected') {
-            const { userId, boxType, xpAmount, distanceCoveredKm, source } = job.data;
+            const { userId, boxType, xpAmount, distanceCoveredKm, source, lat, lng, adData } = job.data;
             if (!userId || !boxType || typeof xpAmount !== 'number') return;
 
             console.log(`[BullMQ] Processing box collection for ${userId} (${boxType}: +${xpAmount} XP, +${distanceCoveredKm}km, source: ${source})`);
@@ -99,6 +99,20 @@ export const startGpsWorker = () => {
                     await tx.user.update({
                         where: { id: userId },
                         data: updateData
+                    });
+
+                    await tx.boxCollectionLog.create({
+                        data: {
+                            userId,
+                            boxType,
+                            xpEarned: xpAmount,
+                            distanceCoveredKm: distanceCoveredKm || 0,
+                            source,
+                            lat,
+                            lng,
+                            adData: adData || null,
+                            isClaimed: false
+                        }
                     });
 
                     if (lv > user.level) {

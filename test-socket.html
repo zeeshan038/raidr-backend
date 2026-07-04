@@ -22,6 +22,11 @@
     <input type="text" id="tripId" placeholder="Trip ID (optional)" />
     <input type="number" id="stopIndex" placeholder="Stop Index to achieve (e.g. 1)" value="1" />
     <input type="text" id="stopDate" placeholder="Stop Date (e.g. 2026-05-17) - optional" />
+    <select id="boxSource" style="padding: 10px; margin: 5px 0; border-radius: 6px; border: none; font-size: 16px; width: 100%; box-sizing: border-box;">
+        <option value="route_stop">route_stop</option>
+        <option value="exploration_drop">exploration_drop</option>
+        <option value="surprise_me">surprise_me</option>
+    </select>
     
     <button id="connectBtn" onclick="connect()">Connect & Start Driving</button>
     <button id="collectBtn" onclick="collectBox()" disabled style="background-color: #ffd700; color: #000; margin-top: 10px;">🎁 Collect Green Box (+50 XP)</button>
@@ -33,6 +38,8 @@
     <script>
         let ws;
         let interval;
+        let currentLat = 25.2048;
+        let currentLng = 55.2708;
 
         const logElement = document.getElementById('log');
         function log(msg, className = '') {
@@ -60,17 +67,15 @@
                 document.getElementById('syncDistanceBtn').disabled = false;
 
                 // Simulate driving by changing coordinates every 2 seconds
-                let lat = 25.2048;
-                let lng = 55.2708;
                 
                 interval = setInterval(() => {
-                    lat += 0.001; // Move slightly
-                    lng += 0.001;
+                    currentLat += 0.001; // Move slightly
+                    currentLng += 0.001;
                     
                     const payload = {
                         tripId: tripId,
-                        lat: parseFloat(lat.toFixed(4)),
-                        lng: parseFloat(lng.toFixed(4)),
+                        lat: parseFloat(currentLat.toFixed(4)),
+                        lng: parseFloat(currentLng.toFixed(4)),
                         heading: 90
                     };
                     
@@ -99,15 +104,24 @@
             const tripId = document.getElementById('tripId').value;
             const index = document.getElementById('stopIndex').value;
             const date = document.getElementById('stopDate').value;
+            const source = document.getElementById('boxSource').value;
 
             const payload = {
                 type: 'box_collected',
                 boxType: 'green',
                 xpAmount: 50,
-                source: 'route_stop', // 'route_stop' | 'exploration_drop' | 'surprise_me'
+                source: source,
                 tripId: tripId || undefined,
                 index: index !== "" ? parseInt(index) : undefined,
-                date: date || undefined
+                date: date || undefined,
+                lat: parseFloat(currentLat.toFixed(4)),
+                lng: parseFloat(currentLng.toFixed(4)),
+                ad: {
+                    id: "40f32ef5-9b24-4311-86e1-36dd2f3de46a",
+                    adTitle: "1+1 Drinks Special",
+                    imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvqOhRuRlkj8hrkWewpf1RtjXmZaCKYEWkwqnUW_qBIA&s=10",
+                    merchantName: "Starbucks"
+                }
             };
             
             ws.send(JSON.stringify(payload));

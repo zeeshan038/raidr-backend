@@ -72,7 +72,10 @@ export const startWebSocketServer = () => {
                         boxType: payload.boxType,
                         xpAmount: payload.xpAmount,
                         distanceCoveredKm: payload.distanceCoveredKm || 0,
-                        source: payload.source
+                        source: payload.source,
+                        lat: payload.lat,
+                        lng: payload.lng,
+                        adData: payload.ad
                     }, {
                         removeOnComplete: true,
                         removeOnFail: 100

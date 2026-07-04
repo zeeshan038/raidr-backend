@@ -26,132 +26,281 @@
     "schemas": {
       "RegisterRequest": {
         "type": "object",
-        "required": ["name", "email", "password"],
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
         "properties": {
-          "name": { "type": "string" },
-          "email": { "type": "string", "format": "email" },
-          "password": { "type": "string", "minLength": 6 }
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6
+          }
         }
       },
       "LoginRequest": {
         "type": "object",
-        "required": ["email", "password"],
+        "required": [
+          "email",
+          "password"
+        ],
         "properties": {
-          "email": { "type": "string", "format": "email" },
-          "password": { "type": "string" }
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
         }
       },
       "SendOtpRequest": {
         "type": "object",
-        "required": ["email"],
+        "required": [
+          "email"
+        ],
         "properties": {
-          "email": { "type": "string", "format": "email" }
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
         }
       },
       "VerifyOtpRequest": {
         "type": "object",
-        "required": ["email", "otp"],
+        "required": [
+          "email",
+          "otp"
+        ],
         "properties": {
-          "email": { "type": "string", "format": "email" },
-          "otp": { "type": "string" }
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "otp": {
+            "type": "string"
+          }
         }
       },
       "GoogleSignInRequest": {
         "type": "object",
-        "required": ["firebaseToken"],
+        "required": [
+          "firebaseToken"
+        ],
         "properties": {
-          "firebaseToken": { "type": "string" }
+          "firebaseToken": {
+            "type": "string"
+          }
         }
       },
       "ResetPasswordRequest": {
         "type": "object",
-        "required": ["email", "newPassword"],
+        "required": [
+          "email",
+          "newPassword"
+        ],
         "properties": {
-          "email": { "type": "string", "format": "email" },
-          "newPassword": { "type": "string", "minLength": 6 }
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 6
+          }
         }
       },
       "UpdateUserRequest": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "fcmToken": { "type": "string" },
-          "location": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "fcmToken": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          }
         }
       },
       "UpdatePhotoUrlRequest": {
         "type": "object",
         "properties": {
-          "avatarFrontUrl": { "type": "string" },
-          "avatarBackUrl": { "type": "string" }
+          "avatarFrontUrl": {
+            "type": "string"
+          },
+          "avatarBackUrl": {
+            "type": "string"
+          }
         }
       },
       "MessageResponse": {
         "type": "object",
         "properties": {
-          "status": { "type": "boolean" },
-          "msg": { "type": "string" }
+          "status": {
+            "type": "boolean"
+          },
+          "msg": {
+            "type": "string"
+          }
         }
       },
       "UserDto": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string" },
-          "email": { "type": "string" },
-          "name": { "type": "string" },
-          "isVerified": { "type": "boolean" },
-          "authProvider": { "type": "string", "enum": ["email", "google", "apple"] },
-          "photoUrl": { "type": "string", "nullable": true },
-          "avatarFrontUrl": { "type": "string", "nullable": true },
-          "avatarBackUrl": { "type": "string", "nullable": true },
-          "level": { "type": "integer" },
-          "xp_earned": { "type": "number" },
-          "xp_progress": { "type": "number" },
-          "green_boxes_count": { "type": "integer" },
-          "golden_boxes_count": { "type": "integer" },
-          "purple_boxes_count": { "type": "integer" },
-          "distance_covered_km": { "type": "number" }
+          "_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "authProvider": {
+            "type": "string",
+            "enum": [
+              "email",
+              "google",
+              "apple"
+            ]
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarFrontUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarBackUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          },
+          "xp_earned": {
+            "type": "number"
+          },
+          "xp_progress": {
+            "type": "number"
+          },
+          "green_boxes_count": {
+            "type": "integer"
+          },
+          "golden_boxes_count": {
+            "type": "integer"
+          },
+          "purple_boxes_count": {
+            "type": "integer"
+          },
+          "distance_covered_km": {
+            "type": "number"
+          }
         }
       },
       "AuthTokenResponse": {
         "type": "object",
         "properties": {
-          "status": { "type": "boolean" },
-          "msg": { "type": "string" },
-          "token": { "type": "string" },
-          "user": { "$ref": "#/components/schemas/UserDto" }
+          "status": {
+            "type": "boolean"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          }
         }
       },
       "ApiError": {
         "type": "object",
         "properties": {
-          "status": { "type": "boolean", "example": false },
-          "msg": { "type": "string", "example": "Something went wrong" }
+          "status": {
+            "type": "boolean",
+            "example": false
+          },
+          "msg": {
+            "type": "string",
+            "example": "Something went wrong"
+          }
         }
       },
       "TripDto": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "userId": { "type": "string" },
-          "routeTitle": { "type": "string", "nullable": true },
-          "destination": { "type": "string" },
-          "hotelLocation": { "type": "string" },
-          "hotelLat": { "type": "number", "nullable": true },
-          "hotelLng": { "type": "number", "nullable": true },
-          "destinationLat": { "type": "number", "nullable": true },
-          "destinationLng": { "type": "number", "nullable": true },
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "routeTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "destination": {
+            "type": "string"
+          },
+          "hotelLocation": {
+            "type": "string"
+          },
+          "hotelLat": {
+            "type": "number",
+            "nullable": true
+          },
+          "hotelLng": {
+            "type": "number",
+            "nullable": true
+          },
+          "destinationLat": {
+            "type": "number",
+            "nullable": true
+          },
+          "destinationLng": {
+            "type": "number",
+            "nullable": true
+          },
           "tripDates": {
             "type": "array",
-            "items": { "type": "string", "format": "date-time" }
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            }
           },
-          "status": { "type": "string", "nullable": true },
-          "tripPace": { "type": "boolean" },
-          "radiusKm": { "type": "number" },
-          "travelWith": { "type": "string" },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "tripPace": {
+            "type": "boolean"
+          },
+          "radiusKm": {
+            "type": "number"
+          },
+          "travelWith": {
+            "type": "string"
+          },
           "interestedVibes": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "routesByDate": {
             "type": "object",
@@ -159,35 +308,94 @@
             "properties": {
               "2026-05-17": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                "items": {
+                  "$ref": "#/components/schemas/RouteStopDto"
+                }
               },
               "2026-05-18": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                "items": {
+                  "$ref": "#/components/schemas/RouteStopDto"
+                }
               }
             }
           },
-          "isShared": { "type": "boolean" },
-          "inviteToken": { "type": "string", "nullable": true },
-          "currentLatitude": { "type": "number", "nullable": true },
-          "currentLongitude": { "type": "number", "nullable": true },
-          "lastLocationUpdatedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "navStatus": { "type": "string", "nullable": true, "enum": ["idle", "navigating", "paused"] },
-          "flowKind": { "type": "string", "nullable": true },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "isShared": {
+            "type": "boolean"
+          },
+          "inviteToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentLatitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "currentLongitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "lastLocationUpdatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "navStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "idle",
+              "navigating",
+              "paused"
+            ]
+          },
+          "flowKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "RouteStopDto": {
         "type": "object",
+        "required": [
+          "index",
+          "name",
+          "category",
+          "lat",
+          "lng",
+          "isAchieved",
+          "xpReward"
+        ],
         "properties": {
-          "index": { "type": "integer" },
-          "name": { "type": "string" },
-          "category": { "type": "string" },
-          "lat": { "type": "number" },
-          "lng": { "type": "number" },
-          "xpReward": { "type": "number" },
-          "isAchieved": { "type": "boolean" }
+          "index": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "xpReward": {
+            "type": "number"
+          },
+          "isAchieved": {
+            "type": "boolean"
+          }
         }
       },
       "GeneratedRoutesDto": {
@@ -198,122 +406,362 @@
             "properties": {
               "0": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                "items": {
+                  "$ref": "#/components/schemas/RouteStopDto"
+                }
               },
               "1": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                "items": {
+                  "$ref": "#/components/schemas/RouteStopDto"
+                }
               },
               "2": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                "items": {
+                  "$ref": "#/components/schemas/RouteStopDto"
+                }
               }
             }
           },
           "refreshQueue": {
-            "type": "array", 
-            "items": { "$ref": "#/components/schemas/RouteStopDto" }
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteStopDto"
+            }
           }
         }
       },
       "GeoPointDto": {
         "type": "object",
         "properties": {
-          "lat": { "type": "number" },
-          "lng": { "type": "number" }
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
         }
       },
       "PlacePoolItemDto": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "lat": { "type": "number" },
-          "lng": { "type": "number" },
-          "category": { "type": "string" },
-          "rating": { "type": "number" },
+          "name": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "category": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
           "photos": {
             "type": "array",
-            "items": { "type": "string", "format": "uri" }
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
           }
         }
       },
       "AvatarItemDto": {
         "type": "object",
         "properties": {
-          "front": { "type": "string" },
-          "back": { "type": "string" },
-          "locked": { "type": "boolean", "description": "True if the avatar is locked (user level too low)" },
-          "requiredLevel": { "type": "integer", "description": "User level required to unlock this avatar" }
+          "front": {
+            "type": "string"
+          },
+          "back": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "True if the avatar is locked (user level too low)"
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "description": "User level required to unlock this avatar"
+          }
         }
       },
       "MerchantAdDto": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "adCategory": { "type": "string" },
-          "categoryName": { "type": "string" },
-          "adTitle": { "type": "string" },
-          "address": { "type": "string" },
-          "approvalStatus": { "type": "string" },
-          "boxOpens": { "type": "integer" },
-          "city": { "type": "string" },
-          "country": { "type": "string" },
-          "descriptionText": { "type": "string" },
-          "imageUrl": { "type": "string" },
-          "impressions": { "type": "integer" },
-          "isActive": { "type": "boolean" },
-          "latitude": { "type": "number" },
-          "longitude": { "type": "number" },
-          "logoUrl": { "type": "string" },
-          "merchantId": { "type": "string" },
-          "merchantName": { "type": "string" },
-          "mysteryBoxReward": { "type": "string" },
-          "radius": { "type": "integer" },
-          "rewardClaims": { "type": "integer" },
-          "stockLimit": { "type": "integer" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "adCategory": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "adTitle": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "descriptionText": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "mysteryBoxReward": {
+            "type": "string"
+          },
+          "radius": {
+            "type": "integer"
+          },
+          "stockLimit": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateCampaignRequest": {
         "type": "object",
-        "required": ["adTitle", "adCategory", "address", "latitude", "longitude", "mysteryBoxReward", "stockLimit", "adImage", "categoryName"],
+        "required": [
+          "adTitle",
+          "adCategory",
+          "address",
+          "latitude",
+          "longitude",
+          "mysteryBoxReward",
+          "stockLimit",
+          "adImage",
+          "categoryName"
+        ],
         "properties": {
-          "adTitle": { "type": "string" },
-          "adCategory": { "type": "string" },
-          "address": { "type": "string" },
-          "city": { "type": "string" },
-          "country": { "type": "string" },
-          "latitude": { "type": "number" },
-          "longitude": { "type": "number" },
-          "mysteryBoxReward": { "type": "string" },
-          "stockLimit": { "type": "integer" },
-          "adImage": { "type": "string" },
-          "descriptionText": { "type": "string" },
-          "categoryName": { "type": "string" },
-          "logoUrl": { "type": "string" },
-          "isActive": { "type": "boolean" },
-          "radius": { "type": "integer" }
+          "adTitle": {
+            "type": "string"
+          },
+          "adCategory": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "mysteryBoxReward": {
+            "type": "string"
+          },
+          "stockLimit": {
+            "type": "integer"
+          },
+          "adImage": {
+            "type": "string"
+          },
+          "descriptionText": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "radius": {
+            "type": "integer"
+          }
         }
       },
       "UpdateCampaignRequest": {
         "type": "object",
         "properties": {
-          "adTitle": { "type": "string" },
-          "adCategory": { "type": "string" },
-          "address": { "type": "string" },
-          "city": { "type": "string" },
-          "country": { "type": "string" },
-          "latitude": { "type": "number" },
-          "longitude": { "type": "number" },
-          "mysteryBoxReward": { "type": "string" },
-          "stockLimit": { "type": "integer" },
-          "adImage": { "type": "string" },
-          "descriptionText": { "type": "string" },
-          "categoryName": { "type": "string" },
-          "logoUrl": { "type": "string" },
-          "isActive": { "type": "boolean" },
-          "radius": { "type": "integer" }
+          "adTitle": {
+            "type": "string"
+          },
+          "adCategory": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "mysteryBoxReward": {
+            "type": "string"
+          },
+          "stockLimit": {
+            "type": "integer"
+          },
+          "adImage": {
+            "type": "string"
+          },
+          "descriptionText": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "radius": {
+            "type": "integer"
+          }
+        }
+      },
+      "MerchantRegisterRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password",
+          "businessName",
+          "category",
+          "address",
+          "defaultRadiusMeter",
+          "phone"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6
+          },
+          "businessName": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "defaultRadiusMeter": {
+            "type": "integer"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "MerchantLoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "MerchantResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "merchant": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "businessName": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "defaultRadiusMeter": {
+                "type": "integer"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "photoUrl": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     }
@@ -321,13 +769,17 @@
   "paths": {
     "/user/register": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Register a new user",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
             }
           }
         },
@@ -336,71 +788,200 @@
             "description": "User registered successfully",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AuthTokenResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
               }
             }
           },
-          "400": { "description": "Validation Error or User exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "400": {
+            "description": "Validation Error or User exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/login": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Login user",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
             }
           }
         },
         "responses": {
-          "200": { "description": "Login successful", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
-          "400": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/send-otp": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Send OTP to user email",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendOtpRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtpRequest"
+              }
+            }
+          }
         },
         "responses": {
-          "200": { "description": "OTP sent", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
-          "400": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "OTP sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/verify-otp": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Verify OTP",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyOtpRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpRequest"
+              }
+            }
+          }
         },
         "responses": {
-          "200": { "description": "OTP verified successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
-          "400": { "description": "Invalid or expired OTP", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "OTP verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired OTP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/signin-with-google": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Sign in with Google Firebase Token",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GoogleSignInRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleSignInRequest"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
@@ -409,14 +990,18 @@
               "application/json": {
                 "schema": {
                   "allOf": [
-                    { "$ref": "#/components/schemas/AuthTokenResponse" },
+                    {
+                      "$ref": "#/components/schemas/AuthTokenResponse"
+                    },
                     {
                       "type": "object",
                       "properties": {
                         "user": {
                           "type": "object",
                           "properties": {
-                            "isNewUser": { "type": "boolean" }
+                            "isNewUser": {
+                              "type": "boolean"
+                            }
                           }
                         }
                       }
@@ -426,92 +1011,315 @@
               }
             }
           },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/forgot-password": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Request a password reset OTP",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendOtpRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtpRequest"
+              }
+            }
+          }
         },
         "responses": {
-          "200": { "description": "Password reset OTP sent", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "Password reset OTP sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/reset-password": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Reset password using OTP",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResetPasswordRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
         },
         "responses": {
-          "200": { "description": "Password reset successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "Password reset successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/update": {
       "put": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Update user details",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateUserRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
         },
         "responses": {
-          "200": { "description": "User updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/whoami": {
       "get": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Get current user profile",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
-          "200": { "description": "User profile fetched successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "User profile fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/update-photo-url": {
       "patch": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Update User Avatar/Background URLs",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePhotoUrlRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePhotoUrlRequest"
+              }
+            }
+          }
         },
         "responses": {
-          "200": { "description": "Avatar updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "Avatar updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/avatars": {
       "get": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Get all avatars and their lock status based on user level",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Avatars fetched successfully",
@@ -520,40 +1328,105 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "currentLevel": { "type": "integer" },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "currentLevel": {
+                      "type": "integer"
+                    },
                     "avatars": {
                       "type": "object",
-                      "additionalProperties": { "$ref": "#/components/schemas/AvatarItemDto" }
+                      "additionalProperties": {
+                        "$ref": "#/components/schemas/AvatarItemDto"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/delete": {
       "delete": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Delete user account",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
-          "200": { "description": "User deleted successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/get-all-keys": {
       "get": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Get all environment keys for maps and AI",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Keys fetched successfully",
@@ -562,16 +1435,30 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
                     "keys": {
                       "type": "object",
                       "properties": {
-                        "googleApiKey": { "type": "string" },
-                        "openWeatherApiKey": { "type": "string" },
-                        "openRouterApiKey": { "type": "string" },
-                        "openAiApiKey": { "type": "string" },
-                        "mapboxToken": { "type": "string" }
+                        "googleApiKey": {
+                          "type": "string"
+                        },
+                        "openWeatherApiKey": {
+                          "type": "string"
+                        },
+                        "openRouterApiKey": {
+                          "type": "string"
+                        },
+                        "openAiApiKey": {
+                          "type": "string"
+                        },
+                        "mapboxToken": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -579,28 +1466,200 @@
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/all-boxes": {
+      "get": {
+        "tags": [
+          "User Profile"
+        ],
+        "summary": "Get all boxes history",
+        "description": "Fetch the history of boxes collected by the user. Optionally filter by source.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by source (e.g. 'surprise_me', 'route_stop')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Box history fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "currentLevel": {
+                      "type": "integer"
+                    },
+                    "totalGreenBoxes": {
+                      "type": "integer"
+                    },
+                    "totalGoldenBoxes": {
+                      "type": "integer"
+                    },
+                    "totalPurpleBoxes": {
+                      "type": "integer"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "boxType": {
+                            "type": "string"
+                          },
+                          "xpEarned": {
+                            "type": "integer"
+                          },
+                          "distanceCoveredKm": {
+                            "type": "number"
+                          },
+                          "source": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lat": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "lng": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "adData": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "adTitle": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string"
+                              },
+                              "merchantName": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "isClaimed": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/trip/weather": {
       "get": {
-        "tags": ["Trip"],
+        "tags": [
+          "Trip"
+        ],
         "summary": "Get city weather and pictures",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "in": "query",
             "name": "lat",
-            "schema": { "type": "number" },
+            "schema": {
+              "type": "number"
+            },
             "required": true,
             "description": "Latitude of the city"
           },
           {
             "in": "query",
             "name": "lng",
-            "schema": { "type": "number" },
+            "schema": {
+              "type": "number"
+            },
             "required": true,
             "description": "Longitude of the city"
           }
@@ -613,8 +1672,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
                     "weather": {
                       "type": "object",
                       "description": "Detailed weather data from OpenWeather API",
@@ -622,8 +1685,12 @@
                         "coord": {
                           "type": "object",
                           "properties": {
-                            "lon": { "type": "number" },
-                            "lat": { "type": "number" }
+                            "lon": {
+                              "type": "number"
+                            },
+                            "lat": {
+                              "type": "number"
+                            }
                           }
                         },
                         "weather": {
@@ -631,49 +1698,86 @@
                           "items": {
                             "type": "object",
                             "properties": {
-                              "id": { "type": "integer" },
-                              "main": { "type": "string" },
-                              "description": { "type": "string" },
-                              "icon": { "type": "string" }
+                              "id": {
+                                "type": "integer"
+                              },
+                              "main": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "icon": {
+                                "type": "string"
+                              }
                             }
                           }
                         },
                         "main": {
                           "type": "object",
                           "properties": {
-                            "temp": { "type": "number" },
-                            "feels_like": { "type": "number" },
-                            "temp_min": { "type": "number" },
-                            "temp_max": { "type": "number" },
-                            "pressure": { "type": "integer" },
-                            "humidity": { "type": "integer" }
+                            "temp": {
+                              "type": "number"
+                            },
+                            "feels_like": {
+                              "type": "number"
+                            },
+                            "temp_min": {
+                              "type": "number"
+                            },
+                            "temp_max": {
+                              "type": "number"
+                            },
+                            "pressure": {
+                              "type": "integer"
+                            },
+                            "humidity": {
+                              "type": "integer"
+                            }
                           }
                         },
                         "wind": {
                           "type": "object",
                           "properties": {
-                            "speed": { "type": "number" },
-                            "deg": { "type": "integer" },
-                            "gust": { "type": "number" }
+                            "speed": {
+                              "type": "number"
+                            },
+                            "deg": {
+                              "type": "integer"
+                            },
+                            "gust": {
+                              "type": "number"
+                            }
                           }
                         },
-                        "visibility": { "type": "integer" },
-                        "name": { "type": "string" }
+                        "visibility": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
                       }
                     },
                     "images": {
                       "type": "array",
-                      "items": { "type": "string", "format": "uri" },
+                      "items": {
+                        "type": "string",
+                        "format": "uri"
+                      },
                       "description": "Array of image URLs from Google Places API"
                     },
                     "factText": {
                       "type": "array",
-                      "items": { "type": "string" },
+                      "items": {
+                        "type": "string"
+                      },
                       "description": "3 creative lifestyle suggestions"
                     },
                     "loadingText": {
                       "type": "array",
-                      "items": { "type": "string" },
+                      "items": {
+                        "type": "string"
+                      },
                       "description": "10 short loading screen messages"
                     }
                   }
@@ -681,27 +1785,63 @@
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/trip/start-pause-trip": {
       "post": {
-        "tags": ["Trip"],
+        "tags": [
+          "Trip"
+        ],
         "summary": "Toggle Trip Navigation Status",
         "description": "Updates the navStatus of a trip (e.g. 'navigating', 'paused', 'idle')",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["tripId", "navStatus"],
+                "required": [
+                  "tripId",
+                  "navStatus"
+                ],
                 "properties": {
-                  "tripId": { "type": "string" },
-                  "navStatus": { "type": "string", "enum": ["idle", "navigating", "paused"] }
+                  "tripId": {
+                    "type": "string"
+                  },
+                  "navStatus": {
+                    "type": "string",
+                    "enum": [
+                      "idle",
+                      "navigating",
+                      "paused"
+                    ]
+                  }
                 }
               }
             }
@@ -715,26 +1855,71 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "trip": { "$ref": "#/components/schemas/TripDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "404": { "description": "Trip not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trip not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/trip/plan-trip": {
       "post": {
-        "tags": ["Trip"],
+        "tags": [
+          "Trip"
+        ],
         "summary": "Plan your trip",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -742,18 +1927,50 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "destination": { "type": "string" },
-                  "hotelLocation": { "type": "string" },
-                  "hotelLat": { "type": "number" },
-                  "hotelLng": { "type": "number" },
-                  "destinationLat": { "type": "number" },
-                  "destinationLng": { "type": "number" },
-                  "tripFrom": { "type": "string", "format": "date" },
-                  "tripTo": { "type": "string", "format": "date" },
-                  "radiusKm": { "type": "number" },
-                  "intenseMode": { "type": "boolean" },
-                  "travelWith": { "type": "array", "items": { "type": "string" } },
-                  "interestedVibes": { "type": "array", "items": { "type": "string" } }
+                  "destination": {
+                    "type": "string"
+                  },
+                  "hotelLocation": {
+                    "type": "string"
+                  },
+                  "hotelLat": {
+                    "type": "number"
+                  },
+                  "hotelLng": {
+                    "type": "number"
+                  },
+                  "destinationLat": {
+                    "type": "number"
+                  },
+                  "destinationLng": {
+                    "type": "number"
+                  },
+                  "tripFrom": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "tripTo": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "radiusKm": {
+                    "type": "number"
+                  },
+                  "intenseMode": {
+                    "type": "boolean"
+                  },
+                  "travelWith": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "interestedVibes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -767,26 +1984,67 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "trip": { "$ref": "#/components/schemas/TripDto" },
-                    "generatedRoutes": { "$ref": "#/components/schemas/GeneratedRoutesDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "trip": {
+                      "$ref": "#/components/schemas/TripDto"
+                    },
+                    "generatedRoutes": {
+                      "$ref": "#/components/schemas/GeneratedRoutesDto"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/trip/skip-trip": {
       "post": {
-        "tags": ["Trip"],
+        "tags": [
+          "Trip"
+        ],
         "summary": "Skip your trip (quick adventure generator)",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -794,11 +2052,24 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "startLat": { "type": "number" },
-                  "startLng": { "type": "number" },
-                  "radiusKm": { "type": "number" },
-                  "intenseMode": { "type": "boolean" },
-                  "tags": { "type": "array", "items": { "type": "string" } }
+                  "startLat": {
+                    "type": "number"
+                  },
+                  "startLng": {
+                    "type": "number"
+                  },
+                  "radiusKm": {
+                    "type": "number"
+                  },
+                  "intenseMode": {
+                    "type": "boolean"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -812,26 +2083,67 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "trip": { "$ref": "#/components/schemas/TripDto" },
-                    "generatedRoutes": { "$ref": "#/components/schemas/GeneratedRoutesDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "trip": {
+                      "$ref": "#/components/schemas/TripDto"
+                    },
+                    "generatedRoutes": {
+                      "$ref": "#/components/schemas/GeneratedRoutesDto"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/trip/save-journey": {
       "post": {
-        "tags": ["Trip"],
+        "tags": [
+          "Trip"
+        ],
         "summary": "Save a generated journey to the database",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -839,18 +2151,26 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "tripId": { "type": "string" },
-                  "routeTitle": { "type": "string" },
+                  "tripId": {
+                    "type": "string"
+                  },
+                  "routeTitle": {
+                    "type": "string"
+                  },
                   "routesByDate": {
                     "type": "object",
                     "properties": {
                       "2026-05-17": {
                         "type": "array",
-                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                        "items": {
+                          "$ref": "#/components/schemas/RouteStopDto"
+                        }
                       },
                       "2026-05-18": {
                         "type": "array",
-                        "items": { "$ref": "#/components/schemas/RouteStopDto" }
+                        "items": {
+                          "$ref": "#/components/schemas/RouteStopDto"
+                        }
                       }
                     }
                   }
@@ -867,42 +2187,89 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "trip": { "$ref": "#/components/schemas/TripDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "trip": {
+                      "$ref": "#/components/schemas/TripDto"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/trip/my-trips": {
       "get": {
-        "tags": ["Trip"],
+        "tags": [
+          "Trip"
+        ],
         "summary": "Get all trips for the authenticated user",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "in": "query",
             "name": "status",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "description": "Filter trips by status (e.g. 'upcoming')"
           },
           {
             "in": "query",
             "name": "page",
-            "schema": { "type": "integer", "default": 1 },
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
             "description": "Page number for pagination"
           },
           {
             "in": "query",
             "name": "limit",
-            "schema": { "type": "integer", "default": 10 },
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
             "description": "Number of items per page"
           }
         ],
@@ -914,19 +2281,33 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
                     "data": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/TripDto" }
+                      "items": {
+                        "$ref": "#/components/schemas/TripDto"
+                      }
                     },
                     "pagination": {
                       "type": "object",
                       "properties": {
-                        "currentPage": { "type": "integer" },
-                        "limit": { "type": "integer" },
-                        "hasNextPage": { "type": "boolean" },
-                        "nextPage": { "type": "integer" }
+                        "currentPage": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        },
+                        "nextPage": {
+                          "type": "integer"
+                        }
                       }
                     }
                   }
@@ -934,22 +2315,48 @@
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/trip/trip-details/{tripId}": {
       "get": {
-        "tags": ["Trip"],
+        "tags": [
+          "Trip"
+        ],
         "summary": "Get details of a specific trip",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "in": "path",
             "name": "tripId",
             "required": true,
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "description": "The unique ID of the trip"
           }
         ],
@@ -961,30 +2368,71 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "data": { "$ref": "#/components/schemas/TripDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TripDto"
+                    }
                   }
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "404": { "description": "Trip not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Internal Server Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trip not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/merchant/ads/create": {
       "post": {
-        "tags": ["Merchant Ads"],
+        "tags": [
+          "Merchant Ads"
+        ],
         "summary": "Create a new ad campaign",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateCampaignRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateCampaignRequest"
+              }
             }
           }
         },
@@ -996,30 +2444,76 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "ad": {
+                      "$ref": "#/components/schemas/MerchantAdDto"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Bad Request" },
-          "401": { "description": "Unauthorized" },
-          "500": { "description": "Internal Server Error" }
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/merchant/ads/get-all-campaigns": {
       "get": {
-        "tags": ["Merchant Ads"],
+        "tags": [
+          "Merchant Ads"
+        ],
         "summary": "Get all campaigns with pagination and search",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "query", "name": "search", "schema": { "type": "string" }, "description": "Search campaign by adTitle or descriptionText" },
-          { "in": "query", "name": "adCategory", "schema": { "type": "string" }, "description": "Filter by adCategory" },
-          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
-          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10 } }
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search campaign by adTitle or descriptionText"
+          },
+          {
+            "in": "query",
+            "name": "adCategory",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by adCategory"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1029,16 +2523,33 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/MerchantAdDto" } },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MerchantAdDto"
+                      }
+                    },
                     "pagination": {
                       "type": "object",
                       "properties": {
-                        "currentPage": { "type": "integer" },
-                        "limit": { "type": "integer" },
-                        "totalPages": { "type": "integer" },
-                        "totalCount": { "type": "integer" }
+                        "currentPage": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        },
+                        "totalCount": {
+                          "type": "integer"
+                        }
                       }
                     }
                   }
@@ -1046,18 +2557,35 @@
               }
             }
           },
-          "401": { "description": "Unauthorized" },
-          "500": { "description": "Internal Server Error" }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/merchant/ads/get-campaign/{id}": {
       "get": {
-        "tags": ["Merchant Ads"],
+        "tags": [
+          "Merchant Ads"
+        ],
         "summary": "Get a specific campaign by ID",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1067,32 +2595,57 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "ad": {
+                      "$ref": "#/components/schemas/MerchantAdDto"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Campaign not found" },
-          "500": { "description": "Internal Server Error" }
+          "404": {
+            "description": "Campaign not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/merchant/ads/update-campaign/{id}": {
       "put": {
-        "tags": ["Merchant Ads"],
+        "tags": [
+          "Merchant Ads"
+        ],
         "summary": "Update an existing campaign",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateCampaignRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCampaignRequest"
+              }
             }
           }
         },
@@ -1104,26 +2657,49 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "ad": {
+                      "$ref": "#/components/schemas/MerchantAdDto"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Campaign not found" },
-          "500": { "description": "Internal Server Error" }
+          "404": {
+            "description": "Campaign not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/merchant/ads/delete-campaign/{id}": {
       "delete": {
-        "tags": ["Merchant Ads"],
+        "tags": [
+          "Merchant Ads"
+        ],
         "summary": "Delete a campaign",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1133,25 +2709,46 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Campaign not found" },
-          "500": { "description": "Internal Server Error" }
+          "404": {
+            "description": "Campaign not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/merchant/ads/toggle-campaign-status/{id}": {
       "patch": {
-        "tags": ["Merchant Ads"],
+        "tags": [
+          "Merchant Ads"
+        ],
         "summary": "Toggle campaign active status",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1159,9 +2756,13 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["isActive"],
+                "required": [
+                  "isActive"
+                ],
                 "properties": {
-                  "isActive": { "type": "boolean" }
+                  "isActive": {
+                    "type": "boolean"
+                  }
                 }
               }
             }
@@ -1175,28 +2776,66 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
-                    "ad": { "$ref": "#/components/schemas/MerchantAdDto" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "ad": {
+                      "$ref": "#/components/schemas/MerchantAdDto"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Campaign not found" },
-          "500": { "description": "Internal Server Error" }
+          "404": {
+            "description": "Campaign not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/trip/banner": {
       "get": {
-        "tags": ["Trip Ads"],
+        "tags": [
+          "Trip Ads"
+        ],
         "summary": "Retrieve an ad campaign for the specified city and coordinates",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "query", "name": "city", "required": true, "schema": { "type": "string" }, "description": "Filter ads by city" },
-          { "in": "query", "name": "lat", "schema": { "type": "number" }, "description": "User's latitude for proximity checks" },
-          { "in": "query", "name": "long", "schema": { "type": "number" }, "description": "User's longitude for proximity checks" }
+          {
+            "in": "query",
+            "name": "city",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter ads by city"
+          },
+          {
+            "in": "query",
+            "name": "lat",
+            "schema": {
+              "type": "number"
+            },
+            "description": "User's latitude for proximity checks"
+          },
+          {
+            "in": "query",
+            "name": "long",
+            "schema": {
+              "type": "number"
+            },
+            "description": "User's longitude for proximity checks"
+          }
         ],
         "responses": {
           "200": {
@@ -1206,15 +2845,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
+                    "status": {
+                      "type": "boolean"
+                    },
                     "ads": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "ad": { "$ref": "#/components/schemas/MerchantAdDto" },
-                          "distanceM": { "type": "integer", "nullable": true },
-                          "isClaimed": { "type": "boolean" }
+                          "ad": {
+                            "$ref": "#/components/schemas/MerchantAdDto"
+                          },
+                          "distanceM": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "isClaimed": {
+                            "type": "boolean"
+                          }
                         }
                       }
                     }
@@ -1223,40 +2871,78 @@
               }
             }
           },
-          "400": { "description": "Bad Request" },
-          "500": { "description": "Internal Server Error" }
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/trip/impression/{adId}": {
       "post": {
-        "tags": ["Trip Ads"],
+        "tags": [
+          "Trip Ads"
+        ],
         "summary": "Record an impression for a banner ad",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "path", "name": "adId", "required": true, "schema": { "type": "string" }, "description": "The unique ID of the ad" }
+          {
+            "in": "path",
+            "name": "adId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique ID of the ad"
+          }
         ],
         "responses": {
           "200": {
             "description": "Impression recorded successfully",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
               }
             }
           },
-          "404": { "description": "Campaign not found" },
-          "500": { "description": "Internal Server Error" }
+          "404": {
+            "description": "Campaign not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/trip/banner/claim/{adId}": {
       "post": {
-        "tags": ["Trip Ads"],
+        "tags": [
+          "Trip Ads"
+        ],
         "summary": "Claim a reward from a banner ad",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "path", "name": "adId", "required": true, "schema": { "type": "string" }, "description": "The unique ID of the ad" }
+          {
+            "in": "path",
+            "name": "adId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique ID of the ad"
+          }
         ],
         "responses": {
           "200": {
@@ -1266,29 +2952,82 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string", "enum": ["success", "alreadyClaimed", "soldOut"] }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "alreadyClaimed",
+                        "soldOut"
+                      ]
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Bad Request" },
-          "404": { "description": "Campaign not found" },
-          "500": { "description": "Internal Server Error" }
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Campaign not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     },
     "/trip/surprise-me": {
       "get": {
-        "tags": ["Trip Ads"],
+        "tags": [
+          "Trip Ads"
+        ],
         "summary": "Retrieve a surprise ad campaign within a 2km range",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "query", "name": "city", "required": true, "schema": { "type": "string" }, "description": "Filter ads by city" },
-          { "in": "query", "name": "lat", "required": true, "schema": { "type": "number" }, "description": "User's latitude for proximity check" },
-          { "in": "query", "name": "long", "required": true, "schema": { "type": "number" }, "description": "User's longitude for proximity check" },
-          { "in": "query", "name": "vibeTitle", "required": false, "schema": { "type": "string" }, "description": "Vibe title to fallback to Google Places" }
+          {
+            "in": "query",
+            "name": "city",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter ads by city"
+          },
+          {
+            "in": "query",
+            "name": "lat",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "User's latitude for proximity check"
+          },
+          {
+            "in": "query",
+            "name": "long",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "User's longitude for proximity check"
+          },
+          {
+            "in": "query",
+            "name": "vibeTitle",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Vibe title to fallback to Google Places"
+          }
         ],
         "responses": {
           "200": {
@@ -1298,19 +3037,268 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "ad": { "$ref": "#/components/schemas/MerchantAdDto", "nullable": true },
-                    "distanceM": { "type": "integer", "nullable": true },
-                    "isClaimed": { "type": "boolean" },
-                    "isFallback": { "type": "boolean" },
-                    "xpReward": { "type": "number" }
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "ad": {
+                      "$ref": "#/components/schemas/MerchantAdDto",
+                      "nullable": true
+                    },
+                    "distanceM": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "isClaimed": {
+                      "type": "boolean"
+                    },
+                    "isFallback": {
+                      "type": "boolean"
+                    },
+                    "xpReward": {
+                      "type": "number"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Bad Request" },
-          "500": { "description": "Internal Server Error" }
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/register": {
+      "post": {
+        "tags": [
+          "Merchant Auth"
+        ],
+        "summary": "Register a merchant",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MerchantRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Merchant registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MerchantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/login": {
+      "post": {
+        "tags": [
+          "Merchant Auth"
+        ],
+        "summary": "Login a merchant",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MerchantLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Merchant logged in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MerchantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Credentials"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/dashboard/all": {
+      "get": {
+        "tags": [
+          "Merchant Dashboard"
+        ],
+        "summary": "Get All Campaigns",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active campaigns fetched successfully"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/dashboard/active-campaigns": {
+      "get": {
+        "tags": [
+          "Merchant Dashboard"
+        ],
+        "summary": "Get My Active Campaigns",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active campaigns fetched successfully"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/dashboard/dashboard-total-count": {
+      "get": {
+        "tags": [
+          "Merchant Dashboard"
+        ],
+        "summary": "Get Dashboard Total Count",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard total counts fetched successfully"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/dashboard/impression-over-time": {
+      "get": {
+        "tags": [
+          "Merchant Dashboard"
+        ],
+        "summary": "Get Impression Over Time",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Impressions over time fetched successfully"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/dashboard/reward-breakdown": {
+      "get": {
+        "tags": [
+          "Merchant Dashboard"
+        ],
+        "summary": "Get Reward Breakdown",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reward breakdown fetched successfully"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
         }
       }
     }
