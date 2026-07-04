@@ -47,9 +47,10 @@ export const Register = async (req, res) => {
                 name: payload.name,
                 businessName: payload.businessName,
                 category: payload.category,
+                address: payload.address,
                 defaultRadiusMeter: payload.defaultRadiusMeter,
                 phone: payload.phone,
-                photoUrl: payload.photoUrl
+                photoUrl: payload.photoUrl || ""
             }
         })
 

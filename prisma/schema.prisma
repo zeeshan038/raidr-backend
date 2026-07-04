@@ -7,82 +7,87 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//User
 model User {
-  id           String  @id @default(uuid())
-  name         String
-  email        String? @unique
-  password     String?
-  isVerified   Boolean @default(false)
-  authProvider String  @default("email") // "email", "google", "apple"
-  firebaseUid  String? @unique
-  photoUrl     String  @default("")
+  id                     String             @id @default(uuid())
+  name                   String
+  email                  String?            @unique
+  password               String?
+  isVerified             Boolean            @default(false)
+  authProvider           String             @default("email")
+  firebaseUid            String?            @unique
+  photoUrl               String             @default("")
+  otpCode                String?
+  otpCreatedAt           DateTime?
+  otpUpdatedAt           DateTime?
+  otpCodeExpireTime      DateTime?
+  avatarBackUrl          String             @default("")
+  avatarUpdatedAt        DateTime?
+  selectedAvatarId       String             @default("")
+  level                  Int                @default(1)
+  xp_earned              Int                @default(0)
+  xp_progress            Int                @default(0)
+  green_boxes_count      Int                @default(0)
+  golden_boxes_count     Int                @default(0)
+  purple_boxes_count     Int                @default(0)
+  distance_covered_km    Float              @default(0)
+  has_seen_level_welcome Boolean            @default(false)
+  fcmTokens              String[]           @default([])
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  avatarFrontUrl         String             @default("")
+  isNewUser              Boolean            @default(false)
+  adImpressions          AdImpression[]
+  boxCollectionLogs      BoxCollectionLog[]
+  adClaims               MerchantAdClaim[]
+  trips                  Trip[]
+}
 
-  // OTP Fields (flattened from nested object)
-  otpCode           String?
-  otpCreatedAt      DateTime?
-  otpUpdatedAt      DateTime?
-  otpCodeExpireTime DateTime?
+model BoxCollectionLog {
+  id                String   @id @default(uuid())
+  userId            String
+  boxType           String
+  xpEarned          Int
+  distanceCoveredKm Float    @default(0)
+  source            String?
+  lat               Float?
+  lng               Float?
+  createdAt         DateTime @default(now())
+  adData            Json?
+  isClaimed         Boolean  @default(false)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  avatarFrontUrl        String    @default("")
-  avatarBackUrl    String    @default("")
-  avatarUpdatedAt  DateTime?
-  selectedAvatarId String    @default("")
-  isNewUser        Boolean    @default(false)
-
-  level                  Int     @default(1)
-  xp_earned              Int     @default(0)
-  xp_progress            Int     @default(0)
-  green_boxes_count      Int     @default(0)
-  golden_boxes_count     Int     @default(0)
-  purple_boxes_count     Int     @default(0)
-  distance_covered_km    Float   @default(0)
-  has_seen_level_welcome Boolean @default(false)
-
-  fcmTokens String[] @default([])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  trips         Trip[]
-  adImpressions AdImpression[]
-  adClaims      MerchantAdClaim[]
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Trip {
-  id              String     @id @default(uuid())
-  userId          String
-  user            User       @relation(fields: [userId], references: [id])
-  routeTitle      String?
-  destination     String?
-  hotelLocation   String?
-  hotelLat        Float?
-  hotelLng        Float?
-  destinationLat  Float?
-  destinationLng  Float?
-  tripDates       DateTime[]
-  status          String? // "in-progress", "upcoming", "completed"
-  tripPace        Boolean? // false=relaxed, true=intense
-  radiusKm        Float?
-  travelWith      String? // "Solo", "Couple", "Friends", "Family"
-  interestedVibes String[]
-  
-  // JSON field for dynamic "yyyy-MM-dd" keys
-  routesByDate Json?
-  
-  isShared    Boolean @default(false)
-  inviteToken String?
-
-  // Live navigation
+  id                    String     @id @default(uuid())
+  userId                String
+  routeTitle            String?
+  destination           String?
+  hotelLocation         String?
+  tripDates             DateTime[]
+  status                String?
+  tripPace              Boolean?
+  radiusKm              Float?
+  travelWith            String?
+  interestedVibes       String[]
+  routesByDate          Json?
+  isShared              Boolean    @default(false)
+  inviteToken           String?
   currentLatitude       Float?
   currentLongitude      Float?
   lastLocationUpdatedAt DateTime?
-  navStatus             String? // "idle", "navigating", "paused"
-
-  // Flow metadata
-  flowKind          String? // "skip", "planYourTrip"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  navStatus             String?
+  flowKind              String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  destinationLat        Float?
+  destinationLng        Float?
+  hotelLat              Float?
+  hotelLng              Float?
+  heading               Float?
+  user                  User       @relation(fields: [userId], references: [id])
 
   @@index([userId, status, createdAt(sort: Desc)])
   @@index([isShared])
@@ -99,7 +104,16 @@ model Avatar {
   updatedAt     DateTime @updatedAt
 }
 
-//Merchant
+model Box {
+  id            String   @id @default(uuid())
+  boxNumber     Int      @unique
+  frontUrl      String
+  backUrl       String
+  requiredLevel Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model Merchant {
   id                 String        @id @default(uuid())
   email              String        @unique
@@ -107,52 +121,52 @@ model Merchant {
   name               String
   businessName       String
   category           String
-  defaultRadiusMeter Float
+  defaultRadiusMeter Float?
   phone              String?
   status             String        @default("pending")
   photoUrl           String
+  address            String        @default("")
   merchantAds        MerchantAds[]
 }
 
-//Merchant Ads
 model MerchantAds {
-  id               String         @id @default(uuid())
+  id               String            @id @default(uuid())
   adCategory       String
-  categoryName     String
   adTitle          String
   address          String
-  approvalStatus   String         @default("pending")
-  boxOpens         Int            @default(0)
+  approvalStatus   String            @default("pending")
+  boxOpens         Int               @default(0)
   city             String
   country          String
   descriptionText  String
   imageUrl         String
-  impressions      Int            @default(0)
-  isActive         Boolean        @default(true)
+  impressions      Int               @default(0)
+  isActive         Boolean           @default(true)
   latitude         Float
   longitude        Float
   logoUrl          String
   merchantId       String
-  merchant         Merchant       @relation(fields: [merchantId], references: [id])
   merchantName     String
   mysteryBoxReward String
-  radius           Int            @default(0)
-  rewardClaims     Int            @default(0)
-  stockLimit       Int            @default(0)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  radius           Int               @default(0)
+  rewardClaims     Int               @default(0)
+  stockLimit       Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  categoryName     String
   adImpressions    AdImpression[]
   adClaims         MerchantAdClaim[]
   adCodes          MerchantAdCode[]
+  merchant         Merchant          @relation(fields: [merchantId], references: [id])
 }
 
 model AdImpression {
   id        String      @id @default(uuid())
   adId      String
-  ad        MerchantAds @relation(fields: [adId], references: [id], onDelete: Cascade)
-  userId    String? // Optional: If you want to track which user saw the ad
-  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
   createdAt DateTime    @default(now())
+  ad        MerchantAds @relation(fields: [adId], references: [id], onDelete: Cascade)
+  user      User?       @relation(fields: [userId], references: [id])
 
   @@index([adId])
   @@index([userId])
@@ -160,12 +174,12 @@ model AdImpression {
 }
 
 model MerchantAdClaim {
-  id        String      @id @default(uuid())
+  id        String          @id @default(uuid())
   adId      String
-  ad        MerchantAds @relation(fields: [adId], references: [id], onDelete: Cascade)
   userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime    @default(now())
+  createdAt DateTime        @default(now())
+  ad        MerchantAds     @relation(fields: [adId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   code      MerchantAdCode?
 
   @@unique([userId, adId])
@@ -175,14 +189,14 @@ model MerchantAdClaim {
 }
 
 model MerchantAdCode {
-  id        String      @id @default(uuid())
+  id        String           @id @default(uuid())
   adId      String
-  ad        MerchantAds @relation(fields: [adId], references: [id], onDelete: Cascade)
-  code      String      @unique
-  isClaimed Boolean     @default(false)
-  claimId   String?     @unique
+  code      String           @unique
+  isClaimed Boolean          @default(false)
+  claimId   String?          @unique
+  createdAt DateTime         @default(now())
+  ad        MerchantAds      @relation(fields: [adId], references: [id], onDelete: Cascade)
   claim     MerchantAdClaim? @relation(fields: [claimId], references: [id])
-  createdAt DateTime    @default(now())
 
   @@index([adId])
   @@index([isClaimed])

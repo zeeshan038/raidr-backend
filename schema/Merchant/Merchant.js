@@ -24,20 +24,15 @@ export const RegisterSchema = (payload) => {
             'any.required': 'Category is required',
             'string.empty': 'Category cannot be empty'
         }),
-        defaultRadiusMeter: Joi.number().messages({
-            'any.required': 'Default radius is required',
-            'number.base': 'Default radius must be a number'
+        address: Joi.string().required().messages({
+            'any.required': 'Address is required',
+            'string.empty': 'Address cannot be empty'
         }),
-        phone: Joi.string().messages({
-            'any.required': 'Phone is required',
-            'string.empty': 'Phone cannot be empty'
-        }),
-        photoUrl: Joi.string().messages({
-            'any.required': 'Photo URL is required',
-            'string.empty': 'Photo URL cannot be empty'
-        }),
+        defaultRadiusMeter: Joi.number().optional(),
+        phone: Joi.string().allow('').optional(),
+        photoUrl: Joi.string().allow('').optional(),
     }).unknown(false);
-    
+
     return schema.validate(payload);
 }
 
@@ -55,6 +50,6 @@ export const LoginSchema = (payload) => {
             'string.empty': 'Password cannot be empty'
         })
     }).unknown(false);
-    
+
     return schema.validate(payload);
 }

@@ -96,7 +96,9 @@ export const SaveJourneySchema = (payload) => {
         category: Joi.string().required(),
         name: Joi.string().required(),
         lat: Joi.number().required(),
-        lng: Joi.number().required()
+        lng: Joi.number().required(),
+        isAchieved: Joi.boolean().required(),
+        xpReward: Joi.number().required()
     }).unknown(true);
 
     const schema = Joi.object({

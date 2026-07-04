@@ -718,3 +718,48 @@ export const getKeys = async (req, res) => {
         });
     }
 };
+
+
+/**
+ * @Description Get all boxes
+ * @Route GET api/user/get-all-boxes
+ * @Access Private
+ */
+export const getAllBoxes = async (req, res) => {
+    const { id } = req.user;
+    const {source} = req.query;
+    try {
+        const user = await prisma.user.findUnique({ where: { id: id } });
+        if (!user) {
+            return res.status(404).json({
+                status: false,
+                msg: "User not found"
+            });
+        }
+
+        const whereClause = { userId: id };
+        if (source) {
+            whereClause.source = source;
+        }
+
+        const boxLogs = await prisma.boxCollectionLog.findMany({
+            where: whereClause,
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.status(200).json({
+            status: true,
+            msg: "Box history fetched successfully",
+            currentLevel: user.level,
+            totalGreenBoxes: user.green_boxes_count,
+            totalGoldenBoxes: user.golden_boxes_count,
+            totalPurpleBoxes: user.purple_boxes_count,
+            history: boxLogs
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}

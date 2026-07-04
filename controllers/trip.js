@@ -534,7 +534,6 @@ export const GetMyTrips = async (req, res) => {
  */
 export const StartAndPauseTrip = async (req, res) => {
     const { id: userId } = req.user;
-    console.log("id", userId)
     const payload = req.body;
 
     const result = StartAndPauseTripSchema(payload);
@@ -567,10 +566,8 @@ export const StartAndPauseTrip = async (req, res) => {
         return res.status(200).json({
             status: true,
             msg: `Trip navigation status updated to ${navStatus}`,
-            trip: updatedTrip
         });
     } catch (error) {
-        console.log(error);
         res.status(500).json({
             status: false,
             msg: error.message
@@ -688,11 +685,14 @@ export const getMerchantAds = async (req, res) => {
         });
         const claimedAdIds = new Set(userClaims.map(c => c.adId));
 
-        const results = eligibleAds.map(item => ({
-            ad: item.ad,
-            distanceM: item.dist !== null ? Math.round(item.dist) : null,
-            isClaimed: claimedAdIds.has(item.ad.id)
-        }));
+        const results = eligibleAds.map(item => {
+            const { approvalStatus, boxOpens, merchantId, merchantName, rewardClaims, impressions, ...adData } = item.ad;
+            return {
+                ad: adData,
+                distanceM: item.dist !== null ? Math.round(item.dist) : null,
+                isClaimed: claimedAdIds.has(item.ad.id)
+            };
+        });
 
         return res.status(200).json({
             status: true,
@@ -893,8 +893,6 @@ export const claimReward = async (req, res) => {
     }
 };
 
-
-
 /**
  * @Description Surprise me 
  * @Route GET /trip/surprise-me?city=&lat=&long=&vibeTitle=
@@ -940,7 +938,7 @@ export const surpriseMe = async (req, res) => {
         let eligibleAds = [];
 
         if (ads.length > 0) {
-            // 2. Fetch user claims for these ads to filter them out
+            // 2. Fetch user claims and impressions for these ads to filter them out
             const { id: userId } = req.user;
             const adIds = ads.map(ad => ad.id);
             const userClaims = await prisma.merchantAdClaim.findMany({
@@ -951,10 +949,18 @@ export const surpriseMe = async (req, res) => {
             });
             const claimedAdIds = new Set(userClaims.map(c => c.adId));
 
-            // 3. Filter ads by claim status, stock limit, and 2km range limit
+            const userImpressions = await prisma.adImpression.findMany({
+                where: {
+                    userId: userId,
+                    adId: { in: adIds }
+                }
+            });
+            const seenAdIds = new Set(userImpressions.map(i => i.adId));
+
+            // 3. Filter ads by claim status, seen status, stock limit, and 2km range limit
             for (const ad of ads) {
-                // Filter out claimed ads
-                if (claimedAdIds.has(ad.id)) continue;
+                // Filter out claimed or seen ads
+                if (claimedAdIds.has(ad.id) || seenAdIds.has(ad.id)) continue;
 
                 // Check stock limit
                 const hasStock = ad.stockLimit <= 0 || ad.rewardClaims < ad.stockLimit;
@@ -976,15 +982,18 @@ export const surpriseMe = async (req, res) => {
         let isFallback = false;
 
         if (eligibleAds.length > 0) {
-            // 4. Sort by nearest distance (nearest wins)
-            eligibleAds.sort((a, b) => a.dist - b.dist);
-            selectedAd = eligibleAds[0].ad;
+            // 4. Shuffle eligible ads to give a different ad on each API call instead of sorting by distance
+            eligibleAds.sort(() => 0.5 - Math.random());
+            const { approvalStatus, boxOpens, merchantId, merchantName, rewardClaims, impressions, ...adData } = eligibleAds[0].ad;
+            selectedAd = adData;
             distanceM = Math.round(eligibleAds[0].dist);
         } else {
             const searchKeyword = vibeTitle ? vibeTitle.split('||').map(v => v.trim()).join(' ') : undefined;
 
             const candidates = await fetchSurpriseNearbyCandidates(userLat, userLng, searchKeyword, searchKeyword);
             if (candidates && candidates.length > 0) {
+                // Shuffle candidates to give a different Google place on each API call
+                candidates.sort(() => 0.5 - Math.random());
                 const best = candidates[0];
                 selectedAd = {
                     id: best.place_id,
@@ -996,6 +1005,20 @@ export const surpriseMe = async (req, res) => {
                 };
                 distanceM = Math.round(best.dist);
                 isFallback = true;
+            }
+        }
+
+        if (selectedAd && !isFallback) {
+            try {
+                const { id: userId } = req.user;
+                await prisma.adImpression.create({
+                    data: {
+                        userId: userId,
+                        adId: selectedAd.id
+                    }
+                });
+            } catch (err) {
+                console.error("Failed to auto-record impression for surprise ad:", err);
             }
         }
 
