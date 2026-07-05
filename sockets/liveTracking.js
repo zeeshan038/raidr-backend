@@ -61,12 +61,10 @@ export const startWebSocketServer = () => {
         // On message received 
         message: async (ws, message, isBinary) => {
             try {
-                // Parse the payload
                 const payload = JSON.parse(Buffer.from(message).toString());
                 payload.userId = ws.userId;
                 console.log(`[uWS] GPS received: lat=${payload.lat}, lng=${payload.lng}`);
 
-                // Handle Box Collection Events
                 if (payload.type === 'box_collected') {
                     gpsQueue.add('box_collected', {
                         userId: ws.userId,

@@ -13,7 +13,6 @@ const queueName = 'gps_events_queue';
  */
 export const startGpsWorker = () => {
 
-    // Set up the cron job for true batching
     const batchQueue = new Queue(queueName, { connection: redis });
     batchQueue.add('process_gps_batch', {}, {
         repeat: { every: 10000 },
