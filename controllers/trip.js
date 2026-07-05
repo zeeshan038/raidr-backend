@@ -1,10 +1,8 @@
 //NPM Pkgs
-
 import crypto from "crypto";
 
 //Schema
 import { PlanYourTripSchema, SkipTripSchema, StartAndPauseTripSchema, SaveJourneySchema } from "../schema/Trip.js"
-
 
 // Prisma Client
 import { prisma } from "../config/db.js"

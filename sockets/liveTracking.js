@@ -64,6 +64,7 @@ export const startWebSocketServer = () => {
                 // Parse the payload
                 const payload = JSON.parse(Buffer.from(message).toString());
                 payload.userId = ws.userId;
+                console.log(`[uWS] GPS received: lat=${payload.lat}, lng=${payload.lng}`);
 
                 // Handle Box Collection Events
                 if (payload.type === 'box_collected') {

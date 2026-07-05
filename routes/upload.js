@@ -27,17 +27,14 @@ function imageFilter(req, file, cb) {
 
 // Upload Image Route
 router.route("/image").post(uploadImage.single("image"), async (req, res) => {
-    // Use HETZNER_BUCKET from .env, fallback to query param, fallback to "images"
     const containerName = process.env.HETZNER_BUCKET || req.query.containerName || "images";
 
-    // Optional: Allow organizing files into folders (e.g., ?folder=merchants)
     const folderName = req.query.folder ? `${req.query.folder}/` : "";
 
-    // Initialize S3 Client for Hetzner Object Storage
     const s3Client = new S3Client({
         endpoint: process.env.HETZNER_ENDPOINT || "https://fsn1.your-objectstorage.com",
         region: process.env.HETZNER_REGION || "fsn1",
-        forcePathStyle: true, // REQUIRED for Hetzner and other S3-compatible services
+        forcePathStyle: true,
         credentials: {
             accessKeyId: process.env.HETZNER_ACCESS_KEY,
             secretAccessKey: process.env.HETZNER_SECRET_KEY,
@@ -65,13 +62,12 @@ router.route("/image").post(uploadImage.single("image"), async (req, res) => {
             Key: blobName,
             Body: compressedImageBuffer,
             ContentType: "image/jpeg",
-            ACL: "public-read", // Makes the image publicly accessible
+            ACL: "public-read",
         });
 
         await s3Client.send(command);
 
         // Generate the public URL
-        // Ensure endpoint doesn't have a trailing slash before appending
         const endpoint = (process.env.HETZNER_ENDPOINT || "https://fsn1.your-objectstorage.com").replace(/\/$/, "");
         const url = `${endpoint}/${containerName}/${blobName}`;
 

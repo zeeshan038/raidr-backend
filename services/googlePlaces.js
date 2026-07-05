@@ -25,6 +25,7 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * c; // in metres
 }
 
+
 /**
  * @Description This function is used to check if a keyword is related to food.
  * @type Function
@@ -36,6 +37,13 @@ function isFoodKeyword(kw) {
     return foodKeywords && foodKeywords.includes(kw);
 }
 
+/**
+ * @Description This function is used to convert Google Place types to display category.
+ * @type Function
+ * @input place - Object
+ * @input fallbackTag - String
+ * @returns response - String
+ */
 function googlePlaceTypesToDisplayCategory(place, fallbackTag) {
     if (place.types && place.types.length > 0) {
         return place.types[0].replace(/_/g, ' ');
