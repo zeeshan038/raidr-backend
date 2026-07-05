@@ -12,10 +12,6 @@ const queueName = 'gps_events_queue';
  * @Descripton Initializes the GPS worker
  */
 export const startGpsWorker = () => {
-    if (redis.status !== 'ready' && redis.status !== 'connecting') {
-        console.log('[BullMQ] Redis is offline, skipping worker initialization.');
-        return;
-    }
 
     // Set up the cron job for true batching
     const batchQueue = new Queue(queueName, { connection: redis });
