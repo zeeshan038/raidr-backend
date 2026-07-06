@@ -56,8 +56,11 @@
                 return;
             }
 
-            log('Connecting to ws://188.245.72.1:3001...');
-            ws = new WebSocket(`ws://188.245.72.1:3001/live-tracking?token=${token}`);
+            // log('Connecting to ws://188.245.72.1:3001...');
+            log('Connecting to wss3001...');
+    
+            // ws = new WebSocket(`ws://188.245.72.1:3001/live-tracking?token=${token}`);
+              ws = new WebSocket(`ws://localhost:3001/live-tracking?token=${token}`);
             ws.onopen = () => {
                 log('✅ Connected to WebSocket!', 'success');
                 document.getElementById('connectBtn').disabled = true;

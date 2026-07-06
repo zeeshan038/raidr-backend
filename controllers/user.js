@@ -412,6 +412,27 @@ export const getUserProfile = async (req, res) => {
         const userResponse = { ...user, _id: user.id };
         delete userResponse.isNewUser;
 
+        if (userResponse.adClaims) {
+            userResponse.adClaims = userResponse.adClaims.map(claim => {
+                if (claim.ad) {
+                    const filteredAd = { ...claim.ad };
+                    delete filteredAd.approvalStatus;
+                    delete filteredAd.boxOpens;
+                    delete filteredAd.impressions;
+                    delete filteredAd.isActive;
+                    delete filteredAd.descriptionText;
+                    delete filteredAd.merchantId;
+                    delete filteredAd.rewardClaims;
+                    delete filteredAd.stockLimit;
+                    return {
+                        ...claim,
+                        ad: filteredAd
+                    };
+                }
+                return claim;
+            });
+        }
+
         res.status(200).json({
             status: true,
             msg: "User profile fetched successfully",
@@ -670,8 +691,7 @@ export const getAvatars = async (req, res) => {
             groupedAvatars[avatarKey] = {
                 front: avatar.frontUrl,
                 back: avatar.backUrl,
-                locked: userLevel < avatar.requiredLevel,
-                requiredLevel: avatar.requiredLevel
+                locked: avatar.avatarNumber === 1 ? false : true
             };
         });
 

@@ -208,6 +208,10 @@
           },
           "distance_covered_km": {
             "type": "number"
+          },
+          "raidrCoins": {
+            "type": "integer",
+            "example": 500
           }
         }
       },
@@ -3295,6 +3299,737 @@
         "responses": {
           "200": {
             "description": "Reward breakdown fetched successfully"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/store/all-items": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "summary": "Get all store avatars",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store avatars fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "frontUrl": {
+                            "type": "string"
+                          },
+                          "backUrl": {
+                            "type": "string"
+                          },
+                          "price": {
+                            "type": "integer"
+                          },
+                          "isNew": {
+                            "type": "boolean"
+                          },
+                          "isFeatured": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "isOwned": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Store avatars fetched successfully",
+                  "data": [
+                    {
+                      "id": "00c41f0e-fa63-47de-a225-379bb6c0629f",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-06T19:10:03.447Z",
+                      "updatedAt": "2026-07-06T19:10:03.447Z",
+                      "isOwned": false
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 10,
+                    "total": 3,
+                    "hasNextPage": false
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/store/my-avatars": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "summary": "Get avatars owned by the logged-in user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned avatars fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "frontUrl": {
+                            "type": "string"
+                          },
+                          "backUrl": {
+                            "type": "string"
+                          },
+                          "price": {
+                            "type": "integer"
+                          },
+                          "isNew": {
+                            "type": "boolean"
+                          },
+                          "isFeatured": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Owned avatars fetched successfully",
+                  "data": [
+                    {
+                      "id": "00c41f0e-fa63-47de-a225-379bb6c0629f",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-06T19:10:03.447Z",
+                      "updatedAt": "2026-07-06T19:10:03.447Z"
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 10,
+                    "hasNextPage": false
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/store/purchase": {
+      "post": {
+        "tags": [
+          "Store"
+        ],
+        "summary": "Purchase an avatar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "avatarId"
+                ],
+                "properties": {
+                  "avatarId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar purchased successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "avatar": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "frontUrl": {
+                              "type": "string"
+                            },
+                            "backUrl": {
+                              "type": "string"
+                            },
+                            "price": {
+                              "type": "integer"
+                            },
+                            "isNew": {
+                              "type": "boolean"
+                            },
+                            "isFeatured": {
+                              "type": "boolean"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        "ownedAvatar": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "userId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "storeId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Avatar purchased successfully",
+                  "data": {
+                    "avatar": {
+                      "id": "00c41f0e-fa63-47de-a225-379bb6c0629f",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-06T19:10:03.447Z",
+                      "updatedAt": "2026-07-06T19:10:03.447Z"
+                    },
+                    "ownedAvatar": {
+                      "id": "30965998-2803-47d9-aa15-8f69c7d57ff8",
+                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
+                      "storeId": "00c41f0e-fa63-47de-a225-379bb6c0629f",
+                      "createdAt": "2026-07-06T19:41:33.361Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Insufficient balance"
+          },
+          "404": {
+            "description": "Avatar or User not found"
+          },
+          "409": {
+            "description": "You already own this avatar"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/store/purchase-coins": {
+      "post": {
+        "tags": [
+          "Store"
+        ],
+        "summary": "Purchase Raid coins",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "coinsAmount",
+                  "priceUsd"
+                ],
+                "properties": {
+                  "coinsAmount": {
+                    "type": "integer"
+                  },
+                  "priceUsd": {
+                    "type": "number"
+                  },
+                  "transactionId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coins purchased successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "raidrCoins": {
+                          "type": "integer"
+                        },
+                        "purchaseHistory": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "userId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "coinsAmount": {
+                              "type": "integer"
+                            },
+                            "priceUsd": {
+                              "type": "number"
+                            },
+                            "transactionId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Coins purchased successfully",
+                  "data": {
+                    "raidrCoins": 500,
+                    "purchaseHistory": {
+                      "id": "5b4b99bf-3606-471d-873c-1960130c639b",
+                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
+                      "coinsAmount": 500,
+                      "priceUsd": 4.99,
+                      "transactionId": "tx_abc123",
+                      "status": "completed",
+                      "createdAt": "2026-07-06T19:23:09.540Z",
+                      "updatedAt": "2026-07-06T19:23:09.540Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload parameters"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/store/transaction-history": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "summary": "Get coin purchase transaction history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction history fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "userId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "coinsAmount": {
+                            "type": "integer"
+                          },
+                          "priceUsd": {
+                            "type": "number"
+                          },
+                          "transactionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Transaction history fetched successfully",
+                  "data": [
+                    {
+                      "id": "30965998-2803-47d9-aa15-8f69c7d57ff8",
+                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
+                      "coinsAmount": 500,
+                      "priceUsd": 4.99,
+                      "transactionId": "tx_abc123",
+                      "status": "completed",
+                      "createdAt": "2026-07-06T19:41:33.361Z",
+                      "updatedAt": "2026-07-06T19:41:33.361Z"
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 10,
+                    "total": 1,
+                    "hasNextPage": false
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/admin/store/create": {
+      "post": {
+        "tags": [
+          "Admin Store"
+        ],
+        "summary": "Create an avatar in the store",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "frontUrl",
+                  "backUrl",
+                  "price"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "frontUrl": {
+                    "type": "string"
+                  },
+                  "backUrl": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "integer"
+                  },
+                  "isFeatured": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "isNew": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar created successfully"
+          },
+          "400": {
+            "description": "Validation Error"
           },
           "500": {
             "description": "Internal Server Error"
