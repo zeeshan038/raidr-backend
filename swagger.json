@@ -3760,13 +3760,219 @@
         },
         "responses": {
           "200": {
-            "description": "Coins purchased successfully"
+            "description": "Coins purchased successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "raidrCoins": {
+                          "type": "integer"
+                        },
+                        "purchaseHistory": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "userId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "coinsAmount": {
+                              "type": "integer"
+                            },
+                            "priceUsd": {
+                              "type": "number"
+                            },
+                            "transactionId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Coins purchased successfully",
+                  "data": {
+                    "raidrCoins": 500,
+                    "purchaseHistory": {
+                      "id": "5b4b99bf-3606-471d-873c-1960130c639b",
+                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
+                      "coinsAmount": 500,
+                      "priceUsd": 4.99,
+                      "transactionId": "tx_abc123",
+                      "status": "completed",
+                      "createdAt": "2026-07-06T19:23:09.540Z",
+                      "updatedAt": "2026-07-06T19:23:09.540Z"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid payload parameters"
           },
           "404": {
             "description": "User not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/store/transaction-history": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "summary": "Get coin purchase transaction history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction history fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "userId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "coinsAmount": {
+                            "type": "integer"
+                          },
+                          "priceUsd": {
+                            "type": "number"
+                          },
+                          "transactionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Transaction history fetched successfully",
+                  "data": [
+                    {
+                      "id": "30965998-2803-47d9-aa15-8f69c7d57ff8",
+                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
+                      "coinsAmount": 500,
+                      "priceUsd": 4.99,
+                      "transactionId": "tx_abc123",
+                      "status": "completed",
+                      "createdAt": "2026-07-06T19:41:33.361Z",
+                      "updatedAt": "2026-07-06T19:41:33.361Z"
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 10,
+                    "total": 1,
+                    "hasNextPage": false
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Internal Server Error"

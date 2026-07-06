@@ -231,3 +231,51 @@ export const PurchaseCoins = async (req, res) => {
         });
     }
 };
+
+
+
+/**
+ * @Description Get Purchase History
+ * @Route GET /api/store/transaction-history
+ * @access Private
+ */
+export const getTransactionHistory = async (req, res) => {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    try {
+        const [transactions, total] = await prisma.$transaction([
+            prisma.raidPurchaseHistory.findMany({
+                where: { userId },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.raidPurchaseHistory.count({
+                where: { userId }
+            })
+        ]);
+
+        const hasNextPage = skip + transactions.length < total;
+
+        return res.status(200).json({
+            status: true,
+            msg: 'Transaction history fetched successfully',
+            data: transactions,
+            pagination: {
+                page,
+                limit,
+                total,
+                hasNextPage
+            }
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
