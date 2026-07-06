@@ -40,6 +40,9 @@ model User {
   boxCollectionLogs      BoxCollectionLog[]
   adClaims               MerchantAdClaim[]
   trips                  Trip[]
+  raidrCoins             Int                @default(0)
+  ownedAvatars           UserOwnedAvatar[]
+  coinPurchases          RaidPurchaseHistory[]
 }
 
 model BoxCollectionLog {
@@ -99,10 +102,10 @@ model Avatar {
   avatarNumber  Int      @unique
   frontUrl      String
   backUrl       String
-  requiredLevel Int      @default(1)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
 
 model Box {
   id            String   @id @default(uuid())
@@ -112,6 +115,23 @@ model Box {
   requiredLevel Int      @default(1)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+
+model RaidPurchaseHistory {
+  id            String   @id @default(uuid())
+  userId        String
+  coinsAmount   Int     
+  priceUsd      Float    
+  transactionId String?  @unique 
+  status        String   @default("completed") 
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Merchant {
@@ -200,4 +220,31 @@ model MerchantAdCode {
 
   @@index([adId])
   @@index([isClaimed])
+}
+
+
+model UserOwnedAvatar {
+  id          String   @id @default(uuid())
+  userId      String
+  storeId     String   
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storeId])
+}
+
+//Super Admin
+model Store {
+    id          String   @id @default(uuid())
+    name        String
+    frontUrl    String   
+    backUrl     String    
+    price       Int      @default(0)
+    isNew       Boolean  @default(false)
+    isFeatured  Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    owners      UserOwnedAvatar[]
 }

@@ -12,45 +12,38 @@ const queueName = 'gps_events_queue';
  * @Descripton Initializes the GPS worker
  */
 export const startGpsWorker = () => {
-
-    const batchQueue = new Queue(queueName, { connection: redis });
-    batchQueue.add('process_gps_batch', {}, {
-        repeat: { every: 10000 },
-        jobId: 'gps_batch_cron_job',
-        removeOnComplete: true,
-        removeOnFail: 100
-    });
-
-    const worker = new Worker(queueName, async (job) => {
-        if (job.name === 'process_gps_batch') {
+    
+    setInterval(async () => {
+        try {
             const multi = redis.multi();
             multi.lrange('gps_batch_list', 0, -1);
-            multi.del('gps_batch_list');
+            multi.del('gps_batch_list'); 
             const results = await multi.exec();
 
             const rawItems = results[0][1];
             if (!rawItems || rawItems.length === 0) return;
 
             const trips = rawItems.map(item => JSON.parse(item));
-            console.log(`[BullMQ] Bulk writing batch of ${trips.length} GPS updates...`);
+            console.log(`[Batch Writer] Bulk writing batch of ${trips.length} GPS updates...`);
 
-            try {
-                await Promise.all(trips.map(update => 
-                    prisma.trip.update({
-                        where: { id: update.tripId },
-                        data: {
-                            currentLatitude: update.lat,
-                            currentLongitude: update.lng,
-                            ...(update.heading !== undefined && { heading: update.heading }),
-                            lastLocationUpdatedAt: new Date()
-                        }
-                    })
-                ));
-            } catch (error) {
-                console.error('[BullMQ] Batch update failed:', error.message);
-            }
-        } 
-        else if (job.name === 'box_collected') {
+            await Promise.all(trips.map(update => 
+                prisma.trip.update({
+                    where: { id: update.tripId },
+                    data: {
+                        currentLatitude: update.lat,
+                        currentLongitude: update.lng,
+                        ...(update.heading !== undefined && { heading: update.heading }),
+                        lastLocationUpdatedAt: new Date()
+                    }
+                })
+            ));
+        } catch (error) {
+            console.error('[Batch Writer] Update failed:', error.message);
+        }
+    }, 10000);
+
+    const worker = new Worker(queueName, async (job) => {
+        if (job.name === 'box_collected') {
             const { userId, boxType, xpAmount, distanceCoveredKm, source, lat, lng, adData } = job.data;
             if (!userId || !boxType || typeof xpAmount !== 'number') return;
 
