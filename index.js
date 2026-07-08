@@ -9,6 +9,7 @@ import fs from "fs";
 import dotenv from "dotenv";
 
 
+// Reload
 dotenv.config();
 const app = express();
 const allowedOrigins = [
@@ -20,7 +21,13 @@ app.use(cors({
   origin: allowedOrigins
 }));
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/api/merchant/payments/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 
 ConnectDB();
 startCleanupCron();

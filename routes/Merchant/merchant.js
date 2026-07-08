@@ -1,12 +1,18 @@
 import express from 'express';
 const router = express.Router();
 
-import { Register, Login } from '../../controllers/Merchant/merchant.js';
+import { Register, Login, WhoAmI} from '../../controllers/Merchant/merchant.js';
+import { verifyMerchant } from '../../middlewares/verifyMerchant.js';
+
 
 
 router.post('/register', Register);
 router.post('/login', Login);
 
+router.use(verifyMerchant)
+router.get("/whoami",WhoAmI)
+
 
 
 export default router;
+ 

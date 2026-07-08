@@ -892,6 +892,139 @@ export const claimReward = async (req, res) => {
 };
 
 /**
+ * @Description Claim Live Event Reward
+ * @Route POST /trip/live-event/claim/:eventId
+ * @Access Private
+ */
+export const claimLiveEventReward = async (req, res) => {
+    const { id: userId } = req.user;
+    const eventId = req.params.eventId;
+    const { userLat, userLng } = req.body;
+
+    if (!eventId) {
+        return res.status(400).json({
+            status: false,
+            msg: "Event ID is required"
+        });
+    }
+
+    if (userLat === undefined || userLng === undefined) {
+        return res.status(400).json({
+            status: false,
+            msg: "User coordinates (userLat, userLng) are required"
+        });
+    }
+
+    try {
+        // 1. Fetch the Live Event
+        const event = await prisma.liveEvent.findUnique({
+            where: { id: eventId }
+        });
+
+        if (!event) { 
+            return res.status(404).json({
+                status: false,
+                msg: "Live Event not found"
+            });
+        }
+
+        // 2. Validate Event is Live
+        if (event.status !== "live") {
+            return res.status(400).json({
+                status: false,
+                msg: `Cannot claim reward. Event is currently "${event.status}" (must be "live").`
+            });
+        }
+
+        // 3. Validate Radius (Must be within 20 meters)
+        const distance = haversineDistance(
+            parseFloat(userLat),
+            parseFloat(userLng),
+            event.latitude,
+            event.longitude
+        );
+
+        if (distance > 20) {
+            return res.status(400).json({
+                status: false,
+                msg: `Too far from event location. You are ${Math.round(distance)}m away, but you must be within 20 meters to claim.`
+            });
+        }
+
+        // 4. Check if User has already claimed this event's reward
+        const existingClaim = await prisma.liveEventClaim.findUnique({
+            where: {
+                eventId_userId: {
+                    eventId,
+                    userId
+                }
+            }
+        });
+
+        if (existingClaim) {
+            return res.status(400).json({
+                status: false,
+                msg: "alreadyClaimed"
+            });
+        }
+
+        // 5. Validate Reward Stock Availability
+        if (event.remainingQty <= 0) {
+            return res.status(400).json({
+                status: false,
+                msg: "soldOut"
+            });
+        }
+
+        // 6. Generate a dynamic coupon/voucher code
+        const assignedCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+
+        // 7. Perform Claim in Transaction
+        const isSurprise = event.size === 'large';
+        const xpAwarded = generateDynamicXP(isSurprise);
+
+        const [claimDoc] = await prisma.$transaction([
+            prisma.liveEventClaim.create({
+                data: {
+                    eventId,
+                    userId,
+                    code: assignedCode,
+                    xpEarned: xpAwarded,
+                    lat: parseFloat(userLat),
+                    lng: parseFloat(userLng)
+                }
+            }),
+            prisma.liveEvent.update({
+                where: { id: eventId },
+                data: {
+                    remainingQty: { decrement: 1 }
+                }
+            }),
+            prisma.user.update({
+                where: { id: userId },
+                data: {
+                    xp_earned: { increment: xpAwarded }
+                }
+            })
+        ]);
+
+        return res.status(200).json({
+            status: true,
+            msg: "success",
+            code: assignedCode,
+            xpEarned: xpAwarded
+        });
+
+    } catch (error) {
+        console.error("Claim Live Event Reward Error:", error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message || "Internal server error"
+        });
+    }
+};
+
+/**
  * @Description Surprise me 
  * @Route GET /trip/surprise-me?city=&lat=&long=&vibeTitle=
  * @Access Private

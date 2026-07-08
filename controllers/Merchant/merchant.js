@@ -124,7 +124,29 @@ export const Register = async (req, res) => {
 
 
 /**
- *  @Decription Update Merchant Profile Picture
- * @Route POST /api/merchant/register
- * @Access Public
+ *  @Decription Merchant Profile
+ * @Route GET /api/merchant/whoami
+ * @Access Private
  */
+export const WhoAmI = async (req, res) => {
+  const { id } = req.merchant;
+  console.log(id)
+    try {
+        const merchant = await prisma.merchant.findUnique({
+            where: {
+                id
+            }
+        })
+
+        return res.status(200).json({
+            status: true,
+            msg: "Merchant profile",
+            merchant: merchant
+        })
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        })
+    }
+}

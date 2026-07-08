@@ -12,6 +12,8 @@ model User {
   name                   String
   email                  String?            @unique
   password               String?
+  lat                    String?
+  long                  String?
   isVerified             Boolean            @default(false)
   authProvider           String             @default("email")
   firebaseUid            String?            @unique
@@ -31,7 +33,7 @@ model User {
   purple_boxes_count     Int                @default(0)
   distance_covered_km    Float              @default(0)
   has_seen_level_welcome Boolean            @default(false)
-  fcmTokens              String[]           @default([])
+  fcmToken               String?       
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
   avatarFrontUrl         String             @default("")
@@ -43,6 +45,8 @@ model User {
   raidrCoins             Int                @default(0)
   ownedAvatars           UserOwnedAvatar[]
   coinPurchases          RaidPurchaseHistory[]
+  eventParticipations    LiveEventParticipant[]
+  eventClaims            LiveEventClaim[]
 }
 
 model BoxCollectionLog {
@@ -145,8 +149,12 @@ model Merchant {
   phone              String?
   status             String        @default("pending")
   photoUrl           String
-  address            String        @default("")
+  address            String                   @default("")
+  credits            Int                      @default(0)
   merchantAds        MerchantAds[]
+  liveEvents         LiveEvent[]
+  creditPurchases    MerchantCreditPurchase[]
+  creditLogs         MerchantCreditLog[]
 }
 
 model MerchantAds {
@@ -222,6 +230,65 @@ model MerchantAdCode {
   @@index([isClaimed])
 }
 
+model LiveEvent {
+  id              String                 @id @default(uuid())
+  title           String
+  description     String
+  merchantId      String
+  commanderAvatar String                 @default("")
+  imageUrl        String                 @default("")
+  latitude        Float
+  longitude       Float
+  startTime       DateTime
+  endTime         DateTime
+  reward          String
+  rewardQuantity  Int
+  remainingQty    Int                    // Track remaining stock
+  status          String                 @default("draft") // draft, pending_approval, scheduled, live, completed, cancelled
+  size            String                 @default("small") // small, medium, large
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  merchant        Merchant               @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  participants    LiveEventParticipant[]
+  claims          LiveEventClaim[]
+  creditLogs      MerchantCreditLog[]
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([startTime])
+  @@index([endTime]) 
+}
+
+model LiveEventParticipant {
+  id        String    @id @default(uuid())
+  eventId   String
+  userId    String
+  joinedAt  DateTime  @default(now())
+  event     LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model LiveEventClaim {
+  id        String    @id @default(uuid())
+  eventId   String
+  userId    String
+  code      String?
+  claimedAt DateTime  @default(now())
+  xpEarned  Int
+  lat       Float?
+  lng       Float?
+  event     LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
 
 model UserOwnedAvatar {
   id          String   @id @default(uuid())
@@ -235,7 +302,50 @@ model UserOwnedAvatar {
   @@unique([userId, storeId])
 }
 
-//Super Admin
+
+model MerchantCreditPurchase {
+  id            String   @id @default(uuid())
+  merchantId    String
+  creditsAmount Int
+  priceUsd      Float
+  transactionId String?  @unique
+  status        String   @default("completed") // pending, completed, failed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  merchant      Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model MerchantCreditLog {
+  id          String     @id @default(uuid())
+  merchantId  String
+  amount      Int        // e.g. +100 for purchase, -25 for medium event
+  type        String     // purchase, event_creation, refund, admin_adjustment
+  description String
+  eventId     String?
+  createdAt   DateTime   @default(now())
+
+  merchant    Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  event       LiveEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([merchantId])
+  @@index([createdAt(sort: Desc)])
+}
+
+
+// Admin 
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Store {
     id          String   @id @default(uuid())
     name        String
