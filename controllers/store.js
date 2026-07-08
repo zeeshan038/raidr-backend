@@ -11,7 +11,7 @@ export const getStoreAvatars = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
     try {
-        const [avatars, total, userOwned] = await prisma.$transaction([
+        const [avatars, total, userOwned, user] = await prisma.$transaction([
             prisma.store.findMany({
                 skip,
                 take: Number(limit),
@@ -21,6 +21,10 @@ export const getStoreAvatars = async (req, res) => {
             prisma.userOwnedAvatar.findMany({
                 where: { userId },
                 select: { storeId: true }
+            }),
+            prisma.user.findUnique({
+                where: { id: userId },
+                select: { raidrCoins: true }
             })
         ]);
 
@@ -36,9 +40,10 @@ export const getStoreAvatars = async (req, res) => {
         return res.status(200).json({
             status: true,
             msg: 'Store avatars fetched successfully',
+            coins: user.raidrCoins,
             data,
             pagination: {
-                page: Number(page),
+                page: Number(page), 
                 limit: Number(limit),
                 total,
                 hasNextPage

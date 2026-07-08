@@ -493,6 +493,54 @@ export const updateUser = async (req, res) => {
 }
 
 /**
+ * @Description Update User Lat Long
+ * @Route PUT api/user/update-location
+ * @Access Private
+ */
+export const UpdateLocation = async (req ,res)=>{
+    const {id} = req.user;
+    const {lat, long} = req.body;
+    if(!lat || !long){
+        return res.status(400).json({
+            status: false,
+            msg: "Lat and long are required"
+        })
+    }
+    try {
+        const user = await prisma.user.update({
+            where: { id: id },
+            data: {
+                lat: lat,
+                long: long
+            }
+        });
+        const userResponse = { ...user, _id: user.id };
+        delete userResponse.isNewUser;
+        res.status(200).json({
+            status: true,
+            msg: "User location updated successfully"
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+/**
+ * @Description Update FCM
+ * @Route PUT api/user/update-fcm
+ * @Access Private
+ */
+export const UpdateFCM = async (req ,res)=>{
+    const {id} = req.user;
+    const {fcm} = req.body;
+
+    
+}
+
+/**
  * @Description Detete User
  * @Route PUT api/user/delete
  * @Access Private

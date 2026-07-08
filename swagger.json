@@ -771,6 +771,132 @@
     }
   },
   "paths": {
+    "/admin/register": {
+      "post": {
+        "tags": [
+          "Admin Auth"
+        ],
+        "summary": "Register a new admin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Admin registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "admin": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "email": { "type": "string" }
+                      }
+                    },
+                    "token": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error or Admin exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/login": {
+      "post": {
+        "tags": [
+          "Admin Auth"
+        ],
+        "summary": "Admin login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Admin logged in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "admin": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "email": { "type": "string" }
+                      }
+                    },
+                    "token": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user/register": {
       "post": {
         "tags": [
@@ -3414,25 +3540,134 @@
                 "example": {
                   "status": true,
                   "msg": "Store avatars fetched successfully",
+                  "coins": 350,
                   "data": [
                     {
-                      "id": "00c41f0e-fa63-47de-a225-379bb6c0629f",
+                      "id": "32df5609-0792-4f91-bd30-eed126879fb8",
+                      "name": "Khan Ali Night Fighter   ",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_back.png",
+                      "price": 50,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T12:00:12.305Z",
+                      "updatedAt": "2026-07-07T12:00:12.305Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "64c1ee88-5ed8-4931-8a4f-9539768f980c",
+                      "name": "Muddassir Night Fighter   ",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_back.png",
+                      "price": 10,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:59:32.680Z",
+                      "updatedAt": "2026-07-07T11:59:32.680Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "ad650466-f439-4773-99d6-c8e6820301a5",
+                      "name": "Sheikh molana muddasir qadri   ",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_back.png",
+                      "price": 15000,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:58:25.991Z",
+                      "updatedAt": "2026-07-07T11:58:25.991Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "2f96a53a-4f19-4830-bca9-79c58a454291",
+                      "name": "Muddassir Avatar ",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 15000,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:57:11.877Z",
+                      "updatedAt": "2026-07-07T11:57:11.877Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "e9df1517-51b7-4ea8-a069-688fe9accf6e",
                       "name": "Fire Knight Avatar",
                       "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
                       "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
                       "price": 150,
                       "isNew": true,
                       "isFeatured": false,
-                      "createdAt": "2026-07-06T19:10:03.447Z",
-                      "updatedAt": "2026-07-06T19:10:03.447Z",
+                      "createdAt": "2026-07-07T11:43:43.429Z",
+                      "updatedAt": "2026-07-07T11:43:43.429Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "b76cbf3b-b866-426c-8bfa-d1c02c7e70cb",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:43:41.465Z",
+                      "updatedAt": "2026-07-07T11:43:41.465Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "5294d5ac-ddeb-48fa-ab05-00eee270879a",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:43:39.196Z",
+                      "updatedAt": "2026-07-07T11:43:39.196Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "8b300683-1e2d-43e6-9054-995284376c5d",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:43:38.430Z",
+                      "updatedAt": "2026-07-07T11:43:38.430Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "cbbe96cb-7c7c-4847-876a-2e591b6591d0",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:43:37.579Z",
+                      "updatedAt": "2026-07-07T11:43:37.579Z",
+                      "isOwned": false
+                    },
+                    {
+                      "id": "f58fc456-6892-4c32-bb1d-b27ae571fdbd",
+                      "name": "Fire Knight Avatar",
+                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
+                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
+                      "price": 150,
+                      "isNew": true,
+                      "isFeatured": false,
+                      "createdAt": "2026-07-07T11:43:36.146Z",
+                      "updatedAt": "2026-07-07T11:43:36.146Z",
                       "isOwned": false
                     }
                   ],
                   "pagination": {
                     "page": 1,
                     "limit": 10,
-                    "total": 3,
-                    "hasNextPage": false
+                    "total": 29,
+                    "hasNextPage": true
                   }
                 }
               }
@@ -4030,6 +4265,473 @@
           },
           "400": {
             "description": "Validation Error"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/events/create": {
+      "post": {
+        "tags": [
+          "Merchant Events"
+        ],
+        "summary": "Create a new live event (requires credits)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "description",
+                  "latitude",
+                  "longitude",
+                  "startTime",
+                  "endTime",
+                  "reward",
+                  "rewardQuantity",
+                  "size"
+                ],
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "latitude": { "type": "number", "format": "float" },
+                  "longitude": { "type": "number", "format": "float" },
+                  "startTime": { "type": "string", "format": "date-time" },
+                  "endTime": { "type": "string", "format": "date-time" },
+                  "reward": { "type": "string" },
+                  "rewardQuantity": { "type": "integer" },
+                  "size": { "type": "string", "enum": ["small", "medium", "large"] },
+                  "commanderAvatar": { "type": "string" },
+                  "imageUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event created successfully"
+          },
+          "400": {
+            "description": "Bad Request (e.g. Insufficient credits, Radius conflict)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/events/my-events": {
+      "get": {
+        "tags": [
+          "Merchant Events"
+        ],
+        "summary": "Get events created by logged-in merchant",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events fetched successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/admin/events/pending": {
+      "get": {
+        "tags": [
+          "Admin Events"
+        ],
+        "summary": "Get all events pending admin approval",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending approval events fetched successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (Admin role required)"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/admin/events/approve/{id}": {
+      "post": {
+        "tags": [
+          "Admin Events"
+        ],
+        "summary": "Approve a pending live event",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event approved and scheduled successfully"
+          },
+          "400": {
+            "description": "Invalid event status"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (Admin role required)"
+          },
+          "404": {
+            "description": "Live Event not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/admin/events/reject/{id}": {
+      "post": {
+        "tags": [
+          "Admin Events"
+        ],
+        "summary": "Reject a pending live event (refunds credits)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event rejected and credits refunded successfully"
+          },
+          "400": {
+            "description": "Invalid event status"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (Admin role required)"
+          },
+          "404": {
+            "description": "Live Event not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/events/discovery": {
+      "get": {
+        "tags": [
+          "User Events"
+        ],
+        "summary": "Get live, scheduled, or ended events for players",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Category of events: live, scheduled, ended",
+            "schema": { "type": "string", "enum": ["live", "scheduled", "ended"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events fetched successfully, includes 'isJoined' indicator per event",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "msg": "Events fetched successfully",
+                  "events": [
+                    {
+                      "id": "e0deb6de-dbfe-46dc-b125-05b75ecd0de9",
+                      "title": "Grand Outlet Opening Raid",
+                      "description": "Join us at the outlet for a live pizza raid and claim vouchers!",
+                      "merchantId": "565dce23-6bb0-4de9-9df0-fd1a45692004",
+                      "commanderAvatar": "https://example.com/avatar.png",
+                      "imageUrl": "https://example.com/reward-image.jpg",
+                      "latitude": 33.7294,
+                      "longitude": 73.0516,
+                      "startTime": "2026-07-09T19:00:00.000Z",
+                      "endTime": "2026-07-09T22:00:00.000Z",
+                      "reward": "Free Pizza Voucher",
+                      "rewardQuantity": 100,
+                      "remainingQty": 100,
+                      "status": "scheduled",
+                      "size": "medium",
+                      "createdAt": "2026-07-08T08:07:51.584Z",
+                      "updatedAt": "2026-07-08T08:12:36.623Z",
+                      "isJoined": true
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 10,
+                    "totalPages": 1,
+                    "hasNextPage": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/events/join-event/{eventId}": {
+      "post": {
+        "tags": [
+          "User Events"
+        ],
+        "summary": "Join an upcoming or live event",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully joined the event"
+          },
+          "400": {
+            "description": "Bad Request (e.g. already joined, invalid event status)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Live Event not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/events/my-events": {
+      "get": {
+        "tags": [
+          "User Events"
+        ],
+        "summary": "Get events that the logged-in player has joined",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["live", "scheduled", "ended"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Joined events fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "msg": "Events fetched successfully",
+                  "events": [
+                    {
+                      "id": "e0deb6de-dbfe-46dc-b125-05b75ecd0de9",
+                      "title": "Grand Outlet Opening Raid",
+                      "description": "Join us at the outlet for a live pizza raid and claim vouchers!",
+                      "merchantId": "565dce23-6bb0-4de9-9df0-fd1a45692004",
+                      "commanderAvatar": "https://example.com/avatar.png",
+                      "imageUrl": "https://example.com/reward-image.jpg",
+                      "latitude": 33.7294,
+                      "longitude": 73.0516,
+                      "startTime": "2026-07-09T19:00:00.000Z",
+                      "endTime": "2026-07-09T22:00:00.000Z",
+                      "reward": "Free Pizza Voucher",
+                      "rewardQuantity": 100,
+                      "remainingQty": 100,
+                      "status": "scheduled",
+                      "size": "medium",
+                      "createdAt": "2026-07-08T08:07:51.584Z",
+                      "updatedAt": "2026-07-08T08:12:36.623Z",
+                      "isJoined": true
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 10,
+                    "totalPages": 1,
+                    "hasNextPage": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/trip/live-event/claim/{eventId}": {
+      "post": {
+        "tags": [
+          "User Events"
+        ],
+        "summary": "Claim reward code for a live event (requires coordinates)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userLat",
+                  "userLng"
+                ],
+                "properties": {
+                  "userLat": { "type": "number", "format": "float" },
+                  "userLng": { "type": "number", "format": "float" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully claimed reward, returns voucher code and XP earned"
+          },
+          "400": {
+            "description": "Bad Request (e.g. out of range, not live, sold out, already claimed)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Live Event not found"
           },
           "500": {
             "description": "Internal Server Error"
