@@ -245,6 +245,7 @@ model LiveEvent {
   rewardQuantity  Int
   remainingQty    Int                    // Track remaining stock
   status          String                 @default("draft") // draft, pending_approval, scheduled, live, completed, cancelled
+  xpReward        Int                     @default(0)
   size            String                 @default("small") // small, medium, large
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt

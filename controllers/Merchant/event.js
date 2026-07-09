@@ -41,19 +41,20 @@ export const createLiveEvent = async (req, res) => {
 
     const parsedStart = new Date(startTime);
     const parsedEnd = new Date(endTime);
-    const now = new Date();
-
-    if (parsedStart < now) {
-        return res.status(400).json({
-            status: false,
-            msg: "Start time must be in the future"
-        });
-    }
 
     if (parsedEnd <= parsedStart) {
         return res.status(400).json({
             status: false,
             msg: "End time must be after the start time"
+        });
+    }
+
+    // Minimum event duration: 30 minutes
+    const durationMs = parsedEnd - parsedStart;
+    if (durationMs < 30 * 60 * 1000) {
+        return res.status(400).json({
+            status: false,
+            msg: "Event duration must be at least 30 minutes"
         });
     }
 
@@ -125,7 +126,8 @@ export const createLiveEvent = async (req, res) => {
                     rewardQuantity: parseInt(rewardQuantity),
                     remainingQty: parseInt(rewardQuantity),
                     status,
-                    size
+                    size,
+                    xpReward: Math.floor(Math.random() * 201) + 100  // Random XP between 100–300
                 }
             })
         ]);

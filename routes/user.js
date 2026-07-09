@@ -16,7 +16,9 @@ import {
     updateAvatarUrl,
     getAvatars,
     getKeys,
-    getAllBoxes
+    getAllBoxes,
+    UpdateLocation,
+    UpdateFCM
 } from '../controllers/user.js';
 
 //middlewares
@@ -38,5 +40,7 @@ router.delete('/delete' , deleteUser);
 router.patch('/update-photo-url' , updateAvatarUrl);
 router.get('/get-all-keys' , getKeys);
 router.get("/all-boxes" , getAllBoxes);
+router.patch("/update-location",UpdateLocation);
+router.patch('/update-fcm' , UpdateFCM);
 
 export default router;

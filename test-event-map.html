@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raidr Live Event Map Tester</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ── Top Bar ─────────────────────────────────────────── */
+        #topbar {
+            background: #12121a;
+            border-bottom: 1px solid #222;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        #topbar h2 { font-size: 15px; color: #fff; white-space: nowrap; }
+        #topbar input {
+            flex: 1;
+            min-width: 140px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #1c1c28;
+            color: #fff;
+            font-size: 13px;
+        }
+        .btn {
+            padding: 7px 14px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-green  { background: #00e676; color: #000; }
+        .btn-red    { background: #ff5252; color: #fff; }
+        .btn-purple { background: #b388ff; color: #000; }
+        .btn-yellow { background: #ffd740; color: #000; }
+        .btn-blue   { background: #40c4ff; color: #000; }
+
+        /* ── Main Layout ─────────────────────────────────────── */
+        #main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ── Map ─────────────────────────────────────────────── */
+        #map {
+            flex: 1;
+            z-index: 1;
+        }
+
+        /* ── Sidebar ─────────────────────────────────────────── */
+        #sidebar {
+            width: 300px;
+            background: #12121a;
+            border-left: 1px solid #1e1e2e;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .section {
+            padding: 12px 14px;
+            border-bottom: 1px solid #1e1e2e;
+        }
+        .section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        /* ── Stats Row ───────────────────────────────────────── */
+        #stats {
+            display: flex;
+            gap: 8px;
+        }
+        .stat-box {
+            flex: 1;
+            background: #1a1a28;
+            border-radius: 8px;
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #2a2a3e;
+        }
+        .stat-box .val { font-size: 22px; font-weight: 700; }
+        .stat-box .lbl { font-size: 10px; color: #888; margin-top: 2px; }
+        .val-green  { color: #00e676; }
+        .val-yellow { color: #ffd740; }
+        .val-purple { color: #b388ff; }
+
+        /* ── Players List ────────────────────────────────────── */
+        #playerList {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 14px;
+        }
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a1a2a;
+            font-size: 12px;
+        }
+        .player-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .player-id { color: #aaa; font-family: monospace; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .player-coords { color: #555; font-size: 10px; white-space: nowrap; }
+
+        /* ── Commander Feed ──────────────────────────────────── */
+        #cmdFeed {
+            height: 140px;
+            overflow-y: auto;
+            padding: 8px 14px;
+            background: #0d0d18;
+        }
+        .cmd-msg {
+            display: flex;
+            gap: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #111;
+            font-size: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+        .cmd-icon { font-size: 16px; flex-shrink: 0; }
+        .cmd-text { color: #ddd; line-height: 1.4; }
+        .cmd-type-inventory { color: #ffd740; }
+        .cmd-type-participant { color: #00e676; }
+        .cmd-type-commander { color: #b388ff; }
+        .cmd-type-status { color: #40c4ff; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Status Badge ────────────────────────────────────── */
+        #statusBadge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #1e3a1e;
+            color: #00e676;
+        }
+        #statusBadge.live    { background: #3a1e1e; color: #ff5252; }
+        #statusBadge.pending { background: #3a3a1e; color: #ffd740; }
+
+        /* ── Connection Dot ──────────────────────────────────── */
+        #connDot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #333;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        #connDot.connected { background: #00e676; box-shadow: 0 0 6px #00e676; }
+
+        /* ── Leaflet custom markers ──────────────────────────── */
+        .player-marker-label {
+            background: rgba(0,0,0,0.75);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            color: #fff;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── TOP BAR ─────────────────────────────────────────────────────────── -->
+<div id="topbar">
+    <h2>🎯 Raidr Event Map</h2>
+    <span><span id="connDot"></span><span id="connLabel" style="font-size:12px;color:#666">Disconnected</span></span>
+    <input type="text" id="token"   placeholder="JWT Token (from /user/login)" style="flex:2" />
+    <input type="text" id="eventId" placeholder="Event ID (UUID)" style="flex:1.5" />
+    <input type="text" id="eventLat" placeholder="Event Lat (e.g. 33.6844)" style="flex:0.8" />
+    <input type="text" id="eventLng" placeholder="Event Lng (e.g. 73.0479)" style="flex:0.8" />
+    <button class="btn btn-green"  id="connectBtn"    onclick="connect()">Connect</button>
+    <button class="btn btn-purple" id="joinRoomBtn"   onclick="joinRoom()" disabled>Join Event Room</button>
+    <button class="btn btn-yellow" id="startMoveBtn"  onclick="startMoving()" disabled>Start Moving</button>
+    <button class="btn btn-red"    id="disconnectBtn" onclick="disconnect()" disabled>Stop</button>
+    <button class="btn btn-blue"   id="claimBtn"      onclick="claimReward()" disabled>🎁 Claim Reward</button>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────────────────────────────── -->
+<div id="main">
+    <div id="map"></div>
+
+    <div id="sidebar">
+
+        <!-- Status -->
+        <div class="section" style="display:flex;align-items:center;gap:8px;">
+            <span id="statusBadge">scheduled</span>
+            <span id="eventTitle" style="font-size:13px;color:#aaa;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">No event loaded</span>
+        </div>
+
+        <!-- Stats -->
+        <div class="section">
+            <h3>Live Stats</h3>
+            <div id="stats">
+                <div class="stat-box">
+                    <div class="val val-green" id="statPlayers">0</div>
+                    <div class="lbl">Players</div>
+                </div>
+                <div class="stat-box">
+                    <div class="val val-yellow" id="statInventory">—</div>
+                    <div class="lbl">Rewards Left</div>
+                </div>
+                <div class="stat-box">
+                    <div class="val val-purple" id="statOnMap">0</div>
+                    <div class="lbl">On Map</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Players on map -->
+        <div class="section" style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding-bottom:0">
+            <h3>Players on Map</h3>
+            <div id="playerList"></div>
+        </div>
+
+        <!-- Commander Feed -->
+        <div class="section" style="padding-bottom:0">
+            <h3>Live Feed</h3>
+        </div>
+        <div id="cmdFeed"></div>
+
+    </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let ws = null;
+let map = null;
+let eventCircle = null;
+let eventMarker = null;
+let myMarker = null;
+let moveInterval = null;
+let locationInterval = null;
+let myLat = null;
+let myLng = null;
+let myUserId = 'me_' + Math.random().toString(36).substr(2, 6);
+const playerMarkers = {};   // userId → Leaflet marker
+const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#c77dff','#ff9f1c','#2ec4b6','#e71d36'];
+let colorIndex = 0;
+const playerColors = {};    // userId → hex color
+
+// ── Map Init ───────────────────────────────────────────────────────────────
+function initMap(lat, lng) {
+    if (map) { map.remove(); map = null; }
+
+    map = L.map('map', { zoomControl: true }).setView([lat, lng], 17);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        maxZoom: 20
+    }).addTo(map);
+
+    // Event location marker
+    const eventIcon = L.divIcon({
+        html: '<div style="width:20px;height:20px;background:#ff5252;border-radius:50%;border:3px solid #fff;box-shadow:0 0 10px #ff5252"></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        className: ''
+    });
+    eventMarker = L.marker([lat, lng], { icon: eventIcon }).addTo(map);
+    eventMarker.bindPopup('<b>🎯 Event Location</b><br>20m Claim Radius').openPopup();
+
+    // 20-metre radius claim zone
+    eventCircle = L.circle([lat, lng], {
+        radius: 20,
+        color: '#ff5252',
+        fillColor: '#ff5252',
+        fillOpacity: 0.12,
+        weight: 2,
+        dashArray: '6,4'
+    }).addTo(map);
+}
+
+function getOrAssignColor(userId) {
+    if (!playerColors[userId]) {
+        playerColors[userId] = COLORS[colorIndex % COLORS.length];
+        colorIndex++;
+    }
+    return playerColors[userId];
+}
+
+function makePlayerIcon(color, isMe) {
+    const size = isMe ? 16 : 13;
+    const glow = isMe ? `box-shadow:0 0 10px ${color}` : '';
+    return L.divIcon({
+        html: `<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;border:2px solid #fff;${glow}"></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2],
+        className: ''
+    });
+}
+
+// ── Player Map Update ──────────────────────────────────────────────────────
+function updatePlayerOnMap(userId, lat, lng, isMe) {
+    const color = getOrAssignColor(userId);
+    const icon  = makePlayerIcon(color, isMe);
+    const label = isMe ? 'You' : userId.slice(0, 8) + '…';
+
+    if (playerMarkers[userId]) {
+        playerMarkers[userId].setLatLng([lat, lng]);
+    } else {
+        const marker = L.marker([lat, lng], { icon }).addTo(map);
+        marker.bindTooltip(label, { permanent: false, direction: 'top', className: 'player-marker-label' });
+        playerMarkers[userId] = marker;
+    }
+
+    // Update sidebar row
+    updatePlayerRow(userId, lat, lng, color, isMe);
+    document.getElementById('statOnMap').textContent = Object.keys(playerMarkers).length;
+}
+
+function updatePlayerRow(userId, lat, lng, color, isMe) {
+    const listEl = document.getElementById('playerList');
+    let row = document.getElementById('row_' + userId);
+    const coordText = lat.toFixed(5) + ', ' + lng.toFixed(5);
+    const label = isMe ? '⭐ You' : userId.slice(0, 16) + '…';
+
+    if (!row) {
+        row = document.createElement('div');
+        row.className = 'player-row';
+        row.id = 'row_' + userId;
+        listEl.appendChild(row);
+    }
+    row.innerHTML =
+        '<div class="player-dot" style="background:' + color + '"></div>' +
+        '<span class="player-id">' + label + '</span>' +
+        '<span class="player-coords">' + coordText + '</span>';
+}
+
+// ── Feed ───────────────────────────────────────────────────────────────────
+function feed(icon, msg, cls) {
+    const el = document.getElementById('cmdFeed');
+    const div = document.createElement('div');
+    div.className = 'cmd-msg';
+    div.innerHTML = '<span class="cmd-icon">' + icon + '</span><span class="cmd-text ' + cls + '">' + msg + '</span>';
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+}
+
+// ── Handle Incoming Socket Messages ───────────────────────────────────────
+function handleMessage(data) {
+    switch (data.type) {
+
+        case 'event_snapshot':
+            document.getElementById('eventTitle').textContent    = data.title || 'Event';
+            document.getElementById('statPlayers').textContent   = data.totalParticipants;
+            document.getElementById('statInventory').textContent = data.remainingQty + '/' + data.rewardQuantity;
+            setStatusBadge(data.status);
+            feed('📋', 'Joined room: <strong>' + data.title + '</strong> | Status: ' + data.status + ' | Rewards: ' + data.remainingQty, '');
+            break;
+
+        case 'player_location':
+            // Another player's location came in — show them on the map
+            if (data.userId !== myUserId) {
+                updatePlayerOnMap(data.userId, data.lat, data.lng, false);
+                // Subtle feed entry (don't spam)
+            }
+            break;
+
+        case 'participant_joined':
+            document.getElementById('statPlayers').textContent = data.totalParticipants;
+            feed('👥', '<strong>' + data.totalParticipants + '</strong> players now in this event', 'cmd-type-participant');
+            break;
+
+        case 'inventory_updated':
+            document.getElementById('statInventory').textContent = data.remainingQty;
+            feed('📦', 'Rewards remaining: <strong>' + data.remainingQty + '</strong>', 'cmd-type-inventory');
+            break;
+
+        case 'commander_message':
+            feed('💬', '[' + data.sender + '] ' + data.text, 'cmd-type-commander');
+            break;
+
+        case 'event_status_changed':
+            setStatusBadge(data.status);
+            feed('🔄', 'Event is now: <strong>' + data.status + '</strong>', 'cmd-type-status');
+            break;
+
+        case 'error':
+            feed('❌', data.msg, '');
+            break;
+    }
+}
+
+function setStatusBadge(status) {
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = status;
+    badge.className = '';
+    badge.id = 'statusBadge';
+    if (status === 'live')      badge.classList.add('live');
+    else if (status !== 'scheduled') badge.classList.add('pending');
+}
+
+// ── WebSocket ──────────────────────────────────────────────────────────────
+function connect() {
+    const token    = document.getElementById('token').value.trim();
+    const eventLat = parseFloat(document.getElementById('eventLat').value) || 33.6844;
+    const eventLng = parseFloat(document.getElementById('eventLng').value) || 73.0479;
+
+    if (!token) { alert('Paste your JWT token first!'); return; }
+
+    // Init map centred on event location
+    initMap(eventLat, eventLng);
+
+    ws = new WebSocket('ws://localhost:3001/live-tracking?token=' + token);
+
+    ws.onopen = function() {
+        document.getElementById('connDot').className   = 'connected';
+        document.getElementById('connLabel').textContent = 'Connected';
+        document.getElementById('connLabel').style.color = '#00e676';
+        document.getElementById('connectBtn').disabled    = true;
+        document.getElementById('disconnectBtn').disabled = false;
+        document.getElementById('joinRoomBtn').disabled   = false;
+        document.getElementById('startMoveBtn').disabled  = false;
+        document.getElementById('claimBtn').disabled      = false;
+        feed('✅', 'WebSocket connected!', '');
+    };
+
+    ws.onmessage = function(e) {
+        try { handleMessage(JSON.parse(e.data)); } catch(ex) { console.error(ex); }
+    };
+
+    ws.onerror = function() {
+        feed('❌', 'Connection error. Is your server running on port 3001?', '');
+        disconnect();
+    };
+
+    ws.onclose = function() {
+        feed('🔌', 'Disconnected.', '');
+        disconnect();
+    };
+}
+
+function joinRoom() {
+    const eventId = document.getElementById('eventId').value.trim();
+    if (!eventId) { alert('Enter an Event ID!'); return; }
+    if (!ws || ws.readyState !== WebSocket.OPEN) { alert('Connect first!'); return; }
+
+    ws.send(JSON.stringify({ type: 'join_event', eventId }));
+    feed('📡', 'Subscribing to event room: ' + eventId, '');
+
+    // Start broadcasting our location to the event room every 5 seconds
+    if (myLat !== null) {
+        startLocationBroadcast(eventId);
+    }
+}
+
+function startMoving() {
+    const eventLat = parseFloat(document.getElementById('eventLat').value) || 33.6844;
+    const eventLng = parseFloat(document.getElementById('eventLng').value) || 73.0479;
+    const eventId  = document.getElementById('eventId').value.trim();
+
+    // Start slightly outside the 20m radius and drift inward
+    myLat = eventLat + 0.0005;
+    myLng = eventLng + 0.0005;
+
+    clearInterval(moveInterval);
+    moveInterval = setInterval(function() {
+        // Drift slowly towards the event marker
+        myLat -= 0.00003;
+        myLng -= 0.00003;
+
+        // Show my own marker
+        updatePlayerOnMap(myUserId, myLat, myLng, true);
+
+        // Broadcast to event room
+        if (ws && ws.readyState === WebSocket.OPEN && eventId) {
+            ws.send(JSON.stringify({
+                type: 'player_location',
+                eventId,
+                lat: myLat,
+                lng: myLng
+            }));
+        }
+    }, 1500);
+
+    feed('🏃', 'Started moving towards event location…', '');
+}
+
+function startLocationBroadcast(eventId) {
+    clearInterval(locationInterval);
+    locationInterval = setInterval(function() {
+        if (myLat !== null && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'player_location', eventId, lat: myLat, lng: myLng }));
+        }
+    }, 5000);
+}
+
+function disconnect() {
+    if (ws) { ws.close(); ws = null; }
+    clearInterval(moveInterval);
+    clearInterval(locationInterval);
+    document.getElementById('connDot').className      = '';
+    document.getElementById('connLabel').textContent  = 'Disconnected';
+    document.getElementById('connLabel').style.color  = '#666';
+    document.getElementById('connectBtn').disabled    = false;
+    document.getElementById('disconnectBtn').disabled = true;
+    document.getElementById('joinRoomBtn').disabled   = true;
+    document.getElementById('startMoveBtn').disabled  = true;
+    document.getElementById('claimBtn').disabled      = true;
+}
+
+// ── REST API Action ────────────────────────────────────────────────────────
+async function claimReward() {
+    const eventId = document.getElementById('eventId').value.trim();
+    const token = document.getElementById('token').value.trim();
+    
+    if (!eventId || !token) { alert('Missing Token or Event ID!'); return; }
+    
+    // Use the player's current map coordinates (or fallback to event center if not moving)
+    const lat = myLat || parseFloat(document.getElementById('eventLat').value);
+    const lng = myLng || parseFloat(document.getElementById('eventLng').value);
+
+    try {
+        const response = await fetch(`http://localhost:5001/api/events/claim/${eventId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                userLat: lat,
+                userLng: lng
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.status) {
+            feed('🎉', `<b>Claim Success!</b> Got ${data.xpEarned} XP.`, 'cmd-type-participant');
+        } else {
+            feed('❌', `<b>Claim Failed:</b> ${data.msg}`, '');
+        }
+    } catch (err) {
+        feed('❌', `<b>Claim Error:</b> ${err.message}`, '');
+    }
+}
+</script>
+
+</body>
+</html>

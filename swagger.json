@@ -1619,6 +1619,179 @@
         }
       }
     },
+    "/user/update-location": {
+      "patch": {
+        "tags": [
+          "User Profile"
+        ],
+        "summary": "Update user's current location",
+        "description": "Updates the authenticated user's latitude and longitude coordinates.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["lat", "long"],
+                "properties": {
+                  "lat": {
+                    "type": "number",
+                    "description": "User's current latitude",
+                    "example": 33.6844
+                  },
+                  "long": {
+                    "type": "number",
+                    "description": "User's current longitude",
+                    "example": 73.0479
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User location updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "User location updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lat and long are required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Lat and long are required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/update-fcm": {
+      "patch": {
+        "tags": [
+          "User Profile"
+        ],
+        "summary": "Update user's FCM token",
+        "description": "Updates the Firebase Cloud Messaging (FCM) token for the authenticated user to enable push notifications.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fcmToken"],
+                "properties": {
+                  "fcmToken": {
+                    "type": "string",
+                    "description": "Firebase Cloud Messaging token for push notifications",
+                    "example": "dGhpcyBpcyBhIHNhbXBsZSBGQ00gdG9rZW4..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User FCM token updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "User FCM updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user/all-boxes": {
       "get": {
         "tags": [
@@ -4683,7 +4856,7 @@
         }
       }
     },
-    "/trip/live-event/claim/{eventId}": {
+    "/events/claim/{eventId}": {
       "post": {
         "tags": [
           "User Events"
@@ -4741,3 +4914,4 @@
     }
   }
 }
+
