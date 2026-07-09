@@ -13,8 +13,7 @@ import {
     getMerchantAds,
     recordAdImpression,
     claimReward,
-    surpriseMe,
-    claimLiveEventReward
+    surpriseMe
 } from '../controllers/trip.js';
 import { verifyUser } from '../middlewares/verifyUser.js';
 
@@ -29,7 +28,6 @@ router.get('/trip-details/:tripId', getTripDetails);
 router.get("/banner", getMerchantAds);
 router.post('/impression/:adId', recordAdImpression);
 router.post('/banner/claim/:adId', claimReward);
-router.post('/live-event/claim/:eventId', claimLiveEventReward);
 router.get('/surprise-me', surpriseMe);
 
 export default router;

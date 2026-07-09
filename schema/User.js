@@ -17,7 +17,7 @@ export const RegisterSchema = (payload) => {
             'string.empty': 'Password cannot be empty'
         })
     }).unknown(false);
-    
+
     return schema.validate(payload);
 }
 
@@ -35,7 +35,7 @@ export const LoginSchema = (payload) => {
             'string.empty': 'Password cannot be empty'
         })
     }).unknown(false);
-    
+
     return schema.validate(payload);
 }
 
@@ -62,7 +62,7 @@ export const UpdateSchema = (payload) => {
         has_seen_level_welcome: Joi.boolean().optional(),
         fcmTokens: Joi.array().items(Joi.string()).optional()
     }).unknown(false);
-    
+
     return schema.validate(payload);
 }
 
@@ -74,7 +74,7 @@ export const ForgotPasswordSchema = (payload) => {
             'string.empty': 'Email cannot be empty'
         })
     }).unknown(false);
-    
+
     return schema.validate(payload);
 }
 
@@ -91,6 +91,6 @@ export const ResetPasswordSchema = (payload) => {
             'string.empty': 'New Password cannot be empty'
         })
     }).unknown(false);
-    
+
     return schema.validate(payload);
 }

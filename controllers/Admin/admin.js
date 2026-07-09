@@ -18,7 +18,7 @@ export const registerAdmin = async (req, res) => {
             msg: result.error.message
         });
     }
-
+    
     try {
         const existingAdmin = await prisma.admin.findUnique({
             where: { email: payload.email }

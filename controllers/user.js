@@ -507,15 +507,13 @@ export const UpdateLocation = async (req ,res)=>{
         })
     }
     try {
-        const user = await prisma.user.update({
+        await prisma.user.update({
             where: { id: id },
             data: {
-                lat: lat,
-                long: long
+                lat: String(lat),
+                long: String(long)
             }
         });
-        const userResponse = { ...user, _id: user.id };
-        delete userResponse.isNewUser;
         res.status(200).json({
             status: true,
             msg: "User location updated successfully"
@@ -535,9 +533,32 @@ export const UpdateLocation = async (req ,res)=>{
  */
 export const UpdateFCM = async (req ,res)=>{
     const {id} = req.user;
-    const {fcm} = req.body;
+    const {fcmToken} = req.body;
 
-    
+    if (!fcmToken) {
+        return res.status(400).json({
+            status: false,
+            msg: "FCM token is required"
+        });
+    }
+
+    try {
+        await prisma.user.update({
+            where: { id: id },
+            data: {
+                fcmToken: fcmToken
+            }
+        });
+        res.status(200).json({ 
+            status: true,
+            msg: "User FCM updated successfully"
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
 }
 
 /**

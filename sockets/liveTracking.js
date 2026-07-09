@@ -9,6 +9,10 @@ dotenv.config();
 import { redis } from '../services/redis.js';
 import { prisma } from '../config/db.js';
 
+// Socket Modules
+import { registerUWSApp } from './eventPublisher.js';
+import { handleJoinEventRoom, handlePlayerLocationUpdate } from './handlers/eventHandler.js';
+
 
 // Create a queue producer
 let gpsQueue = null;
@@ -18,7 +22,14 @@ const WS_PORT = parseInt(process.env.WS_PORT) || 3001;
 export const startWebSocketServer = () => {
     gpsQueue = new Queue('gps_events_queue', { connection: redis });
 
-    const app = uWS.App().ws('/live-tracking', {
+    const app = uWS.App();
+
+    // Register the uWS app instance with the event publisher so
+    // REST controllers (e.g. claimLiveEventReward) can call
+    // publishToEvent() without needing to import uWS directly.
+    registerUWSApp(app);
+
+    app.ws('/live-tracking', {
         compression: uWS.SHARED_COMPRESSOR,
         maxPayloadLength: 16 * 1024 * 1024,
         idleTimeout: 60,
@@ -63,6 +74,22 @@ export const startWebSocketServer = () => {
             try {
                 const payload = JSON.parse(Buffer.from(message).toString());
                 payload.userId = ws.userId;
+
+                // ── Live Event Room ───────────────────────────────────────
+                // When the mobile app opens an event screen it sends this
+                // payload to subscribe to real-time event broadcasts.
+                if (payload.type === 'join_event') {
+                    await handleJoinEventRoom(ws, payload);
+                    return;
+                }
+
+                // ── Player location for event map ─────────────────────────
+                if (payload.type === 'player_location') {
+                    handlePlayerLocationUpdate(ws, payload);
+                    return;
+                }
+                // ─────────────────────────────────────────────────────────
+
                 console.log(`[uWS] GPS received: lat=${payload.lat}, lng=${payload.lng}`);
 
                 if (payload.type === 'box_collected') {

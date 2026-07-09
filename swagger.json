@@ -1619,6 +1619,179 @@
         }
       }
     },
+    "/user/update-location": {
+      "patch": {
+        "tags": [
+          "User Profile"
+        ],
+        "summary": "Update user's current location",
+        "description": "Updates the authenticated user's latitude and longitude coordinates.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["lat", "long"],
+                "properties": {
+                  "lat": {
+                    "type": "number",
+                    "description": "User's current latitude",
+                    "example": 33.6844
+                  },
+                  "long": {
+                    "type": "number",
+                    "description": "User's current longitude",
+                    "example": 73.0479
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User location updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "User location updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lat and long are required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Lat and long are required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/update-fcm": {
+      "patch": {
+        "tags": [
+          "User Profile"
+        ],
+        "summary": "Update user's FCM token",
+        "description": "Updates the Firebase Cloud Messaging (FCM) token for the authenticated user to enable push notifications.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fcmToken"],
+                "properties": {
+                  "fcmToken": {
+                    "type": "string",
+                    "description": "Firebase Cloud Messaging token for push notifications",
+                    "example": "dGhpcyBpcyBhIHNhbXBsZSBGQ00gdG9rZW4..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User FCM token updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "User FCM updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user/all-boxes": {
       "get": {
         "tags": [
@@ -4683,7 +4856,83 @@
         }
       }
     },
-    "/trip/live-event/claim/{eventId}": {
+    "/events/details/{eventId}": {
+      "get": {
+        "tags": [
+          "User Events"
+        ],
+        "summary": "Get Event Details",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Event details fetched successfully"
+                    },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "example": "07345993-64e3-4f4b-b2dc-7a412364a463" },
+                        "title": { "type": "string", "example": "Grand Outlet Opening Raid" },
+                        "description": { "type": "string", "example": "Join us at the outlet for a live pizza raid and claim vouchers!" },
+                        "merchantId": { "type": "string", "example": "565dce23-6bb0-4de9-9df0-fd1a45692004" },
+                        "commanderAvatar": { "type": "string", "example": "https://example.com/avatar.png" },
+                        "imageUrl": { "type": "string", "example": "https://example.com/reward-image.jpg" },
+                        "latitude": { "type": "number", "example": 33.7294 },
+                        "longitude": { "type": "number", "example": 73.0516 },
+                        "startTime": { "type": "string", "format": "date-time", "example": "2026-07-09T11:00:00.000Z" },
+                        "endTime": { "type": "string", "format": "date-time", "example": "2026-07-09T19:00:00.000Z" },
+                        "reward": { "type": "string", "example": "Free Pizza Voucher" },
+                        "rewardQuantity": { "type": "number", "example": 100 },
+                        "remainingQty": { "type": "number", "example": 100 },
+                        "status": { "type": "string", "example": "scheduled" },
+                        "xpReward": { "type": "number", "example": 199 },
+                        "size": { "type": "string", "example": "small" },
+                        "createdAt": { "type": "string", "format": "date-time", "example": "2026-07-09T12:05:07.255Z" },
+                        "updatedAt": { "type": "string", "format": "date-time", "example": "2026-07-09T12:05:07.255Z" },
+                        "_count": {
+                          "type": "object",
+                          "properties": {
+                            "participants": { "type": "number", "example": 0 }
+                          }
+                        },
+                        "totalParticipants": { "type": "number", "example": 0 },
+                        "hasClaimed": { "type": "boolean", "example": false }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/claim/{eventId}": {
       "post": {
         "tags": [
           "User Events"
@@ -4741,3 +4990,4 @@
     }
   }
 }
+
