@@ -4856,6 +4856,82 @@
         }
       }
     },
+    "/events/details/{eventId}": {
+      "get": {
+        "tags": [
+          "User Events"
+        ],
+        "summary": "Get Event Details",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Event details fetched successfully"
+                    },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "example": "07345993-64e3-4f4b-b2dc-7a412364a463" },
+                        "title": { "type": "string", "example": "Grand Outlet Opening Raid" },
+                        "description": { "type": "string", "example": "Join us at the outlet for a live pizza raid and claim vouchers!" },
+                        "merchantId": { "type": "string", "example": "565dce23-6bb0-4de9-9df0-fd1a45692004" },
+                        "commanderAvatar": { "type": "string", "example": "https://example.com/avatar.png" },
+                        "imageUrl": { "type": "string", "example": "https://example.com/reward-image.jpg" },
+                        "latitude": { "type": "number", "example": 33.7294 },
+                        "longitude": { "type": "number", "example": 73.0516 },
+                        "startTime": { "type": "string", "format": "date-time", "example": "2026-07-09T11:00:00.000Z" },
+                        "endTime": { "type": "string", "format": "date-time", "example": "2026-07-09T19:00:00.000Z" },
+                        "reward": { "type": "string", "example": "Free Pizza Voucher" },
+                        "rewardQuantity": { "type": "number", "example": 100 },
+                        "remainingQty": { "type": "number", "example": 100 },
+                        "status": { "type": "string", "example": "scheduled" },
+                        "xpReward": { "type": "number", "example": 199 },
+                        "size": { "type": "string", "example": "small" },
+                        "createdAt": { "type": "string", "format": "date-time", "example": "2026-07-09T12:05:07.255Z" },
+                        "updatedAt": { "type": "string", "format": "date-time", "example": "2026-07-09T12:05:07.255Z" },
+                        "_count": {
+                          "type": "object",
+                          "properties": {
+                            "participants": { "type": "number", "example": 0 }
+                          }
+                        },
+                        "totalParticipants": { "type": "number", "example": 0 },
+                        "hasClaimed": { "type": "boolean", "example": false }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/events/claim/{eventId}": {
       "post": {
         "tags": [
