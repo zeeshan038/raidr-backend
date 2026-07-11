@@ -10,6 +10,10 @@ export const MerchantEventCreateSchema = (payload) => {
             'string.empty': 'Description is required',
             'any.required': 'Description is required',
         }),
+        address: Joi.string().optional().allow('').messages({
+            'string.empty': 'Address is required',
+            'any.required': 'Address is required',
+        }),
         latitude: Joi.number().required().messages({
             'number.base': 'Latitude must be a number',
             'any.required': 'Latitude is required',

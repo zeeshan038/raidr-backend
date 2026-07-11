@@ -767,6 +767,37 @@
             }
           }
         }
+      },
+      "CreatePaymentIntentRequest": {
+        "type": "object",
+        "required": ["coinsAmount", "priceUsd"],
+        "properties": {
+          "coinsAmount": {
+            "type": "number",
+            "example": 100
+          },
+          "priceUsd": {
+            "type": "number",
+            "example": 5.00
+          }
+        }
+      },
+      "CreatePaymentIntentResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "boolean",
+            "example": true
+          },
+          "clientSecret": {
+            "type": "string",
+            "example": "pi_1J..."
+          },
+          "purchaseId": {
+            "type": "string",
+            "example": "64d..."
+          }
+        }
       }
     }
   },
@@ -4476,6 +4507,7 @@
                 "properties": {
                   "title": { "type": "string" },
                   "description": { "type": "string" },
+                  "address": { "type": "string" },
                   "latitude": { "type": "number", "format": "float" },
                   "longitude": { "type": "number", "format": "float" },
                   "startTime": { "type": "string", "format": "date-time" },
@@ -4984,6 +5016,59 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/payments/create-intent": {
+      "post": {
+        "tags": ["Merchant Payments"],
+        "summary": "Create Payment Intent for purchasing coins",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentIntentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns clientSecret and purchaseId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePaymentIntentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid coins amount or price"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/merchant/payments/webhook": {
+      "post": {
+        "tags": ["Merchant Payments"],
+        "summary": "Stripe Webhook Listener",
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully"
+          },
+          "400": {
+            "description": "Webhook signature verification failed"
           }
         }
       }

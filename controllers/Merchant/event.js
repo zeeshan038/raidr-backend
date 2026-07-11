@@ -28,6 +28,7 @@ export const createLiveEvent = async (req, res) => {
     const {
         title,
         description,
+        address,
         latitude,
         longitude,
         startTime,
@@ -115,6 +116,7 @@ export const createLiveEvent = async (req, res) => {
                 data: {
                     title,
                     description,
+                    address: address || "",
                     merchantId,
                     commanderAvatar: commanderAvatar || merchant.photoUrl || "",
                     imageUrl: imageUrl || "",
