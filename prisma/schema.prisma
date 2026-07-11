@@ -234,6 +234,7 @@ model LiveEvent {
   id              String                 @id @default(uuid())
   title           String
   description     String
+  address         String                 @default("")
   merchantId      String
   commanderAvatar String                 @default("")
   imageUrl        String                 @default("")

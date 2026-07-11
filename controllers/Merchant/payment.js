@@ -12,6 +12,8 @@ export const createCoinPaymentIntent = async (req, res) => {
     const merchantId = req.merchant.id;
     const { coinsAmount, priceUsd } = req.body;
 
+    console.log(coinsAmount , priceUsd);
+
     // Validation
     if (!coinsAmount || typeof coinsAmount !== 'number' || coinsAmount <= 0) {
         return res.status(400).json({

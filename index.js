@@ -25,6 +25,7 @@ app.use(cors({
 app.use(express.json({
   verify: (req, res, buf) => {
     if (req.originalUrl && req.originalUrl.startsWith('/api/merchant/payments/webhook')) {
+      console.log("webhook starting")
       req.rawBody = buf;
     }
   }
