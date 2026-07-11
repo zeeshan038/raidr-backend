@@ -4,9 +4,10 @@ import { createCoinPaymentIntent, stripeWebhooks } from '../../controllers/Merch
 
 const router = express.Router();
 
-router.use(verifyMerchant)
-router.post('/create-intent', createCoinPaymentIntent);
+// Webhooks do not use JWT auth (they use Stripe signatures), so define them BEFORE verifyMerchant
 router.post('/webhook', stripeWebhooks);
 
+router.use(verifyMerchant)
+router.post('/create-intent', createCoinPaymentIntent);
 
 export default router;    

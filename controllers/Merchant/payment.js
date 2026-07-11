@@ -10,7 +10,7 @@ import { purchaseReceiptTemplate } from '../../utils/emails/purchaseReceipt.js';
  */
 export const createCoinPaymentIntent = async (req, res) => {
     const merchantId = req.merchant.id;
-    const { coinsAmount, priceUsd } = req.body;
+    const { coinsAmount, priceUsd, address } = req.body;
 
     console.log(coinsAmount , priceUsd);
 
@@ -33,10 +33,33 @@ export const createCoinPaymentIntent = async (req, res) => {
     const amountInCents = Math.round(priceUsd * 100);
 
     try {
+        // Fetch merchant dynamically to get their address
+        const merchant = await prisma.merchant.findUnique({
+            where: { id: merchantId }
+        });
+
+        // Use the frontend provided address if available, otherwise fallback
+        const addressLine = address?.line1 || (merchant?.address && merchant.address.trim() !== '' ? merchant.address : '123 Tech Park');
+        const city = address?.city || 'San Francisco';
+        const state = address?.state || 'CA';
+        const country = address?.country || 'US';
+        const postal_code = address?.postal_code || '94105';
+
         // 1. Create PaymentIntent with Stripe
         const paymentIntent = await stripe.paymentIntents.create({
             amount: amountInCents,
             currency: 'usd',
+            description: `Purchase of ${coinsAmount} Raidr credits by ${merchant?.businessName || 'Merchant'}`,
+            shipping: {
+                name: merchant?.name || 'Merchant User',
+                address: {
+                    line1: addressLine,
+                    city: city,
+                    state: state,
+                    country: country,
+                    postal_code: postal_code
+                }
+            },
             metadata: {
                 merchantId,
                 coinsAmount: coinsAmount.toString(),
@@ -123,7 +146,10 @@ export const stripeWebhooks = async (req, res) => {
                         transactionId,
                         date: updatedPurchase.updatedAt
                     });
-
+                  console.log(updatedMerchant.email)
+                  console.log(coinsAmount)
+                  console.log(existingPurchase.priceUsd)
+                    
                     await sendEmail({
                         to: updatedMerchant.email,
                         subject: "Raidr - Coin Purchase Receipt",
