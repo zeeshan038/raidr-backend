@@ -98,6 +98,7 @@ export const createCoinPaymentIntent = async (req, res) => {
  * @access Public
  */
 export const stripeWebhooks = async (req, res) => {
+    console.log("--> ENTERED stripeWebhooks CONTROLLER");
     const sig = req.headers["stripe-signature"];
     let event;
 
@@ -107,6 +108,7 @@ export const stripeWebhooks = async (req, res) => {
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
         );
+        console.log(`--> STRIPE EVENT VERIFIED: ${event.type}`);
     } catch (err) {
         console.log(`⚠️ Webhook signature verification failed.`, err.message);
         return res.sendStatus(400);
@@ -120,12 +122,15 @@ export const stripeWebhooks = async (req, res) => {
         const coinsAmount = parseInt(paymentIntent.metadata.coinsAmount);
 
         try {
+            console.log(`Searching database for transaction ID: ${transactionId}`);
             const existingPurchase = await prisma.merchantCreditPurchase.findUnique({
                 where: { transactionId }
             });
+            console.log(`Found existingPurchase:`, existingPurchase);
 
             // If database record is pending, complete it and update merchant coins balance
             if (existingPurchase && existingPurchase.status === "pending") {
+                console.log("Status is pending, completing transaction...");
                 const [updatedPurchase, updatedMerchant] = await prisma.$transaction([
                     prisma.merchantCreditPurchase.update({
                         where: { transactionId },
@@ -136,6 +141,7 @@ export const stripeWebhooks = async (req, res) => {
                         data: { credits: { increment: coinsAmount } }
                     })
                 ]);
+                console.log(`Credits added! New credit balance: ${updatedMerchant.credits}`);
 
                 // Send email receipt to merchant
                 try {

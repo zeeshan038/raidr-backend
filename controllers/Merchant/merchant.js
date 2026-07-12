@@ -122,7 +122,6 @@ export const Register = async (req, res) => {
     }
 }
 
-
 /**
  *  @Decription Merchant Profile
  * @Route GET /api/merchant/whoami
@@ -142,6 +141,35 @@ export const WhoAmI = async (req, res) => {
             status: true,
             msg: "Merchant profile",
             merchant: merchant
+        })
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        })
+    }
+}
+
+
+/**
+ *  @Decription Get Merchant Credits
+ * @Route GET /api/merchant/credits
+ * @Access Private
+ */
+export const GetCredits = async (req, res) => {
+    const { id } = req.merchant;
+
+    try {
+        const merchant = await prisma.merchant.findUnique({
+            where: {
+                id
+            }
+        })
+
+        return res.status(200).json({
+            status: true,
+            msg: "Merchant credits",
+            credits: merchant.credits
         })
     } catch (error) {
         return res.status(500).json({

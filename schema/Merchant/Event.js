@@ -49,3 +49,21 @@ export const MerchantEventCreateSchema = (payload) => {
 
     return schema.validate(payload);
 };
+
+export const MerchantEventUpdateSchema = (payload) => {
+    const schema = Joi.object({
+        title: Joi.string().optional(),
+        description: Joi.string().optional(),
+        address: Joi.string().optional().allow(''),
+        latitude: Joi.number().optional(),
+        longitude: Joi.number().optional(),
+        startTime: Joi.date().optional(),
+        endTime: Joi.date().optional(),
+        reward: Joi.string().optional(),
+        rewardQuantity: Joi.number().integer().min(1).optional(),
+        commanderAvatar: Joi.string().optional().allow(''),
+        imageUrl: Joi.string().optional().allow('')
+    }).unknown(true);
+
+    return schema.validate(payload);
+};
