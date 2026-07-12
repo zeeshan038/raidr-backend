@@ -383,6 +383,73 @@ export const signInWithGoogle = async (req, res) => {
     }
 }
 
+/** 
+ * @Description Sign-in with apple
+ * @Route POST api/user/signin-with-apple
+ * @Access Public
+ */
+export const signInWithApple = async (req, res) => {
+    const { firebaseToken } = req.body;
+
+    if (!firebaseToken) {
+        return res.status(400).json({
+            status: false,
+            msg: "Firebase token is required"
+        });
+    }
+    try {
+        const decodedToken = await getAuth().verifyIdToken(firebaseToken);
+        const { uid, email, name, picture } = decodedToken;
+
+        let user = email
+            ? await prisma.user.findUnique({ where: { email: email } })
+            : await prisma.user.findUnique({ where: { firebaseUid: uid } });
+
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    email: email,
+                    name: name || "Apple User",
+                    authProvider: "apple",
+                    firebaseUid: uid,
+                    photoUrl: picture || "",
+                    isVerified: true,
+                    isNewUser: true
+                }
+            });
+        } else {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    firebaseUid: uid,
+                    photoUrl: user.photoUrl || picture,
+                    isVerified: true,
+                    isNewUser: false
+                }
+            });
+        }
+
+        const token = generateToken(user);
+
+        const userResponse = {
+            ...user,
+            _id: user.id
+        };
+
+        res.status(200).json({
+            status: true,
+            msg: "User logged in with Apple successfully",
+            user: userResponse,
+            token
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
 /**
  * @Description Get User Profile
  * @Route GET api/user/whoami
