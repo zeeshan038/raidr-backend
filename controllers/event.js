@@ -14,8 +14,8 @@ export const GetEvents = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const { status } = req.query; // live, scheduled, ended
-    const { id: userId } = req.user; // Get logged-in player ID
+    const { status } = req.query;
+    const { id: userId } = req.user;
 
     let statusFilter;
     if (status === "live") {

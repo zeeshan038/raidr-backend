@@ -1,6 +1,11 @@
 import { prisma } from "../../config/db.js";
-import { MerchantEventCreateSchema } from "../../schema/Merchant/Event.js";
-import { haversineDistance } from "../../utils/methods/methods.js";
+import {
+    MerchantEventCreateSchema,
+    MerchantEventUpdateSchema
+} from "../../schema/Merchant/Event.js";
+import {
+    haversineDistance
+} from "../../utils/methods/methods.js";
 
 const EVENT_COSTS = {
     small: 10,
@@ -147,8 +152,8 @@ export const createLiveEvent = async (req, res) => {
 
         return res.status(201).json({
             status: true,
-            msg: size === 'small' 
-                ? "Event created and scheduled successfully" 
+            msg: size === 'small'
+                ? "Event created and scheduled successfully"
                 : "Event submitted successfully and is pending admin approval",
             event: newEvent
         });
@@ -199,6 +204,198 @@ export const getMyEvents = async (req, res) => {
         });
     } catch (error) {
         console.error("Get My Events Error:", error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message || "Internal server error"
+        });
+    }
+};
+
+
+/**
+ * @description Update An Event
+ * @Route PUT /api/merchant/events/update-event/:eventId
+ * @Access Private (Merchant)
+ */
+export const updateLiveEvent = async (req, res) => {
+    const { id: merchantId } = req.merchant;
+    const { eventId } = req.params;
+    const payload = req.body;
+
+    const result = MerchantEventUpdateSchema(payload);
+    if (result.error) {
+        return res.status(400).json({
+            status: false,
+            msg: result.error.message
+        });
+    }
+
+    try {
+        const existingEvent = await prisma.liveEvent.findUnique({
+            where: { id: eventId }
+        });
+
+        if (!existingEvent) {
+            return res.status(404).json({
+                status: false,
+                msg: "Event not found"
+            });
+        }
+
+        if (existingEvent.merchantId !== merchantId) {
+            return res.status(403).json({
+                status: false,
+                msg: "Unauthorized to update this event"
+            });
+        }
+
+        if (existingEvent.status === "completed" || existingEvent.status === "cancelled") {
+            return res.status(400).json({
+                status: false,
+                msg: "Cannot update completed or cancelled events"
+            });
+        }
+
+        const updateData = { ...payload };
+
+        const startTime = payload.startTime ? new Date(payload.startTime) : existingEvent.startTime;
+        const endTime = payload.endTime ? new Date(payload.endTime) : existingEvent.endTime;
+
+        if (payload.startTime || payload.endTime) {
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: false,
+                    msg: "End time must be after the start time"
+                });
+            }
+            const durationMs = endTime - startTime;
+            if (durationMs < 30 * 60 * 1000) {
+                return res.status(400).json({
+                    status: false,
+                    msg: "Event duration must be at least 30 minutes"
+                });
+            }
+            updateData.startTime = startTime;
+            updateData.endTime = endTime;
+        }
+
+        if (payload.latitude || payload.longitude || payload.startTime || payload.endTime) {
+            const lat = payload.latitude ? parseFloat(payload.latitude) : existingEvent.latitude;
+            const lng = payload.longitude ? parseFloat(payload.longitude) : existingEvent.longitude;
+
+            const overlappingEvents = await prisma.liveEvent.findMany({
+                where: {
+                    id: { not: eventId },
+                    status: { in: ["scheduled", "live"] },
+                    startTime: { lt: endTime },
+                    endTime: { gt: startTime }
+                }
+            });
+
+            for (const event of overlappingEvents) {
+                const distance = haversineDistance(lat, lng, event.latitude, event.longitude);
+                if (distance <= 500) {
+                    return res.status(400).json({
+                        status: false,
+                        msg: "Radius Conflict: Another event exists within 500 meters during this time window."
+                    });
+                }
+            }
+
+            if (payload.latitude) updateData.latitude = parseFloat(payload.latitude);
+            if (payload.longitude) updateData.longitude = parseFloat(payload.longitude);
+        }
+
+        if (payload.rewardQuantity) {
+            const diff = parseInt(payload.rewardQuantity) - existingEvent.rewardQuantity;
+            updateData.remainingQty = existingEvent.remainingQty + diff;
+            updateData.rewardQuantity = parseInt(payload.rewardQuantity);
+
+            if (updateData.remainingQty < 0) {
+                return res.status(400).json({
+                    status: false,
+                    msg: "New reward quantity is less than what has already been claimed."
+                });
+            }
+        }
+
+        const updatedEvent = await prisma.liveEvent.update({
+            where: { id: eventId },
+            data: updateData
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: "Event updated successfully",
+            event: updatedEvent
+        });
+
+    } catch (error) {
+        console.error("Update Live Event Error:", error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message || "Internal server error"
+        });
+    }
+};
+
+/**
+ * @description Get Live Event By ID
+ * @Route GET /api/merchant/events/:eventId
+ * @Access Private (Merchant)
+ */
+export const getEventById = async (req, res) => {
+    const { id: merchantId } = req.merchant;
+    const { eventId } = req.params;
+
+    try {
+        const event = await prisma.liveEvent.findUnique({
+            where: { id: eventId },
+            include: {
+                merchant: {
+                    select: {
+                        photoUrl: true
+                    }
+                },
+                claims: {
+                    include: {
+                        user: {
+                            select: {
+                                name: true,
+                                email: true,
+                                photoUrl: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        claimedAt: 'desc'
+                    }
+                }
+            }
+        });
+
+        if (!event) {
+            return res.status(404).json({
+                status: false,
+                msg: "Event not found"
+            });
+        }
+
+        if (event.merchantId !== merchantId) {
+            return res.status(403).json({
+                status: false,
+                msg: "Unauthorized to view this event"
+            });
+        }
+
+        return res.status(200).json({
+            status: true,
+            msg: "Event fetched successfully",
+            event
+        });
+
+    } catch (error) {
+        console.error("Get Event By ID Error:", error);
         return res.status(500).json({
             status: false,
             msg: error.message || "Internal server error"
