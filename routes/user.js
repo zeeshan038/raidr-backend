@@ -8,6 +8,7 @@ import {
     sendOTP,
     verifyOTP,
     signInWithGoogle,
+    signInWithApple,
     updateUser,
     getUserProfile,
     deleteUser,
@@ -29,6 +30,7 @@ router.post('/login' , loginUser);
 router.post('/send-otp' , sendOTP);
 router.post('/verify-otp' , verifyOTP);
 router.post('/signin-with-google' , signInWithGoogle);
+router.post('/signin-with-apple' , signInWithApple);
 router.post('/forgot-password' , forgotPassword);
 router.post('/reset-password' , resetPassword);
 
