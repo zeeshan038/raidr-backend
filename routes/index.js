@@ -25,8 +25,6 @@ router.use('/merchant/ads',AdsRoutes);
 router.use("/merchant/dashboard",DashboardRoutes);
 router.use('/merchant/payments', PaymentRoutes);
 router.use('/merchant/events', MerchantEventRoutes);
-
-// The broad /merchant route MUST be at the bottom, otherwise its verifyMerchant middleware intercepts the routes above
 router.use('/merchant',MerchantRoutes);
 
 
