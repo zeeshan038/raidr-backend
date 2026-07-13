@@ -11,7 +11,7 @@ import { prisma } from '../config/db.js';
 
 // Socket Modules
 import { registerUWSApp } from './eventPublisher.js';
-import { handleJoinEventRoom, handlePlayerLocationUpdate } from './handlers/eventHandler.js';
+import { handleJoinEventRoom, handlePlayerLocationUpdate, handleCheckEventAvailability } from './handlers/eventHandler.js';
 
 
 // Create a queue producer
@@ -86,6 +86,12 @@ export const startWebSocketServer = () => {
                 // ── Player location for event map ─────────────────────────
                 if (payload.type === 'player_location') {
                     handlePlayerLocationUpdate(ws, payload);
+                    return;
+                }
+
+                // ── Check if event is sold out upon arrival ───────────────
+                if (payload.type === 'check_event_availability') {
+                    await handleCheckEventAvailability(ws, payload);
                     return;
                 }
                 // ─────────────────────────────────────────────────────────

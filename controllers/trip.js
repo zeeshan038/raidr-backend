@@ -133,7 +133,7 @@ export const PlanYourTrip = async (req, res) => {
             index: i + 1,
             name: s.name,
             category: s.category,
-            lat: s.lat, 
+            lat: s.lat,
             lng: s.lng,
             isAchieved: false,
             xpReward: generateDynamicXP(s.isSurprise ?? false)
@@ -459,7 +459,7 @@ export const SaveJourney = async (req, res) => {
         const updateTrip = await prisma.trip.update({
             where: { id: tripId },
             data: updateData
-        });     
+        });
 
         console.log("UPDATED TRIP ROUTES:", updateTrip.routesByDate);
 
@@ -573,7 +573,6 @@ export const StartAndPauseTrip = async (req, res) => {
     }
 }
 
-
 /**
  * @Description Trip Details
  * @Route POST /trip/trip-details/:id
@@ -640,11 +639,10 @@ export const getMerchantAds = async (req, res) => {
         const userLat = lat !== undefined && lat !== "" ? parseFloat(lat) : null;
         const userLng = long !== undefined && long !== "" ? parseFloat(long) : null;
 
-        // 2. Filter ads by stock limit and coordinate/radius matching
+        // Filter ads by stock limit and coordinate/radius matching
         const eligibleAds = [];
 
         for (const ad of ads) {
-            // Check stock limit
             const hasStock = ad.stockLimit <= 0 || ad.rewardClaims < ad.stockLimit;
             if (!hasStock) continue;
 
@@ -666,14 +664,14 @@ export const getMerchantAds = async (req, res) => {
             });
         }
 
-        // 3. If coordinates are provided, sort by nearest distance
+        // If coordinates are provided, sort by nearest distance
         if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
             eligibleAds.sort((a, b) => a.dist - b.dist);
         }
 
         const { id: userId } = req.user;
 
-        // 4. Fetch user claims for all eligible ads to determine if claimed
+        // Fetch user claims for all eligible ads to determine if claimed
         const adIds = eligibleAds.map(item => item.ad.id);
         const userClaims = await prisma.merchantAdClaim.findMany({
             where: {
@@ -921,7 +919,7 @@ export const claimLiveEventReward = async (req, res) => {
             where: { id: eventId }
         });
 
-        if (!event) { 
+        if (!event) {
             return res.status(404).json({
                 status: false,
                 msg: "Live Event not found"
@@ -1097,7 +1095,7 @@ export const surpriseMe = async (req, res) => {
                 if (!hasStock) continue;
 
                 const dist = haversineDistance(userLat, userLng, ad.latitude, ad.longitude);
-                
+
                 // Enforce 2km (2000m) range limit
                 if (dist > 2000) {
                     continue;

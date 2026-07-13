@@ -113,3 +113,95 @@ export const handlePlayerLocationUpdate = (ws, payload) => {
         avatarUrl: avatarUrl || null
     });
 };
+
+/**
+ * Check if the live event has stock. If empty, automatically award the event XP.
+ * 
+ * @param {import('uWebSockets.js').WebSocket} ws
+ * @param {object} payload
+ * @param {string} payload.eventId
+ * @param {number} [payload.lat]
+ * @param {number} [payload.lng]
+ */
+export const handleCheckEventAvailability = async (ws, payload) => {
+    const { eventId, lat, lng } = payload;
+    const userId = ws.userId;
+    console.log(`[EventHandler] Check availability requested for event: ${eventId} by user: ${userId}`);
+
+    if (!eventId) {
+        ws.send(JSON.stringify({ type: 'error', msg: 'eventId is required' }));
+        return;
+    }
+
+    try {
+        const event = await prisma.liveEvent.findUnique({
+            where: { id: eventId }
+        });
+
+        if (!event) {
+            console.log(`[EventHandler] -> Event ${eventId} not found`);
+            ws.send(JSON.stringify({ type: 'error', msg: 'Event not found' }));
+            return;
+        }
+
+        console.log(`[EventHandler] Event found: ${event.title}. Remaining Qty: ${event.remainingQty}`);
+
+        if (event.remainingQty > 0) {
+            console.log('[EventHandler] -> Event has stock. Sending status: available');
+            ws.send(JSON.stringify({
+                type: 'event_availability_response',
+                status: 'available'
+            }));
+            return;
+        }
+
+        // Remaining Qty is <= 0. Give consolation XP if not already claimed.
+        console.log('[EventHandler] -> Event is sold out. Checking existing claims for user...');
+        const existingClaim = await prisma.liveEventClaim.findUnique({
+            where: {
+                eventId_userId: { eventId, userId }
+            }
+        });
+
+        if (existingClaim) {
+            console.log('[EventHandler] -> User has already claimed/received XP. Sending status: sold_out');
+            ws.send(JSON.stringify({
+                type: 'event_availability_response',
+                status: 'sold_out',
+                msg: 'Already claimed'
+            }));
+            return;
+        }
+
+        const xpAwarded = event.xpReward || 0;
+        console.log(`[EventHandler] -> User has not claimed. Awarding ${xpAwarded} consolation XP...`);
+
+        await prisma.$transaction([
+            prisma.liveEventClaim.create({
+                data: {
+                    eventId,
+                    userId,
+                    code: 'CONSOLATION_XP',
+                    xpEarned: xpAwarded,
+                    lat: lat !== undefined ? parseFloat(lat) : null,
+                    lng: lng !== undefined ? parseFloat(lng) : null
+                }
+            }),
+            prisma.user.update({
+                where: { id: userId },
+                data: { xp_earned: { increment: xpAwarded } }
+            })
+        ]);
+
+        console.log(`[EventHandler] -> Successfully awarded XP. Sending status: sold_out_xp_awarded`);
+        ws.send(JSON.stringify({
+            type: 'event_availability_response',
+            status: 'sold_out_xp_awarded',
+            xpAwarded
+        }));
+
+    } catch (err) {
+        console.error('[EventHandler] Error checking event availability:', err.message);
+        ws.send(JSON.stringify({ type: 'error', msg: 'Failed to check event availability' }));
+    }
+};
