@@ -845,8 +845,6 @@ export const getAvatars = async (req, res) => {
     }
 }
 
-
-
 /**
  * @Description Get All Keys i-e take out keys from the env file and send it at the api reponse
  * @Route POST api/user/get-keys
@@ -903,6 +901,8 @@ export const getAllBoxes = async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
+        const history = boxLogs;
+
         res.status(200).json({
             status: true,
             msg: "Box history fetched successfully",
@@ -910,7 +910,43 @@ export const getAllBoxes = async (req, res) => {
             totalGreenBoxes: user.green_boxes_count,
             totalGoldenBoxes: user.golden_boxes_count,
             totalPurpleBoxes: user.purple_boxes_count,
-            history: boxLogs
+            history: history
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+
+/**
+ * @Description Get User Live Event Claims
+ * @Route GET api/user/live-events/claims
+ * @Access Private
+ */
+export const getUserLiveEventClaims = async (req, res) => {
+    const { id } = req.user;
+    try {
+        const user = await prisma.user.findUnique({ where: { id: id } });
+        if (!user) {
+            return res.status(404).json({
+                status: false,
+                msg: "User not found"
+            });
+        }
+
+        const liveEventLogs = await prisma.liveEventClaim.findMany({
+            where: { userId: id },
+            include: { event: true },
+            orderBy: { claimedAt: 'desc' }
+        });
+
+        res.status(200).json({
+            status: true,
+            msg: "Live event claims fetched successfully",
+            history: liveEventLogs
         });
     } catch (error) {
         res.status(500).json({

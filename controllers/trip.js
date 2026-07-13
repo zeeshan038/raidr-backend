@@ -980,8 +980,7 @@ export const claimLiveEventReward = async (req, res) => {
         const assignedCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
         // 7. Perform Claim in Transaction
-        const isSurprise = event.size === 'large';
-        const xpAwarded = generateDynamicXP(isSurprise);
+        const xpAwarded = event.xpReward || 0;
 
         const [claimDoc] = await prisma.$transaction([
             prisma.liveEventClaim.create({

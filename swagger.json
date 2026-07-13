@@ -2077,6 +2077,109 @@
         }
       }
     },
+    "/user/live-events/claims": {
+      "get": {
+        "tags": [
+          "User Profile"
+        ],
+        "summary": "Get user live event claims",
+        "description": "Fetch the history of live events claimed by the user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live event claims fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "userId": { "type": "string" },
+                          "code": { "type": "string", "nullable": true },
+                          "claimedAt": { "type": "string", "format": "date-time" },
+                          "xpEarned": { "type": "integer" },
+                          "lat": { "type": "number", "nullable": true },
+                          "lng": { "type": "number", "nullable": true },
+                          "event": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "title": { "type": "string" },
+                              "description": { "type": "string" },
+                              "address": { "type": "string" },
+                              "merchantId": { "type": "string" },
+                              "commanderAvatar": { "type": "string" },
+                              "imageUrl": { "type": "string" },
+                              "latitude": { "type": "number" },
+                              "longitude": { "type": "number" },
+                              "startTime": { "type": "string", "format": "date-time" },
+                              "endTime": { "type": "string", "format": "date-time" },
+                              "reward": { "type": "string" },
+                              "rewardQuantity": { "type": "integer" },
+                              "remainingQty": { "type": "integer" },
+                              "status": { "type": "string" },
+                              "xpReward": { "type": "integer" },
+                              "size": { "type": "string" },
+                              "createdAt": { "type": "string", "format": "date-time" },
+                              "updatedAt": { "type": "string", "format": "date-time" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/trip/weather": {
       "get": {
         "tags": [
