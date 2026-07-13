@@ -28,3 +28,17 @@ export const CreateAvatarSchema = (payload) => {
 
     return schema.validate(payload);
 }
+
+// Update Avatar
+export const UpdateAvatarSchema = (payload) => {
+    const schema = Joi.object({
+        name: Joi.string().optional(),
+        frontUrl: Joi.string().optional(),
+        backUrl: Joi.string().optional(),
+        price: Joi.number().optional(),
+        isFeatured: Joi.boolean().optional(),
+        isNew: Joi.boolean().optional()
+    }).unknown(true);
+
+    return schema.validate(payload);
+}

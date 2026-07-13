@@ -781,7 +781,10 @@
       },
       "CreatePaymentIntentRequest": {
         "type": "object",
-        "required": ["coinsAmount", "priceUsd"],
+        "required": [
+          "coinsAmount",
+          "priceUsd"
+        ],
         "properties": {
           "coinsAmount": {
             "type": "number",
@@ -789,7 +792,7 @@
           },
           "priceUsd": {
             "type": "number",
-            "example": 5.00
+            "example": 5
           }
         }
       },
@@ -837,17 +840,29 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
                     "admin": {
                       "type": "object",
                       "properties": {
-                        "id": { "type": "string" },
-                        "name": { "type": "string" },
-                        "email": { "type": "string" }
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
                       }
                     },
-                    "token": { "type": "string" }
+                    "token": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -900,17 +915,29 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean" },
-                    "msg": { "type": "string" },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
                     "admin": {
                       "type": "object",
                       "properties": {
-                        "id": { "type": "string" },
-                        "name": { "type": "string" },
-                        "email": { "type": "string" }
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
                       }
                     },
-                    "token": { "type": "string" }
+                    "token": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -1746,7 +1773,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["lat", "long"],
+                "required": [
+                  "lat",
+                  "long"
+                ],
                 "properties": {
                   "lat": {
                     "type": "number",
@@ -1845,7 +1875,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["fcmToken"],
+                "required": [
+                  "fcmToken"
+                ],
                 "properties": {
                   "fcmToken": {
                     "type": "string",
@@ -2003,6 +2035,109 @@
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/live-events/claims": {
+      "get": {
+        "tags": [
+          "User Profile"
+        ],
+        "summary": "Get user live event claims",
+        "description": "Fetch the history of live events claimed by the user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live event claims fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "userId": { "type": "string" },
+                          "code": { "type": "string", "nullable": true },
+                          "claimedAt": { "type": "string", "format": "date-time" },
+                          "xpEarned": { "type": "integer" },
+                          "lat": { "type": "number", "nullable": true },
+                          "lng": { "type": "number", "nullable": true },
+                          "event": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "title": { "type": "string" },
+                              "description": { "type": "string" },
+                              "address": { "type": "string" },
+                              "merchantId": { "type": "string" },
+                              "commanderAvatar": { "type": "string" },
+                              "imageUrl": { "type": "string" },
+                              "latitude": { "type": "number" },
+                              "longitude": { "type": "number" },
+                              "startTime": { "type": "string", "format": "date-time" },
+                              "endTime": { "type": "string", "format": "date-time" },
+                              "reward": { "type": "string" },
+                              "rewardQuantity": { "type": "integer" },
+                              "remainingQty": { "type": "integer" },
+                              "status": { "type": "string" },
+                              "xpReward": { "type": "integer" },
+                              "size": { "type": "string" },
+                              "createdAt": { "type": "string", "format": "date-time" },
+                              "updatedAt": { "type": "string", "format": "date-time" }
+                            }
                           }
                         }
                       }
@@ -4502,41 +4637,51 @@
         "tags": [
           "Admin Store"
         ],
-        "summary": "Create an avatar in the store",
+        "summary": "Create Avatar",
+        "description": "Create a new Avatar for the store",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Cyber Ninja"
+                  },
+                  "frontUrl": {
+                    "type": "string",
+                    "example": "https://example.com/front.png"
+                  },
+                  "backUrl": {
+                    "type": "string",
+                    "example": "https://example.com/back.png"
+                  },
+                  "price": {
+                    "type": "number",
+                    "example": 15
+                  },
+                  "isFeatured": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "isNew": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                },
                 "required": [
                   "name",
                   "frontUrl",
                   "backUrl",
                   "price"
-                ],
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "frontUrl": {
-                    "type": "string"
-                  },
-                  "backUrl": {
-                    "type": "string"
-                  },
-                  "price": {
-                    "type": "integer"
-                  },
-                  "isFeatured": {
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "isNew": {
-                    "type": "boolean",
-                    "default": true
-                  }
-                }
+                ]
               }
             }
           }
@@ -4546,10 +4691,10 @@
             "description": "Avatar created successfully"
           },
           "400": {
-            "description": "Validation Error"
+            "description": "Validation error"
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Server error"
           }
         }
       }
@@ -4583,18 +4728,51 @@
                   "size"
                 ],
                 "properties": {
-                  "title": { "type": "string" },
-                  "description": { "type": "string" },
-                  "address": { "type": "string" },
-                  "latitude": { "type": "number", "format": "float" },
-                  "longitude": { "type": "number", "format": "float" },
-                  "startTime": { "type": "string", "format": "date-time" },
-                  "endTime": { "type": "string", "format": "date-time" },
-                  "reward": { "type": "string" },
-                  "rewardQuantity": { "type": "integer" },
-                  "size": { "type": "string", "enum": ["small", "medium", "large"] },
-                  "commanderAvatar": { "type": "string" },
-                  "imageUrl": { "type": "string" }
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "startTime": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endTime": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "reward": {
+                    "type": "string"
+                  },
+                  "rewardQuantity": {
+                    "type": "integer"
+                  },
+                  "size": {
+                    "type": "string",
+                    "enum": [
+                      "small",
+                      "medium",
+                      "large"
+                    ]
+                  },
+                  "commanderAvatar": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -4631,12 +4809,18 @@
           {
             "name": "page",
             "in": "query",
-            "schema": { "type": "integer", "default": 1 }
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": { "type": "integer", "default": 10 }
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
           }
         ],
         "responses": {
@@ -4652,12 +4836,12 @@
         }
       }
     },
-    "/admin/events/pending": {
+    "/admin/events/all": {
       "get": {
         "tags": [
           "Admin Events"
         ],
-        "summary": "Get all events pending admin approval",
+        "summary": "Get all events",
         "security": [
           {
             "bearerAuth": []
@@ -4665,14 +4849,28 @@
         ],
         "parameters": [
           {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional status filter (e.g., pending_approval, live, completed)"
+          },
+          {
             "name": "page",
             "in": "query",
-            "schema": { "type": "integer", "default": 1 }
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": { "type": "integer", "default": 10 }
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
           }
         ],
         "responses": {
@@ -4707,7 +4905,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4748,7 +4948,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4788,18 +4990,31 @@
           {
             "name": "page",
             "in": "query",
-            "schema": { "type": "integer", "default": 1 }
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": { "type": "integer", "default": 10 }
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
           },
           {
             "name": "status",
             "in": "query",
             "description": "Category of events: live, scheduled, ended",
-            "schema": { "type": "string", "enum": ["live", "scheduled", "ended"] }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "live",
+                "scheduled",
+                "ended"
+              ]
+            }
           }
         ],
         "responses": {
@@ -4867,7 +5082,9 @@
             "name": "eventId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4904,17 +5121,30 @@
           {
             "name": "page",
             "in": "query",
-            "schema": { "type": "integer", "default": 1 }
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": { "type": "integer", "default": 10 }
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
           },
           {
             "name": "status",
             "in": "query",
-            "schema": { "type": "string", "enum": ["live", "scheduled", "ended"] }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "live",
+                "scheduled",
+                "ended"
+              ]
+            }
           }
         ],
         "responses": {
@@ -5006,32 +5236,99 @@
                     "event": {
                       "type": "object",
                       "properties": {
-                        "id": { "type": "string", "example": "07345993-64e3-4f4b-b2dc-7a412364a463" },
-                        "title": { "type": "string", "example": "Grand Outlet Opening Raid" },
-                        "description": { "type": "string", "example": "Join us at the outlet for a live pizza raid and claim vouchers!" },
-                        "merchantId": { "type": "string", "example": "565dce23-6bb0-4de9-9df0-fd1a45692004" },
-                        "commanderAvatar": { "type": "string", "example": "https://example.com/avatar.png" },
-                        "imageUrl": { "type": "string", "example": "https://example.com/reward-image.jpg" },
-                        "latitude": { "type": "number", "example": 33.7294 },
-                        "longitude": { "type": "number", "example": 73.0516 },
-                        "startTime": { "type": "string", "format": "date-time", "example": "2026-07-09T11:00:00.000Z" },
-                        "endTime": { "type": "string", "format": "date-time", "example": "2026-07-09T19:00:00.000Z" },
-                        "reward": { "type": "string", "example": "Free Pizza Voucher" },
-                        "rewardQuantity": { "type": "number", "example": 100 },
-                        "remainingQty": { "type": "number", "example": 100 },
-                        "status": { "type": "string", "example": "scheduled" },
-                        "xpReward": { "type": "number", "example": 199 },
-                        "size": { "type": "string", "example": "small" },
-                        "createdAt": { "type": "string", "format": "date-time", "example": "2026-07-09T12:05:07.255Z" },
-                        "updatedAt": { "type": "string", "format": "date-time", "example": "2026-07-09T12:05:07.255Z" },
+                        "id": {
+                          "type": "string",
+                          "example": "07345993-64e3-4f4b-b2dc-7a412364a463"
+                        },
+                        "title": {
+                          "type": "string",
+                          "example": "Grand Outlet Opening Raid"
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "Join us at the outlet for a live pizza raid and claim vouchers!"
+                        },
+                        "merchantId": {
+                          "type": "string",
+                          "example": "565dce23-6bb0-4de9-9df0-fd1a45692004"
+                        },
+                        "commanderAvatar": {
+                          "type": "string",
+                          "example": "https://example.com/avatar.png"
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "example": "https://example.com/reward-image.jpg"
+                        },
+                        "latitude": {
+                          "type": "number",
+                          "example": 33.7294
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "example": 73.0516
+                        },
+                        "startTime": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-07-09T11:00:00.000Z"
+                        },
+                        "endTime": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-07-09T19:00:00.000Z"
+                        },
+                        "reward": {
+                          "type": "string",
+                          "example": "Free Pizza Voucher"
+                        },
+                        "rewardQuantity": {
+                          "type": "number",
+                          "example": 100
+                        },
+                        "remainingQty": {
+                          "type": "number",
+                          "example": 100
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "scheduled"
+                        },
+                        "xpReward": {
+                          "type": "number",
+                          "example": 199
+                        },
+                        "size": {
+                          "type": "string",
+                          "example": "small"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-07-09T12:05:07.255Z"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-07-09T12:05:07.255Z"
+                        },
                         "_count": {
                           "type": "object",
                           "properties": {
-                            "participants": { "type": "number", "example": 0 }
+                            "participants": {
+                              "type": "number",
+                              "example": 0
+                            }
                           }
                         },
-                        "totalParticipants": { "type": "number", "example": 0 },
-                        "hasClaimed": { "type": "boolean", "example": false }
+                        "totalParticipants": {
+                          "type": "number",
+                          "example": 0
+                        },
+                        "hasClaimed": {
+                          "type": "boolean",
+                          "example": false
+                        }
                       }
                     }
                   }
@@ -5058,7 +5355,9 @@
             "name": "eventId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -5072,8 +5371,14 @@
                   "userLng"
                 ],
                 "properties": {
-                  "userLat": { "type": "number", "format": "float" },
-                  "userLng": { "type": "number", "format": "float" }
+                  "userLat": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "userLng": {
+                    "type": "number",
+                    "format": "float"
+                  }
                 }
               }
             }
@@ -5100,7 +5405,9 @@
     },
     "/merchant/payments/create-intent": {
       "post": {
-        "tags": ["Merchant Payments"],
+        "tags": [
+          "Merchant Payments"
+        ],
         "summary": "Create Payment Intent for purchasing coins",
         "security": [
           {
@@ -5139,7 +5446,9 @@
     },
     "/merchant/payments/webhook": {
       "post": {
-        "tags": ["Merchant Payments"],
+        "tags": [
+          "Merchant Payments"
+        ],
         "summary": "Stripe Webhook Listener",
         "responses": {
           "200": {
@@ -5150,7 +5459,161 @@
           }
         }
       }
+    },
+    "/admin/store/get-all": {
+      "get": {
+        "tags": [
+          "Admin Store"
+        ],
+        "summary": "Get All Store Items",
+        "description": "Fetch paginated store items with optional search",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by avatar name"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store items fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/store/update/{id}": {
+      "put": {
+        "tags": [
+          "Admin Store"
+        ],
+        "summary": "Update Store Item",
+        "description": "Update an existing avatar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Avatar ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "frontUrl": {
+                    "type": "string"
+                  },
+                  "backUrl": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number"
+                  },
+                  "isFeatured": {
+                    "type": "boolean"
+                  },
+                  "isNew": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar updated successfully"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Avatar not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/store/delete/{id}": {
+      "delete": {
+        "tags": [
+          "Admin Store"
+        ],
+        "summary": "Delete Store Item",
+        "description": "Delete an existing avatar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Avatar ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avatar deleted successfully"
+          },
+          "404": {
+            "description": "Avatar not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
     }
   }
 }
-

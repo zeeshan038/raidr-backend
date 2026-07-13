@@ -1,9 +1,12 @@
+import crypto from 'crypto';
+
 import { prisma } from "../config/db.js";
 import {
     publishParticipantJoined,
     publishInventoryUpdated,
     publishCommanderMessage
 } from "../sockets/eventPublisher.js";
+import { generateDynamicXP, haversineDistance } from "../utils/methods/methods.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
@@ -407,8 +410,7 @@ export const claimLiveEventReward = async (req, res) => {
         const assignedCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
         // 7. Perform Claim in Transaction
-        const isSurprise = event.size === 'large';
-        const xpAwarded = generateDynamicXP(isSurprise);
+        const xpAwarded = event.xpReward || 0;
 
         const [claimDoc] = await prisma.$transaction([
             prisma.liveEventClaim.create({
