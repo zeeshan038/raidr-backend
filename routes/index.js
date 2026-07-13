@@ -28,7 +28,6 @@ router.use('/merchant/events', MerchantEventRoutes);
 router.use('/merchant',MerchantRoutes);
 
 
-
 //User Routes
 router.use("/user",UserRoutes);
 router.use("/trip",TripRoutes);

@@ -7,19 +7,22 @@ const EVENT_COSTS = {
 };
 
 /**
- * @description Get all pending approval Live Events
- * @Route GET /api/admin/events/pending
+ * @description Get all  Live Events
+ * @Route GET /api/admin/events/pending?status
  * @Access Private (Admin)
  */
-export const getPendingEvents = async (req, res) => {
+export const getAllEvents = async (req, res) => {
+    const {status}= req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    const whereClause = status ? { status } : {};
+
     try {
         const [events, totalCount] = await Promise.all([
             prisma.liveEvent.findMany({
-                where: { status: "pending_approval" },
+                where: whereClause,
                 include: {
                     merchant: {
                         select: {
@@ -35,13 +38,13 @@ export const getPendingEvents = async (req, res) => {
                 orderBy: { createdAt: "desc" }
             }),
             prisma.liveEvent.count({
-                where: { status: "pending_approval" }
+                where: whereClause
             })
         ]);
 
         return res.status(200).json({
             status: true,
-            msg: "Pending approval events fetched successfully",
+            msg: "Events fetched successfully",
             events,
             pagination: {
                 page,
@@ -54,7 +57,7 @@ export const getPendingEvents = async (req, res) => {
         console.error("Get Pending Events Error:", error);
         return res.status(500).json({
             status: false,
-            msg: error.message || "Internal server error"
+            msg: error.message
         });
     }
 };
