@@ -6,7 +6,7 @@ import {
     publishInventoryUpdated,
     publishCommanderMessage
 } from "../sockets/eventPublisher.js";
-import { generateDynamicXP, haversineDistance } from "../utils/methods/Methods.js";
+import { generateDynamicXP, haversineDistance } from "../utils/methods/methods.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
