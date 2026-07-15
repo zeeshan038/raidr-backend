@@ -28,6 +28,8 @@ model User {
   level                  Int                @default(1)
   xp_earned              Int                @default(0)
   xp_progress            Int                @default(0)
+  quests_played          Int                @default(0)
+  rewards_claimed        Int                @default(0)
   green_boxes_count      Int                @default(0)
   golden_boxes_count     Int                @default(0)
   purple_boxes_count     Int                @default(0)

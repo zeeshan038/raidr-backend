@@ -208,6 +208,12 @@
           "xp_progress": {
             "type": "number"
           },
+          "quests_played": {
+            "type": "integer"
+          },
+          "rewards_claimed": {
+            "type": "integer"
+          },
           "green_boxes_count": {
             "type": "integer"
           },

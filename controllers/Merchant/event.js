@@ -4,8 +4,10 @@ import {
     MerchantEventUpdateSchema
 } from "../../schema/Merchant/Event.js";
 import {
-    haversineDistance
+    haversineDistance,
+    calculateRadiusForUserLiveEvent
 } from "../../utils/methods/methods.js";
+import { sendNotification } from "../../utils/Notification.js";
 
 const EVENT_COSTS = {
     small: 10,
@@ -149,6 +151,25 @@ export const createLiveEvent = async (req, res) => {
                 eventId: newEvent.id
             }
         });
+
+        // Notify users within 20km radius
+        try {
+            const usersWithTokens = await prisma.user.findMany({
+                where: {
+                    fcmToken: { not: null }
+                },
+                select: { id: true, lat: true, long: true, fcmToken: true }
+            });
+
+            const nearbyUsers = calculateRadiusForUserLiveEvent(usersWithTokens, newEvent.latitude, newEvent.longitude, 20);
+
+            for (const user of nearbyUsers) {
+                sendNotification(user.fcmToken, "New Event Near You!", `A new event "${title}" has been created near your location.`)
+                    .catch(err => console.error(`Failed to send notification to user ${user.id}:`, err));
+            }
+        } catch (notifErr) {
+            console.error("Error sending notifications on event creation:", notifErr);
+        }
 
         return res.status(201).json({
             status: true,

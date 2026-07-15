@@ -24,7 +24,7 @@ import {
     interleavePlanRawForChunkDiversity,
     resolveStartPointForPlan
 } from "../utils/tripUtils.js"
-import { haversineDistance, generateDynamicXP } from "../utils/methods/methods.js"
+import { haversineDistance, generateDynamicXP } from "../utils/methods/Methods.js"
 
 
 /**
@@ -863,6 +863,11 @@ export const claimReward = async (req, res) => {
                         isActive: reachedStockLimit ? false : undefined
                     }
                 });
+
+                await tx.user.update({
+                    where: { id: userId },
+                    data: { rewards_claimed: { increment: 1 } }
+                });
             });
         } catch (txError) {
             if (txError.message === "soldOut") {
@@ -1000,7 +1005,8 @@ export const claimLiveEventReward = async (req, res) => {
             prisma.user.update({
                 where: { id: userId },
                 data: {
-                    xp_earned: { increment: xpAwarded }
+                    xp_earned: { increment: xpAwarded },
+                    rewards_claimed: { increment: 1 }
                 }
             })
         ]);
