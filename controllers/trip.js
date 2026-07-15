@@ -24,7 +24,7 @@ import {
     interleavePlanRawForChunkDiversity,
     resolveStartPointForPlan
 } from "../utils/tripUtils.js"
-import { haversineDistance, generateDynamicXP } from "../utils/methods/Methods.js"
+import { haversineDistance, generateDynamicXP } from "../utils/methods/methods.js"
 
 
 /**

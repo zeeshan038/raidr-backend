@@ -19,7 +19,7 @@ import sendEmail from "../utils/Nodemailer.js";
 import {
     generateOTP,
     generateToken
-} from "../utils/methods/Methods.js";
+} from "../utils/methods/methods.js";
 
 
 /**

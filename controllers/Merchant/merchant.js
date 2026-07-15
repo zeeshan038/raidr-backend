@@ -7,7 +7,7 @@ import { prisma } from "../../config/db.js";
 
 //Schema 
 import { RegisterSchema, LoginSchema } from "../../schema/Merchant/Merchant.js";
-import { generateToken } from "../../utils/methods/Methods.js";
+import { generateToken } from "../../utils/methods/methods.js";
 
 
 /**
