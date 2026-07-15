@@ -131,7 +131,7 @@ export const handleCheckEventAvailability = async (ws, payload) => {
     if (!eventId) {
         ws.send(JSON.stringify({ type: 'error', msg: 'eventId is required' }));
         return;
-    }
+    } 
 
     try {
         const event = await prisma.liveEvent.findUnique({
@@ -155,7 +155,6 @@ export const handleCheckEventAvailability = async (ws, payload) => {
             return;
         }
 
-        // Remaining Qty is <= 0. Give consolation XP if not already claimed.
         console.log('[EventHandler] -> Event is sold out. Checking existing claims for user...');
         const existingClaim = await prisma.liveEventClaim.findUnique({
             where: {
