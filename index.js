@@ -17,7 +17,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5173",
   "https://business.raidr-app.com",
-  "http://admin.raidr-app.com"
+  "https://admin.raidr-app.com"
 ];
 
 app.use(cors({
