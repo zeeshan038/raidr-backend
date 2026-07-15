@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../../config/db.js";
 import { RegisterAdminSchema, LoginAdminSchema } from "../../schema/Admin/Admin.js";
-import { generateToken } from "../../utils/methods/methods.js";
+import { generateToken } from "../../utils/methods/Methods.js";
 
 /**
  * @Description Register Admin
@@ -18,7 +18,7 @@ export const registerAdmin = async (req, res) => {
             msg: result.error.message
         });
     }
-    
+
     try {
         const existingAdmin = await prisma.admin.findUnique({
             where: { email: payload.email }

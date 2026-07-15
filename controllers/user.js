@@ -19,7 +19,7 @@ import sendEmail from "../utils/Nodemailer.js";
 import {
     generateOTP,
     generateToken
-} from "../utils/methods/methods.js";
+} from "../utils/methods/Methods.js";
 
 
 /**
@@ -458,16 +458,8 @@ export const signInWithApple = async (req, res) => {
 export const getUserProfile = async (req, res) => {
     const { id } = req.user;
     try {
-        const user = await prisma.user.findUnique({ 
-            where: { id: id },
-            include: {
-                adClaims: {
-                    include: {
-                        ad: true,
-                        code: true
-                    }
-                }
-            }
+        const user = await prisma.user.findUnique({
+            where: { id: id }
         });
         if (!user) {
             return res.status(404).json({
@@ -478,27 +470,6 @@ export const getUserProfile = async (req, res) => {
 
         const userResponse = { ...user, _id: user.id };
         delete userResponse.isNewUser;
-
-        if (userResponse.adClaims) {
-            userResponse.adClaims = userResponse.adClaims.map(claim => {
-                if (claim.ad) {
-                    const filteredAd = { ...claim.ad };
-                    delete filteredAd.approvalStatus;
-                    delete filteredAd.boxOpens;
-                    delete filteredAd.impressions;
-                    delete filteredAd.isActive;
-                    delete filteredAd.descriptionText;
-                    delete filteredAd.merchantId;
-                    delete filteredAd.rewardClaims;
-                    delete filteredAd.stockLimit;
-                    return {
-                        ...claim,
-                        ad: filteredAd
-                    };
-                }
-                return claim;
-            });
-        }
 
         res.status(200).json({
             status: true,
@@ -564,10 +535,10 @@ export const updateUser = async (req, res) => {
  * @Route PUT api/user/update-location
  * @Access Private
  */
-export const UpdateLocation = async (req ,res)=>{
-    const {id} = req.user;
-    const {lat, long} = req.body;
-    if(!lat || !long){
+export const UpdateLocation = async (req, res) => {
+    const { id } = req.user;
+    const { lat, long } = req.body;
+    if (!lat || !long) {
         return res.status(400).json({
             status: false,
             msg: "Lat and long are required"
@@ -598,9 +569,9 @@ export const UpdateLocation = async (req ,res)=>{
  * @Route PUT api/user/update-fcm
  * @Access Private
  */
-export const UpdateFCM = async (req ,res)=>{
-    const {id} = req.user;
-    const {fcmToken} = req.body;
+export const UpdateFCM = async (req, res) => {
+    const { id } = req.user;
+    const { fcmToken } = req.body;
 
     if (!fcmToken) {
         return res.status(400).json({
@@ -616,7 +587,7 @@ export const UpdateFCM = async (req ,res)=>{
                 fcmToken: fcmToken
             }
         });
-        res.status(200).json({ 
+        res.status(200).json({
             status: true,
             msg: "User FCM updated successfully"
         });
@@ -806,7 +777,7 @@ export const updateAvatarUrl = async (req, res) => {
  * @Access Private
  */
 export const getAvatars = async (req, res) => {
-    const {id} = req.user;
+    const { id } = req.user;
     try {
         const user = await prisma.user.findUnique({ where: { id: id } });
         if (!user) {
@@ -881,7 +852,7 @@ export const getKeys = async (req, res) => {
  */
 export const getAllBoxes = async (req, res) => {
     const { id } = req.user;
-    const {source} = req.query;
+    const { source } = req.query;
     try {
         const user = await prisma.user.findUnique({ where: { id: id } });
         if (!user) {

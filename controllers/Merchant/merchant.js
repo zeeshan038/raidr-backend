@@ -6,8 +6,8 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../../config/db.js";
 
 //Schema 
-import { RegisterSchema , LoginSchema} from "../../schema/Merchant/Merchant.js";
-import { generateToken } from "../../utils/methods/methods.js";
+import { RegisterSchema, LoginSchema } from "../../schema/Merchant/Merchant.js";
+import { generateToken } from "../../utils/methods/Methods.js";
 
 
 /**
@@ -55,7 +55,7 @@ export const Register = async (req, res) => {
         })
 
         const token = await generateToken(createMerchant.id);
-        
+
         return res.status(201).json({
             status: true,
             msg: "Merchant registered successfully",
@@ -75,7 +75,7 @@ export const Register = async (req, res) => {
  * @Route POST /api/merchant/login
  * @Access Public
  */
- export const Login = async (req, res) => {
+export const Login = async (req, res) => {
     const payload = req.body;
 
     const result = LoginSchema(payload)
@@ -128,8 +128,8 @@ export const Register = async (req, res) => {
  * @Access Private
  */
 export const WhoAmI = async (req, res) => {
-  const { id } = req.merchant;
-  console.log(id)
+    const { id } = req.merchant;
+    console.log(id)
     try {
         const merchant = await prisma.merchant.findUnique({
             where: {

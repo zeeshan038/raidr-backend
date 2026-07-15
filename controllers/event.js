@@ -6,7 +6,7 @@ import {
     publishInventoryUpdated,
     publishCommanderMessage
 } from "../sockets/eventPublisher.js";
-import { generateDynamicXP, haversineDistance } from "../utils/methods/methods.js";
+import { generateDynamicXP, haversineDistance } from "../utils/methods/Methods.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
@@ -207,6 +207,12 @@ export const JoinEvent = async (req, res) => {
             }
         });
 
+        // 4b. Increment quests_played
+        await prisma.user.update({
+            where: { id: userId },
+            data: { quests_played: { increment: 1 } }
+        });
+
         // 5. Get updated participant count
         const participantCount = await prisma.liveEventParticipant.count({
             where: { eventId }
@@ -214,6 +220,11 @@ export const JoinEvent = async (req, res) => {
 
         // 6. Broadcast to all event room subscribers via uWS
         publishParticipantJoined(eventId, participantCount);
+        publishCommanderMessage(
+            eventId,
+            `A new player has joined the event!`,
+            'system'
+        );
 
         return res.status(200).json({
             status: true,
@@ -225,7 +236,7 @@ export const JoinEvent = async (req, res) => {
         console.error("Join Event Error:", error);
         return res.status(500).json({
             status: false,
-            msg: error.message 
+            msg: error.message
         });
     }
 };
@@ -240,8 +251,8 @@ export const GetMyEvents = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const { status } = req.query; 
-    const { id: userId } = req.user; 
+    const { status } = req.query;
+    const { id: userId } = req.user;
 
     let statusFilter;
     if (status === "live") {
@@ -351,7 +362,7 @@ export const claimLiveEventReward = async (req, res) => {
             where: { id: eventId }
         });
 
-        if (!event) { 
+        if (!event) {
             return res.status(404).json({
                 status: false,
                 msg: "Live Event not found"
@@ -432,7 +443,8 @@ export const claimLiveEventReward = async (req, res) => {
             prisma.user.update({
                 where: { id: userId },
                 data: {
-                    xp_earned: { increment: xpAwarded }
+                    xp_earned: { increment: xpAwarded },
+                    rewards_claimed: { increment: 1 }
                 }
             })
         ]);
