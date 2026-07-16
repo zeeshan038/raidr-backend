@@ -149,9 +149,40 @@ export const getCampaigns = async (req, res) => {
 export const getCampaignById = async (req, res) => {
     const { id } = req.merchant;
     const { id: campaignId } = req.params;
+    const { search } = req.query;
+    
     try {
+        let adCodeFilter = undefined;
+        if (search) {
+            adCodeFilter = {
+                OR: [
+                    { code: { contains: search, mode: "insensitive" } },
+                    { claim: { user: { name: { contains: search, mode: "insensitive" } } } },
+                    { claim: { user: { email: { contains: search, mode: "insensitive" } } } }
+                ]
+            };
+        }
+
         const ad = await prisma.merchantAds.findFirst({
-            where: { id: campaignId, merchantId: id }
+            where: { id: campaignId, merchantId: id },
+            include: {
+                adCodes: {
+                    where: adCodeFilter,
+                    include: {
+                        claim: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        email: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         if (!ad) {

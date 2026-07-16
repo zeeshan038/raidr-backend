@@ -204,3 +204,71 @@ export const handleCheckEventAvailability = async (ws, payload) => {
         ws.send(JSON.stringify({ type: 'error', msg: 'Failed to check event availability' }));
     }
 };
+
+/**
+ * Check if the surprise me box (merchant ad) has stock.
+ * 
+ * @param {import('uWebSockets.js').WebSocket} ws
+ * @param {object} payload
+ * @param {string} payload.adId
+ */
+export const handleCheckSurpriseAvailability = async (ws, payload) => {
+    const { adId } = payload;
+    const userId = ws.userId;
+    console.log(`[EventHandler] Check surprise availability requested for ad: ${adId} by user: ${userId}`);
+
+    if (!adId) {
+        ws.send(JSON.stringify({ type: 'error', msg: 'adId is required' }));
+        return;
+    }
+
+    try {
+        const ad = await prisma.merchantAds.findUnique({
+            where: { id: adId }
+        });
+
+        if (!ad) {
+            console.log(`[EventHandler] -> Ad ${adId} not found`);
+            ws.send(JSON.stringify({ type: 'error', msg: 'Ad not found' }));
+            return;
+        }
+
+        console.log(`[EventHandler] Ad found: ${ad.adTitle}. Stock Limit: ${ad.stockLimit}, Reward Claims: ${ad.rewardClaims}`);
+
+        if (ad.stockLimit <= 0 || ad.rewardClaims < ad.stockLimit) {
+            console.log('[EventHandler] -> Ad has stock. Sending status: available');
+            ws.send(JSON.stringify({
+                type: 'surprise_availability_response',
+                status: 'available'
+            }));
+            return;
+        }
+
+        console.log('[EventHandler] -> Ad is sold out. Checking existing claims for user...');
+        const existingClaim = await prisma.merchantAdClaim.findUnique({
+            where: {
+                userId_adId: { userId, adId }
+            }
+        });
+
+        if (existingClaim) {
+            console.log('[EventHandler] -> User has already claimed. Sending status: sold_out');
+            ws.send(JSON.stringify({
+                type: 'surprise_availability_response',
+                status: 'sold_out',
+                msg: 'Already claimed'
+            }));
+            return;
+        }
+
+        console.log('[EventHandler] -> Ad is sold out. Sending status: sold_out');
+        ws.send(JSON.stringify({
+            type: 'surprise_availability_response',
+            status: 'sold_out'
+        }));
+        
+    } catch (err) {
+        console.error('[EventHandler] Error checking surprise availability:', err.message);
+        ws.send(JSON.stringify({ type: 'error', msg: 'Failed to check surprise availability' }));
+    }
+};

@@ -3138,6 +3138,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search campaign codes by code, user name, or user email"
           }
         ],
         "responses": {

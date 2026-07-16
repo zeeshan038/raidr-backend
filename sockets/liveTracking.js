@@ -11,7 +11,7 @@ import { prisma } from '../config/db.js';
 
 // Socket Modules
 import { registerUWSApp } from './eventPublisher.js';
-import { handleJoinEventRoom, handlePlayerLocationUpdate, handleCheckEventAvailability } from './handlers/eventHandler.js';
+import { handleJoinEventRoom, handlePlayerLocationUpdate, handleCheckEventAvailability, handleCheckSurpriseAvailability } from './handlers/eventHandler.js';
 
 
 // Create a queue producer
@@ -92,6 +92,12 @@ export const startWebSocketServer = () => {
                 // ── Check if event is sold out upon arrival ───────────────
                 if (payload.type === 'check_event_availability') {
                     await handleCheckEventAvailability(ws, payload);
+                    return;
+                }
+
+                // ── Check if surprise me (merchant ad) is sold out ────────
+                if (payload.type === 'check_surprise_availability') {
+                    await handleCheckSurpriseAvailability(ws, payload);
                     return;
                 }
                 // ─────────────────────────────────────────────────────────
