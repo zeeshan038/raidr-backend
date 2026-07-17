@@ -362,7 +362,7 @@ export const updateLiveEvent = async (req, res) => {
 
 /**
  * @description Get Live Event By ID
- * @Route GET /api/merchant/events/:eventId
+ * @Route GET /api/merchant/events/specific-event/:eventId
  * @Access Private (Merchant)
  */
 export const getEventById = async (req, res) => {
@@ -423,3 +423,48 @@ export const getEventById = async (req, res) => {
         });
     }
 };
+
+/**
+ * @description Delete Event
+ * @Route GET /api/merchant/events/delete/:eventId
+ * @Access Private (Merchant)
+ */
+export const deleteEvent = async (req, res) => {
+    const { id: merchantId } = req.merchant;
+    const { eventId } = req.params;
+
+    try {
+        const event = await prisma.liveEvent.findUnique({
+            where: { id: eventId }
+        });
+
+        if (!event) {
+            return res.status(404).json({
+                status: false,
+                msg: "Event not found"
+            });
+        }
+
+        if (event.merchantId !== merchantId) {
+            return res.status(403).json({
+                status: false,
+                msg: "Unauthorized to delete this event"
+            });
+        }
+
+        await prisma.liveEvent.delete({
+            where: { id: eventId }
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: "Event deleted successfully"
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}

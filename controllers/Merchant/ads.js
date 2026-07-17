@@ -157,8 +157,8 @@ export const getCampaignById = async (req, res) => {
             adCodeFilter = {
                 OR: [
                     { code: { contains: search, mode: "insensitive" } },
-                    { claim: { user: { name: { contains: search, mode: "insensitive" } } } },
-                    { claim: { user: { email: { contains: search, mode: "insensitive" } } } }
+                    { claim: { user: { name: { contains: search, mode: "insensitive" } } } }, 
+                    { claim: { user: { email: { contains: search, mode: "insensitive" } } } } 
                 ]
             };
         }
@@ -346,4 +346,4 @@ export const toggleCampaignStatus = async (req, res) => {
     }
 };
 
-// Force server restart to load updated Prisma Client
+
