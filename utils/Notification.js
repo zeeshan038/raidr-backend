@@ -7,7 +7,7 @@ export const sendNotification = async (fcm, title, body) => {
   }
 
   try {
-    await getMessaging().sendEachForMulticast({
+    const response = await getMessaging().sendEachForMulticast({
       tokens: [fcm],
       notification: {
         title,
@@ -25,7 +25,13 @@ export const sendNotification = async (fcm, title, body) => {
         },
       }
     });
-    console.log("Notification sent successfully.");
+    
+    if (response.failureCount > 0) {
+      console.error("Notification failed:", response.responses[0].error);
+      throw new Error(`Notification failed: ${response.responses[0].error.message}`);
+    } else {
+      console.log("Notification sent successfully. Message ID:", response.responses[0].messageId);
+    }
   } catch (error) {
     console.error("Error sending notification: ", error);
     throw error;

@@ -7,6 +7,7 @@ import TripRoutes from "./trip.js"
 import UploadRoutes from "./upload.js"
 import UserStoreRoutes from './store.js'
 import EventRoutes from './events.js'
+import TestRoutes from './test.js'
 
 //Merchant 
 import MerchantRoutes from "./Merchant/merchant.js"
@@ -20,7 +21,7 @@ import AdminStoreRoutes from "./Admin/store.js"
 import AdminAuthRoutes from "./Admin/admin.js"
 import AdminEventRoutes from "./Admin/event.js"
 
-//Merchant Routes
+//Merchant Routes 
 router.use('/merchant/ads',AdsRoutes);
 router.use("/merchant/dashboard",DashboardRoutes);
 router.use('/merchant/payments', PaymentRoutes);
@@ -40,5 +41,7 @@ router.use("/admin/store",AdminStoreRoutes)
 router.use("/admin",AdminAuthRoutes)
 router.use("/admin/events",AdminEventRoutes)
 
+//Test
+router.use("/test", TestRoutes)
  
 export default router;
