@@ -40,8 +40,6 @@ export const handleJoinEventRoom = async (ws, payload) => {
     console.log(`[EventHandler] User ${ws.userId} subscribed to ${topic}`);
 
     try {
-        // Fetch a lightweight snapshot of the event so the app can
-        // immediately render the correct UI state after connecting
         const event = await prisma.liveEvent.findUnique({
             where: { id: eventId },
             select: {
@@ -65,7 +63,6 @@ export const handleJoinEventRoom = async (ws, payload) => {
             return;
         }
 
-        // Send the initial snapshot directly back to this one user (not broadcast)
         ws.send(JSON.stringify({
             type: 'event_snapshot',
             eventId: event.id,
