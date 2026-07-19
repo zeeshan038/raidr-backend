@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
-import { createLiveEvent, getMyEvents, getEventById, updateLiveEvent, deleteEvent } from '../../controllers/Merchant/event.js';
+import { createLiveEvent, getMyEvents, getEventById, updateLiveEvent, deleteEvent, redeemEventCoupon } from '../../controllers/Merchant/event.js';
 import { verifyMerchant } from '../../middlewares/verifyMerchant.js';
 
 router.use(verifyMerchant);

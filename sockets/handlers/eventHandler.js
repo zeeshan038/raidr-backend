@@ -89,7 +89,6 @@ export const handleJoinEventRoom = async (ws, payload) => {
 /**
  * Broadcast this player's current GPS coordinates to everyone
  * else in the event room so the live map can show all players.
- * 
  * Throttling is done on the client side (only sent every 5 seconds
  * or when the user moves > 10 metres) to avoid flooding the server.
  * 
@@ -163,11 +162,10 @@ export const handleCheckEventAvailability = async (ws, payload) => {
         });
 
         if (existingClaim) {
-            console.log('[EventHandler] -> User has already claimed/received XP. Sending status: sold_out');
+            console.log('[EventHandler] -> User has already claimed/received XP. Sending status: claimed');
             ws.send(JSON.stringify({
                 type: 'event_availability_response',
-                status: 'sold_out',
-                msg: 'Already claimed'
+                status: 'claimed'
             }));
             return;
         }
@@ -252,11 +250,10 @@ export const handleCheckSurpriseAvailability = async (ws, payload) => {
         });
 
         if (existingClaim) {
-            console.log('[EventHandler] -> User has already claimed. Sending status: sold_out');
+            console.log('[EventHandler] -> User has already claimed. Sending status: claimed');
             ws.send(JSON.stringify({
                 type: 'surprise_availability_response',
-                status: 'sold_out',
-                msg: 'Already claimed'
+                status: 'claimed'
             }));
             return;
         }

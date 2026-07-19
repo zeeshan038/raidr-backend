@@ -219,14 +219,16 @@ model MerchantAdClaim {
 }
 
 model MerchantAdCode {
-  id        String           @id @default(uuid())
-  adId      String
-  code      String           @unique
-  isClaimed Boolean          @default(false)
-  claimId   String?          @unique
-  createdAt DateTime         @default(now())
-  ad        MerchantAds      @relation(fields: [adId], references: [id], onDelete: Cascade)
-  claim     MerchantAdClaim? @relation(fields: [claimId], references: [id])
+  id         String           @id @default(uuid())
+  adId       String
+  code       String           @unique
+  isClaimed  Boolean          @default(false)
+  isRedeemed Boolean          @default(false)
+  redeemedAt DateTime?
+  claimId    String?          @unique
+  createdAt  DateTime         @default(now())
+  ad         MerchantAds      @relation(fields: [adId], references: [id], onDelete: Cascade)
+  claim      MerchantAdClaim? @relation(fields: [claimId], references: [id])
 
   @@index([adId])
   @@index([isClaimed])
@@ -278,16 +280,18 @@ model LiveEventParticipant {
 }
 
 model LiveEventClaim {
-  id        String    @id @default(uuid())
-  eventId   String
-  userId    String
-  code      String?
-  claimedAt DateTime  @default(now())
-  xpEarned  Int
-  lat       Float?
-  lng       Float?
-  event     LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String    @id @default(uuid())
+  eventId    String
+  userId     String
+  code       String?   @unique
+  isRedeemed Boolean   @default(false)
+  redeemedAt DateTime?
+  claimedAt  DateTime  @default(now())
+  xpEarned   Int
+  lat        Float?
+  lng        Float?
+  event      LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
