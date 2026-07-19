@@ -11,6 +11,5 @@ router.get('/my-events', getMyEvents);
 router.get('/specific-event/:eventId', getEventById);
 router.put('/update-event/:eventId', updateLiveEvent);
 router.delete('/delete/:eventId', deleteEvent);
-router.post('/redeem-coupon', redeemEventCoupon);
 
 export default router;
