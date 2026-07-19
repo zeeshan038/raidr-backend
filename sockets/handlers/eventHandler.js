@@ -163,11 +163,10 @@ export const handleCheckEventAvailability = async (ws, payload) => {
         });
 
         if (existingClaim) {
-            console.log('[EventHandler] -> User has already claimed/received XP. Sending status: sold_out');
+            console.log('[EventHandler] -> User has already claimed/received XP. Sending status: claimed');
             ws.send(JSON.stringify({
                 type: 'event_availability_response',
-                status: 'sold_out',
-                msg: 'Already claimed'
+                status: 'claimed'
             }));
             return;
         }
@@ -252,11 +251,10 @@ export const handleCheckSurpriseAvailability = async (ws, payload) => {
         });
 
         if (existingClaim) {
-            console.log('[EventHandler] -> User has already claimed. Sending status: sold_out');
+            console.log('[EventHandler] -> User has already claimed. Sending status: claimed');
             ws.send(JSON.stringify({
                 type: 'surprise_availability_response',
-                status: 'sold_out',
-                msg: 'Already claimed'
+                status: 'claimed'
             }));
             return;
         }
