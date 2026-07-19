@@ -460,11 +460,60 @@ export const deleteEvent = async (req, res) => {
             status: true,
             msg: "Event deleted successfully"
         });
-
     } catch (error) {
         return res.status(500).json({
             status: false,
             msg: error.message
         });
     }
-}
+};
+
+/**
+ * @Description Redeem an event coupon code
+ * @Route POST /api/merchant/events/redeem-coupon
+ * @Access Private (Merchant)
+ */
+export const redeemEventCoupon = async (req, res) => {
+    const { id: merchantId } = req.merchant;
+    const { couponCode } = req.body;
+
+    if (!couponCode) {
+        return res.status(400).json({ status: false, msg: "Coupon code is required" });
+    }
+
+    try {
+        const claim = await prisma.liveEventClaim.findFirst({
+            where: { code: couponCode },
+            include: { event: true }
+        });
+
+        if (!claim) {
+            return res.status(404).json({ status: false, msg: "Invalid coupon code" });
+        }
+
+        if (claim.event.merchantId !== merchantId) {
+            return res.status(403).json({ status: false, msg: "Unauthorized to redeem this coupon" });
+        }
+
+        if (claim.isRedeemed) {
+            return res.status(400).json({ status: false, msg: "This coupon has already been redeemed" });
+        }
+
+        const updatedClaim = await prisma.liveEventClaim.update({
+            where: { id: claim.id },
+            data: { 
+                isRedeemed: true,
+                redeemedAt: new Date()
+            }
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: "Coupon successfully redeemed!",
+            data: updatedClaim
+        });
+
+    } catch (err) {
+        return res.status(500).json({ status: false, msg: err.message });
+    }
+};
