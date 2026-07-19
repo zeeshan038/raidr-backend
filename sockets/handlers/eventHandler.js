@@ -89,7 +89,6 @@ export const handleJoinEventRoom = async (ws, payload) => {
 /**
  * Broadcast this player's current GPS coordinates to everyone
  * else in the event room so the live map can show all players.
- * 
  * Throttling is done on the client side (only sent every 5 seconds
  * or when the user moves > 10 metres) to avoid flooding the server.
  * 
