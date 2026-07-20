@@ -12,6 +12,11 @@ const calculateGrowth = (current, previous) => {
     return parseFloat((((current - previous) / previous) * 100).toFixed(1));
 };
 
+/**
+ * @description Get dashboard metrics
+ * @route GET /api/admin/dashboard/metrics
+ * @access Private
+ */
 export const getDashboardMetrics = async (req, res) => {
     try {
         const now = new Date();
@@ -76,6 +81,12 @@ export const getDashboardMetrics = async (req, res) => {
     }
 };
 
+
+/**
+ * @description Get user growth chart
+ * @route GET /api/admin/dashboard/user-growth
+ * @access Private
+ */
 export const getUserGrowthChart = async (req, res) => {
     try {
         const now = new Date();
@@ -112,6 +123,12 @@ export const getUserGrowthChart = async (req, res) => {
     }
 };
 
+
+/**
+ * @description Get merchant growth chart
+ * @route GET /api/admin/dashboard/merchant-growth
+ * @access Private
+ */
 export const getMerchantGrowthChart = async (req, res) => {
     try {
         const now = new Date();
@@ -139,6 +156,69 @@ export const getMerchantGrowthChart = async (req, res) => {
             status: true,
             msg: "Merchant growth chart fetched successfully",
             data: merchantGrowthData
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
+
+export const getRecentMerchants = async (req, res) => {
+    try {
+        const merchants = await prisma.merchant.findMany({
+            take: 5,
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                businessName: true,
+                category: true,
+                credits: true,
+                status: true,
+            }
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: "Recent merchants fetched successfully",
+            data: merchants
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
+
+
+/**
+ * @description Get recent merchants
+ * @route GET /api/admin/dashboard/recent-merchants
+ * @access Private
+ */
+export const getUpcomingEvents = async (req, res) => {
+    try {
+        const events = await prisma.liveEvent.findMany({
+            where: {
+                startTime: { gte: new Date() }
+            },
+            take: 5,
+            orderBy: { startTime: 'asc' },
+            include: {
+                merchant: {
+                    select: {
+                        businessName: true
+                    }
+                }
+            }
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: "Upcoming events fetched successfully",
+            data: events
         });
     } catch (error) {
         return res.status(500).json({
