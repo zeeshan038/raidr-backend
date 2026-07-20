@@ -4,6 +4,7 @@ import { Worker, Queue } from 'bullmq';
 //config
 import { prisma } from '../config/db.js';
 import { redis } from '../services/redis.js';
+import { publishToUser } from '../sockets/eventPublisher.js';
 
 // The queue name
 const queueName = 'gps_events_queue';
@@ -106,6 +107,15 @@ export const startGpsWorker = () => {
                     if (lv > user.level) {
                         console.log(`[BullMQ] User ${userId} leveled up to ${lv}!`);
                     }
+
+                    // Broadcast real-time stats update to the user
+                    publishToUser(userId, {
+                        type: 'user_stats_updated',
+                        xpAdded: xpAmount,
+                        newXpProgress: bank,
+                        newLevel: lv,
+                        leveledUp: lv > user.level
+                    });
                 });
             } catch (error) {
                 console.error('[BullMQ] Box collection update failed:', error.message);

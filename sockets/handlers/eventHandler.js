@@ -140,7 +140,16 @@ export const handleCheckEventAvailability = async (ws, payload) => {
             return;
         }
 
-        console.log(`[EventHandler] Event found: ${event.title}. Remaining Qty: ${event.remainingQty}`);
+        console.log(`[EventHandler] Event found: ${event.title}. Remaining Qty: ${event.remainingQty}, Status: ${event.status}`);
+
+        if (event.status === 'completed' || event.status === 'cancelled') {
+            console.log('[EventHandler] -> Event has ended. Sending status: eventEnded');
+            ws.send(JSON.stringify({
+                type: 'event_availability_response',
+                status: 'eventEnded'
+            }));
+            return;
+        }
 
         if (event.remainingQty > 0) {
             console.log('[EventHandler] -> Event has stock. Sending status: available');

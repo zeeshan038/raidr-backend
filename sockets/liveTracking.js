@@ -64,6 +64,7 @@ export const startWebSocketServer = () => {
         /* On connection */
         open: (ws) => {
             console.log(`[uWS] User ${ws.userId} connected to live tracking`);
+            ws.subscribe(`user:${ws.userId}`);
             if (ws.squadId) {
                 ws.subscribe(`squad:${ws.squadId}`);
             }

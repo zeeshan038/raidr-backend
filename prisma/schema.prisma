@@ -22,7 +22,7 @@ model User {
   otpCreatedAt           DateTime?
   otpUpdatedAt           DateTime?
   otpCodeExpireTime      DateTime?
-  avatarBackUrl          String             @default("")
+  avatarBackUrl          String             @default("https://hel1.your-objectstorage.com/raidr-assets/avatars/1_back.png")
   avatarUpdatedAt        DateTime?
   selectedAvatarId       String             @default("")
   level                  Int                @default(1)
@@ -38,7 +38,7 @@ model User {
   fcmToken               String?       
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
-  avatarFrontUrl         String             @default("")
+  avatarFrontUrl         String             @default("https://hel1.your-objectstorage.com/raidr-assets/avatars/1_front.png")
   isNewUser              Boolean            @default(false)
   adImpressions          AdImpression[]
   boxCollectionLogs      BoxCollectionLog[]
