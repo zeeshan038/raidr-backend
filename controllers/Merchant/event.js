@@ -164,7 +164,7 @@ export const createLiveEvent = async (req, res) => {
             const nearbyUsers = calculateRadiusForUserLiveEvent(usersWithTokens, newEvent.latitude, newEvent.longitude, 20);
 
             for (const user of nearbyUsers) {
-                sendNotification(user.fcmToken, "New Event Near You!", `A new event "${title}" has been created near your location.`)
+                sendNotification(user.fcmToken, "⚡ A New Raid Has Appeared!", `"${title}" is now live near you. Be among the first to join and claim exclusive rewards!`)
                     .catch(err => console.error(`Failed to send notification to user ${user.id}:`, err));
             }
         } catch (notifErr) {

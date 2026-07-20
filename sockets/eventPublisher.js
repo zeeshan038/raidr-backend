@@ -32,6 +32,17 @@ export const publishToEvent = (eventId, payload) => {
     uwsApp.publish(topic, JSON.stringify(payload));
 };
 
+/**
+ * Publish any payload to a specific user's private topic.
+ * 
+ * @param {string} userId
+ * @param {object} payload
+ */
+export const publishToUser = (userId, payload) => {
+    if (!uwsApp) return;
+    uwsApp.publish(`user:${userId}`, JSON.stringify(payload));
+};
+
 // ─── Convenience Publishers ──────────────────────────────────────────────────
 
 /**

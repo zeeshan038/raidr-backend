@@ -213,6 +213,10 @@ export const JoinEvent = async (req, res) => {
             data: { quests_played: { increment: 1 } }
         });
 
+        // 4c. Get the user's name
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        const userName = user?.name || "A player";
+
         // 5. Get updated participant count
         const participantCount = await prisma.liveEventParticipant.count({
             where: { eventId }
@@ -222,7 +226,7 @@ export const JoinEvent = async (req, res) => {
         publishParticipantJoined(eventId, participantCount);
         publishCommanderMessage(
             eventId,
-            `A new player has joined the event!`,
+            `🎉 Welcome ${userName} to the event! Let's get ready! 🚀`,
             'system'
         );
 

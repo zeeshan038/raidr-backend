@@ -1,5 +1,5 @@
 import { prisma } from '../config/db.js';
-import { publishEventStatusChanged } from '../sockets/eventPublisher.js';
+import { publishEventStatusChanged, publishCommanderMessage } from '../sockets/eventPublisher.js';
 import { sendNotification } from '../utils/Notification.js';
 import { calculateRadiusForUserLiveEvent } from '../utils/methods/methods.js';
 
@@ -26,7 +26,7 @@ export const startEventStatusCron = () => {
             for (const event of events20Mins) {
                 for (const part of event.participants) {
                     if (part.user.fcmToken) {
-                        sendNotification(part.user.fcmToken, "Event Starting Soon!", `Event "${event.title}" is starting in 20 minutes!`)
+                        sendNotification(part.user.fcmToken, "⏳ Your Raid Starts Soon!", `"${event.title}" begins in 20 minutes. Get ready and be there from the start to maximize your rewards!`)
                             .catch(err => console.error(`Cron Notif Err for user ${part.user.id}:`, err));
                     }
                 }
@@ -53,7 +53,7 @@ export const startEventStatusCron = () => {
                     
                     for (const user of nearbyUsers) {
                         if (!participantIds.includes(user.id)) {
-                            sendNotification(user.fcmToken, "Event Starting Soon!", `An event "${event.title}" near you is starting in 10 minutes!`)
+                            sendNotification(user.fcmToken, "🚨 Raid Begins in 10 Minutes!", `Just 10 minutes until "${event.title}" goes live. Get ready to jump into the adventure!`)
                                 .catch(err => console.error(`Cron Notif Err for user ${user.id}:`, err));
                         }
                     }
@@ -83,10 +83,23 @@ export const startEventStatusCron = () => {
                     publishEventStatusChanged(event.id, 'live');
 
                     for (const user of allUsersWithTokens) {
-                        sendNotification(user.fcmToken, "Event is Live!", `Event "${event.title}" is now LIVE! Join in!`)
+                        sendNotification(user.fcmToken, "🚀 The Raid Is Live!", `"${event.title}" has officially started. Head there now and secure your rewards before others do!`)
                             .catch(err => console.error(`Cron Notif Err for user ${user.id}:`, err));
                     }
                 }
+            }
+
+            // --- 5 minutes before ending: Broadcast Commander Message ---
+            const min5_start = new Date(now.getTime() + 4 * 60000);
+            const min5_end = new Date(now.getTime() + 5 * 60000);
+            const eventsEndingSoon = await prisma.liveEvent.findMany({
+                where: {
+                    status: 'live',
+                    endTime: { gt: min5_start, lte: min5_end }
+                }
+            });
+            for (const event of eventsEndingSoon) {
+                publishCommanderMessage(event.id, '⏳ Hurry up! Only 5 minutes left in the event! Claim your rewards! 🎁', 'system');
             }
 
             // --- Event gets Completed ---
@@ -110,9 +123,10 @@ export const startEventStatusCron = () => {
                     });
                     console.log(`[Cron] Event ${event.id} is now COMPLETED`);
                     publishEventStatusChanged(event.id, 'completed');
+                    publishCommanderMessage(event.id, '🛑 The event has ended! Thank you for participating! 🎉', 'system');
 
                     for (const user of allUsersWithTokens) {
-                        sendNotification(user.fcmToken, "Event Completed", `Event "${event.title}" has successfully ended.`)
+                        sendNotification(user.fcmToken, "✅ Raid Completed!", `"${event.title}" has officially ended. Thanks for joining us, and we'll see you at the next adventure!`)
                             .catch(err => console.error(`Cron Notif Err for user ${user.id}:`, err));
                     }
                 }
