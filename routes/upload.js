@@ -48,8 +48,8 @@ router.route("/image").post(uploadImage.single("image"), async (req, res) => {
 
         // Compress Image
         const compressedImageBuffer = await sharp(req.file.buffer)
-            .toFormat("jpeg")
-            .jpeg({ quality: 80, progressive: true })
+            .toFormat("webp")
+            .webp({ quality: 80 })
             .toBuffer();
 
         // Generate a unique blob name (includes folder if provided)
@@ -61,7 +61,7 @@ router.route("/image").post(uploadImage.single("image"), async (req, res) => {
             Bucket: containerName,
             Key: blobName,
             Body: compressedImageBuffer,
-            ContentType: "image/jpeg",
+            ContentType: "image/webp",
             ACL: "public-read",
         });
 
