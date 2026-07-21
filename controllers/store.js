@@ -147,10 +147,24 @@ export const getMyAvatars = async (req, res) => {
             take: limit
         });
 
+        const avatarsList = owned.map(o => o.store);
+
+        if (page === 1) {
+            avatarsList.unshift({
+                id: "424", // Empty string matches selectedAvatarId default
+                name: "Default Avatar",
+                frontUrl: "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_front.png",
+                backUrl: "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_back.png",
+                price: 0,
+                isNew: false,
+                isFeatured: false,
+            });
+        }
+
         return res.status(200).json({
             status: true,
             msg: 'Owned avatars fetched successfully',
-            data: owned.map(o => o.store),
+            data: avatarsList,
             pagination: {
                 page: page,
                 limit: limit,
