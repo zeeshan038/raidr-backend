@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { prisma } from "../../config/db.js";
 import {
     MerchantEventCreateSchema,
@@ -111,6 +112,8 @@ export const createLiveEvent = async (req, res) => {
         // Determine status: small event is auto-scheduled, medium/large need approval
         const status = size === 'small' ? 'scheduled' : 'pending_approval';
 
+        const qrCodeToken = `event-qr-${crypto.randomBytes(16).toString('hex')}`;
+
         // 3. Perform database operations in transaction
         const [updatedMerchant, newEvent] = await prisma.$transaction([
             prisma.merchant.update({
@@ -136,6 +139,7 @@ export const createLiveEvent = async (req, res) => {
                     remainingQty: parseInt(rewardQuantity),
                     status,
                     size,
+                    qrCode: qrCodeToken,
                     xpReward: Math.floor(Math.random() * 201) + 100  // Random XP between 100–300
                 }
             })
