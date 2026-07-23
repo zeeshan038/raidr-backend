@@ -285,7 +285,7 @@ export const SkipYourTrip = async (req, res) => {
         const intenseMode = payload.intenseMode || true;
         const radiusKm = payload.radiusKm || 2.0;
         const tags = payload.tags || [];
-        const visibleK = intenseMode ? 6 : 3;
+        const visibleK = 3;
 
         // Extract vibe strings
         const keywords = expandTags(tags.length ? tags : ['Nightlife', 'Nature', 'Shopping', 'Children', 'Culinary']);

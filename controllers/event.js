@@ -337,19 +337,26 @@ export const GetMyEvents = async (req, res) => {
 
 
 /**
- * @Description Claim Live Event Reward
- * @Route POST /trip/live-event/claim/:eventId
+ * @Description Claim Live Event Reward (QR Code Scan)
+ * @Route POST /api/events/claim/:eventId
  * @Access Private
  */
 export const claimLiveEventReward = async (req, res) => {
     const { id: userId } = req.user;
     const eventId = req.params.eventId;
-    const { userLat, userLng } = req.body;
+    const { qrCodeData, userLat, userLng } = req.body;
 
     if (!eventId) {
         return res.status(400).json({
             status: false,
             msg: "Event ID is required"
+        });
+    }
+
+    if (!qrCodeData) {
+        return res.status(400).json({
+            status: false,
+            msg: "QR Code data is required"
         });
     }
 
@@ -373,7 +380,15 @@ export const claimLiveEventReward = async (req, res) => {
             });
         }
 
-        // 2. Validate Event is Live
+        // 2. Validate QR Code matches the Event
+        if (event.qrCode !== qrCodeData) {
+            return res.status(400).json({
+                status: false,
+                msg: "Invalid QR Code scanned for this event"
+            });
+        }
+
+        // 3. Validate Event is Live
         if (event.status !== "live") {
             return res.status(400).json({
                 status: false,
@@ -381,7 +396,7 @@ export const claimLiveEventReward = async (req, res) => {
             });
         }
 
-        // 3. Validate Radius (Must be within 20 meters)
+        // 4. Validate Radius (Must be within 20 meters)
         const distance = haversineDistance(
             parseFloat(userLat),
             parseFloat(userLng),
@@ -396,7 +411,7 @@ export const claimLiveEventReward = async (req, res) => {
             });
         }
 
-        // 4. Check if User has already claimed this event's reward
+        // 5. Check if User has already claimed this event's reward
         const existingClaim = await prisma.liveEventClaim.findUnique({
             where: {
                 eventId_userId: {
@@ -407,13 +422,25 @@ export const claimLiveEventReward = async (req, res) => {
         });
 
         if (existingClaim) {
-            return res.status(400).json({
-                status: false,
-                msg: "alreadyClaimed"
-            });
+            if (existingClaim.isRedeemed) {
+                return res.status(400).json({
+                    status: false,
+                    msg: "alreadyClaimed"
+                });
+            } else {
+                // If claim exists but is not redeemed, return it as the "Winning Ticket"
+                return res.status(200).json({
+                    status: true,
+                    msg: "success",
+                    claimId: existingClaim.id,
+                    code: existingClaim.code,
+                    xpEarned: existingClaim.xpEarned,
+                    isRedeemed: false
+                });
+            }
         }
 
-        // 5. Validate Reward Stock Availability
+        // 6. Validate Reward Stock Availability
         if (event.remainingQty <= 0) {
             return res.status(400).json({
                 status: false,
@@ -421,25 +448,116 @@ export const claimLiveEventReward = async (req, res) => {
             });
         }
 
-        // 6. Generate a dynamic coupon/voucher code
+        // 7. Generate a dynamic coupon/voucher code
         const assignedCode = crypto.randomBytes(4).toString('hex').toUpperCase();
-
-        // 7. Perform Claim in Transaction
         const xpAwarded = event.xpReward || 0;
 
-        const [claimDoc] = await prisma.$transaction([
-            prisma.liveEventClaim.create({
+        // 8. Create temporary claim ticket (does not decrement stock yet)
+        const claimDoc = await prisma.liveEventClaim.create({
+            data: {
+                eventId,
+                userId,
+                code: assignedCode,
+                xpEarned: xpAwarded,
+                lat: parseFloat(userLat),
+                lng: parseFloat(userLng),
+                isRedeemed: false
+            }
+        });
+
+        return res.status(200).json({
+            status: true,
+            msg: "success",
+            claimId: claimDoc.id,
+            code: assignedCode,
+            xpEarned: xpAwarded,
+            isRedeemed: false
+        });
+
+    } catch (error) {
+        console.error("Claim Live Event Reward Error:", error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message || "Internal server error"
+        });
+    }
+};
+
+/**
+ * @Description Redeem Live Event Claim (Swipe to Redeem)
+ * @Route POST /api/events/redeem/:claimId
+ * @Access Private
+ */
+export const redeemLiveEventClaim = async (req, res) => {
+    const { id: userId } = req.user;
+    const { claimId } = req.params;
+
+    if (!claimId) {
+        return res.status(400).json({
+            status: false,
+            msg: "Claim ID is required"
+        });
+    }
+
+    try {
+        // 1. Fetch the claim details
+        const claim = await prisma.liveEventClaim.findUnique({
+            where: { id: claimId },
+            include: { event: true }
+        });
+
+        if (!claim) {
+            return res.status(404).json({
+                status: false,
+                msg: "Winning ticket not found"
+            });
+        }
+
+        // 2. Validate ownership
+        if (claim.userId !== userId) {
+            return res.status(403).json({
+                status: false,
+                msg: "Unauthorized to redeem this ticket"
+            });
+        }
+
+        // 3. Prevent duplicate redemption
+        if (claim.isRedeemed) {
+            return res.status(400).json({
+                status: false,
+                msg: "This ticket has already been redeemed"
+            });
+        }
+
+        // 4. Validate event status
+        if (claim.event.status !== "live") {
+            return res.status(400).json({
+                status: false,
+                msg: `Cannot redeem reward. Event is currently "${claim.event.status}" (must be "live").`
+            });
+        }
+
+        // 5. Validate reward limit/stock is available
+        if (claim.event.remainingQty <= 0) {
+            return res.status(400).json({
+                status: false,
+                msg: "Sorry, reward limit has been reached."
+            });
+        }
+
+        // 6. Perform Redemption in Transaction
+        const xpAwarded = claim.xpEarned || 0;
+
+        const [updatedClaim] = await prisma.$transaction([
+            prisma.liveEventClaim.update({
+                where: { id: claimId },
                 data: {
-                    eventId,
-                    userId,
-                    code: assignedCode,
-                    xpEarned: xpAwarded,
-                    lat: parseFloat(userLat),
-                    lng: parseFloat(userLng)
+                    isRedeemed: true,
+                    redeemedAt: new Date()
                 }
             }),
             prisma.liveEvent.update({
-                where: { id: eventId },
+                where: { id: claim.eventId },
                 data: {
                     remainingQty: { decrement: 1 }
                 }
@@ -455,27 +573,26 @@ export const claimLiveEventReward = async (req, res) => {
 
         // Fetch updated inventory count after the transaction
         const updatedEvent = await prisma.liveEvent.findUnique({
-            where: { id: eventId },
-            select: { remainingQty: true, title: true }
+            where: { id: claim.eventId },
+            select: { remainingQty: true }
         });
 
-        // Broadcast real-time updates to everyone in this event's room
-        publishInventoryUpdated(eventId, updatedEvent.remainingQty);
+        // Broadcast real-time updates to event room subscribers
+        publishInventoryUpdated(claim.eventId, updatedEvent.remainingQty);
         publishCommanderMessage(
-            eventId,
-            `A player just claimed a reward! ${updatedEvent.remainingQty} remaining.`,
+            claim.eventId,
+            `A player just redeemed a reward! ${updatedEvent.remainingQty} remaining.`,
             'system'
         );
 
         return res.status(200).json({
             status: true,
             msg: "success",
-            code: assignedCode,
-            xpEarned: xpAwarded
+            claim: updatedClaim
         });
 
     } catch (error) {
-        console.error("Claim Live Event Reward Error:", error);
+        console.error("Redeem Live Event Claim Error:", error);
         return res.status(500).json({
             status: false,
             msg: error.message || "Internal server error"
