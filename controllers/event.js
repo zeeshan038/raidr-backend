@@ -32,10 +32,8 @@ export const GetEvents = async (req, res) => {
     }
 
     try {
-        const [events, totalEvents] = await prisma.$transaction([
+        const [liveEvents, coinRushEvents] = await Promise.all([
             prisma.liveEvent.findMany({
-                skip,
-                take: limit,
                 where: {
                     status: statusFilter
                 },
@@ -45,33 +43,59 @@ export const GetEvents = async (req, res) => {
                             userId: userId
                         }
                     }
-                },
-                orderBy: {
-                    startTime: "asc"
                 }
             }),
-            prisma.liveEvent.count({
+            prisma.coinRushEvent.findMany({
                 where: {
                     status: statusFilter
+                },
+                include: {
+                    participants: {
+                        where: {
+                            userId: userId
+                        }
+                    }
                 }
             })
         ]);
 
-        const formattedEvents = events.map(event => {
+        const formattedLiveEvents = liveEvents.map(event => {
             const isJoined = event.participants.length > 0;
             const { participants, ...eventData } = event;
             return {
                 ...eventData,
-                isJoined
+                isJoined,
+                isCoinRush: false
             };
         });
 
+        const formattedCoinRushEvents = coinRushEvents.map(event => {
+            const isJoined = event.participants.length > 0;
+            const { participants, ...eventData } = event;
+            return {
+                ...eventData,
+                isJoined,
+                isCoinRush: true
+            };
+        });
+
+        const mergedEvents = [...formattedLiveEvents, ...formattedCoinRushEvents];
+
+        // Sort combined events by startTime (ascending)
+        mergedEvents.sort((a, b) => {
+            const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
+            const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
+            return timeA - timeB;
+        });
+
+        const totalEvents = mergedEvents.length;
+        const paginatedEvents = mergedEvents.slice(skip, skip + limit);
         const totalPages = Math.ceil(totalEvents / limit);
 
         return res.status(200).json({
             status: true,
             msg: "Events fetched successfully",
-            events: formattedEvents,
+            events: paginatedEvents,
             pagination: {
                 page,
                 limit,
@@ -104,6 +128,7 @@ export const eventDetails = async (req, res) => {
     }
 
     try {
+        // Try Live Event first
         const event = await prisma.liveEvent.findUnique({
             where: { id: eventId },
             include: {
@@ -113,15 +138,71 @@ export const eventDetails = async (req, res) => {
             }
         });
 
-        if (!event) {
-            return res.status(404).json({
-                status: false,
-                msg: "Live Event not found"
+        if (event) {
+            // Check if the current user has already claimed a reward for this event
+            const existingClaim = await prisma.liveEventClaim.findUnique({
+                where: {
+                    eventId_userId: { eventId, userId }
+                }
+            });
+
+            return res.status(200).json({
+                status: true,
+                msg: "Event details fetched successfully",
+                event: {
+                    ...event,
+                    isCoinRush: false,
+                    totalParticipants: event._count.participants,
+                    hasClaimed: !!existingClaim,
+                    isRedeemed: existingClaim ? existingClaim.isRedeemed : false,
+                    claimId: existingClaim ? existingClaim.id : undefined
+                }
             });
         }
 
-        // Check if the current user has already claimed a reward for this event
-        const existingClaim = await prisma.liveEventClaim.findUnique({
+        // Try Coin Rush Event second
+        const coinRushEvent = await prisma.coinRushEvent.findUnique({
+            where: { id: eventId },
+            include: {
+                checkpoints: {
+                    orderBy: { sequence: 'asc' }
+                },
+                participants: {
+                    where: { userId }
+                },
+                progress: {
+                    where: { userId }
+                },
+                _count: {
+                    select: { participants: true }
+                }
+            }
+        });
+
+        if (!coinRushEvent) {
+            return res.status(404).json({
+                status: false,
+                msg: "Event not found"
+            });
+        }
+
+        const isJoined = coinRushEvent.participants.length > 0;
+        
+        // Determine which checkpoint IDs are completed
+        const completedCheckpointIds = coinRushEvent.progress.map(p => p.checkpointId);
+
+        // Hide qrCode strings for security and set isAchieved status
+        const safeCheckpoints = coinRushEvent.checkpoints.map(cp => {
+            const { qrCode, ...rest } = cp;
+            const isAchieved = completedCheckpointIds.includes(cp.id);
+            return {
+                ...rest,
+                isAchieved
+            };
+        });
+
+        // Check if there is already a claim
+        const existingCoinRushClaim = await prisma.coinRushClaim.findUnique({
             where: {
                 eventId_userId: { eventId, userId }
             }
@@ -131,10 +212,18 @@ export const eventDetails = async (req, res) => {
             status: true,
             msg: "Event details fetched successfully",
             event: {
-                ...event,
-                totalParticipants: event._count.participants,
-                hasClaimed: !!existingClaim,
-                isRedeemed: existingClaim ? existingClaim.isRedeemed : false
+                ...coinRushEvent,
+                checkpoints: safeCheckpoints,
+                participants: undefined, // remove raw relation list
+                progress: undefined,     // remove raw relation list
+                isJoined,
+                isCoinRush: true,
+                completedCheckpointIds,
+                totalParticipants: coinRushEvent._count.participants,
+                hasClaimed: !!existingCoinRushClaim,
+                isRedeemed: existingCoinRushClaim ? existingCoinRushClaim.isRedeemed : false,
+                claimId: existingCoinRushClaim ? existingCoinRushClaim.id : undefined,
+                claimCode: existingCoinRushClaim ? existingCoinRushClaim.code : undefined
             }
         });
 
