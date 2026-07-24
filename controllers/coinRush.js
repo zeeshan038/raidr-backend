@@ -115,14 +115,18 @@ export const GetCoinRushEventDetails = async (req, res) => {
 
         const isJoined = event.participants.length > 0;
         
-        // Hide qrCode strings for security so players can't preview them from API response
-        const safeCheckpoints = event.checkpoints.map(cp => {
-            const { qrCode, ...rest } = cp;
-            return rest;
-        });
-
         // Determine which checkpoint IDs are completed
         const completedCheckpointIds = event.progress.map(p => p.checkpointId);
+
+        // Hide qrCode strings for security and set isAchieved status
+        const safeCheckpoints = event.checkpoints.map(cp => {
+            const { qrCode, ...rest } = cp;
+            const isAchieved = completedCheckpointIds.includes(cp.id);
+            return {
+                ...rest,
+                isAchieved
+            };
+        });
 
         return res.status(200).json({
             status: true,
@@ -361,16 +365,14 @@ export const SubmitCheckpointCompletion = async (req, res) => {
         });
 
         if (completedCount === totalCheckpoints) {
-            // Check if there is already a winner
             const freshEvent = await prisma.coinRushEvent.findUnique({
                 where: { id: eventId }
             });
 
             if (!freshEvent.winnerId) {
-                // We have a winner! Use transaction to lock the event and declare winner
                 const uniqueCode = `CLAIM-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${Date.now().toString().slice(-4)}`;
                 
-                await prisma.$transaction([
+                const [_, newClaim] = await prisma.$transaction([
                     prisma.coinRushEvent.update({
                         where: { id: eventId },
                         data: {
@@ -412,6 +414,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     msg: "Congratulations! You completed all checkpoints first and won the event!",
                     completedAll: true,
                     isWinner: true,
+                    claimId: newClaim.id,
                     claimCode: uniqueCode
                 });
             } else {

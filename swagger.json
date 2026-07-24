@@ -5348,6 +5348,16 @@
                           "type": "boolean",
                           "description": "True if the merchant has confirmed and handed over the reward",
                           "example": false
+                        },
+                        "isCoinRush": {
+                          "type": "boolean",
+                          "description": "True if this is a Coin Rush event",
+                          "example": false
+                        },
+                        "claimId": {
+                          "type": "string",
+                          "description": "Claim ID if already claimed",
+                          "example": "3b0f718f-1f1b-c6ea-628a-3e727421a7e7"
                         }
                       }
                     }
@@ -5910,6 +5920,7 @@
                     "msg": { "type": "string" },
                     "completedAll": { "type": "boolean", "example": false },
                     "isWinner": { "type": "boolean", "example": false },
+                    "claimId": { "type": "string", "description": "Only present if user won", "example": "3b0f718f-1f1b-c6ea-628a-3e727421a7e7" },
                     "claimCode": { "type": "string", "description": "Only present if user won", "example": "CLAIM-A1B2-3456" },
                     "progress": { "type": "string", "example": "3/5" }
                   }
