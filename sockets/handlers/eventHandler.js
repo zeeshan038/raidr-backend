@@ -10,6 +10,7 @@
 
 import { prisma } from '../../config/db.js';
 import { publishToEvent } from '../eventPublisher.js';
+import { publishToCoinRush } from '../coinRushPublisher.js';
 
 /**
  * Subscribe the connected socket to the live event topic and
@@ -97,17 +98,27 @@ export const handleJoinEventRoom = async (ws, payload) => {
  * @param {string} [payload.avatarUrl]
  */
 export const handlePlayerLocationUpdate = (ws, payload) => {
-    const { eventId, lat, lng, avatarUrl } = payload;
+    const { eventId, lat, lng, avatarUrl, isCoinRush } = payload;
 
     if (!eventId || lat === undefined || lng === undefined) return;
 
-    publishToEvent(eventId, {
-        type: 'player_location',
-        userId: ws.userId,
-        lat,
-        lng,
-        avatarUrl: avatarUrl || null
-    });
+    if (isCoinRush) {
+        publishToCoinRush(eventId, {
+            type: 'player_location',
+            userId: ws.userId,
+            lat,
+            lng,
+            avatarUrl: avatarUrl || null
+        });
+    } else {
+        publishToEvent(eventId, {
+            type: 'player_location',
+            userId: ws.userId,
+            lat,
+            lng,
+            avatarUrl: avatarUrl || null
+        });
+    }
 };
 
 /**
