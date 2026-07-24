@@ -133,7 +133,8 @@ export const eventDetails = async (req, res) => {
             event: {
                 ...event,
                 totalParticipants: event._count.participants,
-                hasClaimed: !!existingClaim
+                hasClaimed: !!existingClaim,
+                isRedeemed: existingClaim ? existingClaim.isRedeemed : false
             }
         });
 

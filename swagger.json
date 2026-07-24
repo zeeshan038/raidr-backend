@@ -5343,6 +5343,11 @@
                         "hasClaimed": {
                           "type": "boolean",
                           "example": false
+                        },
+                        "isRedeemed": {
+                          "type": "boolean",
+                          "description": "True if the merchant has confirmed and handed over the reward",
+                          "example": false
                         }
                       }
                     }
@@ -5759,6 +5764,331 @@
           "500": {
             "description": "Server error"
           }
+        }
+      }
+    },
+    "/coin-rush/discovery": {
+      "get": {
+        "tags": ["Coin Rush - User"],
+        "summary": "Discover Coin Rush events (live, scheduled, ended)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "example": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "example": 10 } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["live", "scheduled", "ended"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Coin Rush events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Coin Rush events fetched successfully" },
+                    "events": { "type": "array", "items": { "type": "object" } },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "totalPages": { "type": "integer" },
+                        "hasNextPage": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coin-rush/details/{eventId}": {
+      "get": {
+        "tags": ["Coin Rush - User"],
+        "summary": "Get Coin Rush event details (checkpoints, progress, join status)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details with checkpoint list and completed checkpoint IDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "title": { "type": "string" },
+                        "eventType": { "type": "string", "enum": ["GPS", "QR"] },
+                        "status": { "type": "string" },
+                        "checkpointCount": { "type": "integer", "example": 5 },
+                        "isJoined": { "type": "boolean", "example": false },
+                        "completedCheckpointIds": { "type": "array", "items": { "type": "string" } },
+                        "totalParticipants": { "type": "integer" },
+                        "checkpoints": {
+                          "type": "array",
+                          "description": "QR code values are hidden for security",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "sequence": { "type": "integer" },
+                              "latitude": { "type": "number", "nullable": true },
+                              "longitude": { "type": "number", "nullable": true },
+                              "description": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Event not found" }
+        }
+      }
+    },
+    "/coin-rush/join/{eventId}": {
+      "post": {
+        "tags": ["Coin Rush - User"],
+        "summary": "Join a Coin Rush event",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Successfully joined the event" },
+          "400": { "description": "Already joined or event not active" },
+          "404": { "description": "Event not found" }
+        }
+      }
+    },
+    "/coin-rush/complete-checkpoint/{eventId}": {
+      "post": {
+        "tags": ["Coin Rush - User"],
+        "summary": "Submit a checkpoint completion (GPS proximity check or QR scan)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["checkpointId"],
+                "properties": {
+                  "checkpointId": { "type": "string", "description": "ID of the checkpoint to complete" },
+                  "lat": { "type": "number", "description": "Player latitude (GPS events only)" },
+                  "lng": { "type": "number", "description": "Player longitude (GPS events only)" },
+                  "qrCode": { "type": "string", "description": "Scanned QR code value (QR events only)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkpoint completed. Returns winner status if all checkpoints done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "msg": { "type": "string" },
+                    "completedAll": { "type": "boolean", "example": false },
+                    "isWinner": { "type": "boolean", "example": false },
+                    "claimCode": { "type": "string", "description": "Only present if user won", "example": "CLAIM-A1B2-3456" },
+                    "progress": { "type": "string", "example": "3/5" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Not in range / Invalid QR / Already completed" },
+          "404": { "description": "Event or checkpoint not found" }
+        }
+      }
+    },
+    "/coin-rush/redeem/{claimId}": {
+      "post": {
+        "tags": ["Coin Rush - User"],
+        "summary": "Redeem a Coin Rush claim (zero-touch winner reward handover)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "claimId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Reward redeemed successfully" },
+          "400": { "description": "Already redeemed" },
+          "404": { "description": "Claim not found" }
+        }
+      }
+    },
+    "/merchant/coin-rush/create": {
+      "post": {
+        "tags": ["Coin Rush - Merchant"],
+        "summary": "Create a new Coin Rush event with checkpoints (GPS auto/manual or QR)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "description", "eventType", "duration", "rewardType", "rewardTitle"],
+                "properties": {
+                  "title": { "type": "string", "example": "Treasure Hunt 2026" },
+                  "description": { "type": "string" },
+                  "eventType": { "type": "string", "enum": ["GPS", "QR"] },
+                  "checkpointCount": { "type": "integer", "minimum": 3, "maximum": 10, "example": 5 },
+                  "duration": { "type": "integer", "description": "Duration in minutes", "example": 60 },
+                  "startTime": { "type": "string", "format": "date-time" },
+                  "endTime": { "type": "string", "format": "date-time" },
+                  "centerLat": { "type": "number", "description": "GPS auto-gen: center latitude" },
+                  "centerLng": { "type": "number", "description": "GPS auto-gen: center longitude" },
+                  "radiusMeter": { "type": "number", "description": "GPS auto-gen: radius in meters (100–1000)" },
+                  "checkpoints": {
+                    "type": "array",
+                    "description": "GPS manual mode: list of coordinates",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "latitude": { "type": "number" },
+                        "longitude": { "type": "number" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  },
+                  "rewardType": { "type": "string", "enum": ["CASH", "PHYSICAL", "DIGITAL_COUPON"] },
+                  "rewardTitle": { "type": "string", "example": "PS5 Console" },
+                  "rewardImageUrl": { "type": "string" },
+                  "rewardDescription": { "type": "string" },
+                  "rewardClaimInstructions": { "type": "string" },
+                  "rewardValue": { "type": "number", "example": 500 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Coin Rush event created with all checkpoints" },
+          "400": { "description": "Validation error (missing fields, invalid count, etc.)" }
+        }
+      }
+    },
+    "/merchant/coin-rush/my-events": {
+      "get": {
+        "tags": ["Coin Rush - Merchant"],
+        "summary": "List all Coin Rush events created by the logged-in merchant",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of merchant's Coin Rush events with checkpoint and participant count" }
+        }
+      }
+    },
+    "/merchant/coin-rush/details/{eventId}": {
+      "get": {
+        "tags": ["Coin Rush - Merchant"],
+        "summary": "Get full details of a Coin Rush event (including QR codes and GPS coordinates)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Full event details with all checkpoint data (QR codes visible)" },
+          "403": { "description": "Forbidden - not your event" },
+          "404": { "description": "Event not found" }
+        }
+      }
+    },
+    "/merchant/coin-rush/qr-codes/{eventId}": {
+      "get": {
+        "tags": ["Coin Rush - Merchant"],
+        "summary": "Get QR codes for a QR-based Coin Rush event (for printing)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of checkpoints with QR code values for each",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "checkpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "sequence": { "type": "integer" },
+                          "qrCode": { "type": "string", "example": "cr_a1b2c3d4e5f6g7h8i9j0k1l2" },
+                          "description": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Event is not QR type" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Event not found" }
+        }
+      }
+    },
+    "/merchant/coin-rush/update/{eventId}": {
+      "put": {
+        "tags": ["Coin Rush - Merchant"],
+        "summary": "Update a Coin Rush event (draft/scheduled only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "description": "Fields to update" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Event updated successfully" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Event not found" }
+        }
+      }
+    },
+    "/merchant/coin-rush/delete/{eventId}": {
+      "delete": {
+        "tags": ["Coin Rush - Merchant"],
+        "summary": "Delete a Coin Rush event",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Event deleted successfully" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Event not found" }
         }
       }
     }
