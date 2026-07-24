@@ -15,6 +15,7 @@ import AdsRoutes from "./Merchant/ads.js"
 import DashboardRoutes from "./Merchant/dashboard.js"
 import PaymentRoutes from "./Merchant/payment.js"
 import MerchantEventRoutes from "./Merchant/event.js"
+import MerchantCoinRushRoutes from "./Merchant/coinRush.js"
 
 //Admin
 import AdminStoreRoutes from "./Admin/store.js"
@@ -29,15 +30,18 @@ router.use('/merchant/ads',AdsRoutes);
 router.use("/merchant/dashboard",DashboardRoutes);
 router.use('/merchant/payments', PaymentRoutes);
 router.use('/merchant/events', MerchantEventRoutes);
+router.use('/merchant/coin-rush', MerchantCoinRushRoutes);
 router.use('/merchant',MerchantRoutes);
 
 
 //User Routes
+import CoinRushRoutes from './coinRush.js'
 router.use("/user",UserRoutes);
 router.use("/trip",TripRoutes);
 router.use("/upload",UploadRoutes);
 router.use('/store',UserStoreRoutes);
 router.use('/events',EventRoutes)
+router.use('/coin-rush', CoinRushRoutes)
 
 //Admin 
 router.use("/admin/store",AdminStoreRoutes)

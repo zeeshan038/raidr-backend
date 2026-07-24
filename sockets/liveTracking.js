@@ -11,7 +11,9 @@ import { prisma } from '../config/db.js';
 
 // Socket Modules
 import { registerUWSApp } from './eventPublisher.js';
+import { registerUWSAppForCoinRush } from './coinRushPublisher.js';
 import { handleJoinEventRoom, handlePlayerLocationUpdate, handleCheckEventAvailability, handleCheckSurpriseAvailability } from './handlers/eventHandler.js';
+import { handleJoinCoinRushRoom } from './handlers/coinRushHandler.js';
 
 
 // Create a queue producer
@@ -28,6 +30,7 @@ export const startWebSocketServer = () => {
     // REST controllers (e.g. claimLiveEventReward) can call
     // publishToEvent() without needing to import uWS directly.
     registerUWSApp(app);
+    registerUWSAppForCoinRush(app);
 
     app.ws('/live-tracking', {
         compression: uWS.SHARED_COMPRESSOR,
@@ -81,6 +84,12 @@ export const startWebSocketServer = () => {
                 // payload to subscribe to real-time event broadcasts.
                 if (payload.type === 'join_event') {
                     await handleJoinEventRoom(ws, payload);
+                    return;
+                }
+
+                // ── Coin Rush Room ────────────────────────────────────────
+                if (payload.type === 'join_coin_rush') {
+                    await handleJoinCoinRushRoom(ws, payload);
                     return;
                 }
 

@@ -49,6 +49,9 @@ model User {
   coinPurchases          RaidPurchaseHistory[]
   eventParticipations    LiveEventParticipant[]
   eventClaims            LiveEventClaim[]
+  coinRushParticipations CoinRushParticipant[]
+  coinRushClaims         CoinRushClaim[]
+  coinRushProgress       CoinRushProgress[]
 }
 
 model BoxCollectionLog {
@@ -157,6 +160,7 @@ model Merchant {
   updatedAt          DateTime      @default(now()) @updatedAt
   merchantAds        MerchantAds[]
   liveEvents         LiveEvent[]
+  coinRushEvents     CoinRushEvent[]
   creditPurchases    MerchantCreditPurchase[]
   creditLogs         MerchantCreditLog[]
 }
@@ -369,3 +373,105 @@ model Store {
     updatedAt   DateTime @updatedAt
     owners      UserOwnedAvatar[]
 }
+
+model CoinRushEvent {
+  id                      String                 @id @default(uuid())
+  title                   String
+  description             String
+  merchantId              String
+  eventType               String                 // "GPS" or "QR"
+  status                  String                 @default("draft") // draft, pending_approval, scheduled, live, completed, cancelled
+  checkpointCount         Int                    @default(5)
+  duration                Int                    // Duration in minutes
+  startTime               DateTime?
+  endTime                 DateTime?
+  
+  // Center point and radius (for automatic GPS checkpoint generation)
+  centerLat               Float?
+  centerLng               Float?
+  radiusMeter             Float?
+  
+  // Flexible Reward System fields
+  rewardType              String                 // "CASH", "PHYSICAL", "DIGITAL_COUPON"
+  rewardTitle             String
+  rewardImageUrl          String                 @default("")
+  rewardDescription       String                 @default("")
+  rewardClaimInstructions String                 @default("")
+  rewardValue             Float                  @default(0.0)
+
+  winnerId                String?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+
+  merchant                Merchant               @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  checkpoints             CoinRushCheckpoint[]
+  participants            CoinRushParticipant[]
+  claims                  CoinRushClaim[]
+  progress                CoinRushProgress[]
+
+  @@index([merchantId])
+  @@index([status])
+}
+
+model CoinRushCheckpoint {
+  id          String             @id @default(uuid())
+  eventId     String
+  sequence    Int                // 1 to N
+  latitude    Float?             // For GPS
+  longitude   Float?             // For GPS
+  qrCode      String?            @unique // Unique code to scan for QR
+  description String             @default("")
+  createdAt   DateTime           @default(now())
+
+  event       CoinRushEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  progress    CoinRushProgress[]
+
+  @@index([eventId])
+}
+
+model CoinRushParticipant {
+  id        String        @id @default(uuid())
+  eventId   String
+  userId    String
+  joinedAt  DateTime      @default(now())
+  
+  event     CoinRushEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model CoinRushProgress {
+  id           String             @id @default(uuid())
+  eventId      String
+  userId       String
+  checkpointId String
+  completedAt  DateTime           @default(now())
+
+  event        CoinRushEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkpoint   CoinRushCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, checkpointId])
+  @@index([eventId, userId])
+}
+
+model CoinRushClaim {
+  id         String        @id @default(uuid())
+  eventId    String
+  userId     String
+  code       String        @unique // unique redemption voucher code
+  isRedeemed Boolean       @default(false)
+  redeemedAt DateTime?
+  claimedAt  DateTime      @default(now())
+
+  event      CoinRushEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+

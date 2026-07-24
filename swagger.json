@@ -5359,7 +5359,7 @@
         "tags": [
           "User Events"
         ],
-        "summary": "Claim reward code for a live event (requires coordinates)",
+        "summary": "Claim reward code for a live event (requires coordinates and QR data)",
         "security": [
           {
             "bearerAuth": []
@@ -5382,10 +5382,15 @@
               "schema": {
                 "type": "object",
                 "required": [
+                  "qrCodeData",
                   "userLat",
                   "userLng"
                 ],
                 "properties": {
+                  "qrCodeData": {
+                    "type": "string",
+                    "description": "The scanned QR code content"
+                  },
                   "userLat": {
                     "type": "number",
                     "format": "float"
@@ -5401,7 +5406,40 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully claimed reward, returns voucher code and XP earned"
+            "description": "Successfully claimed reward, returns voucher code and XP earned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "claimId": {
+                      "type": "string",
+                      "example": "clksd83j00001u87b6hds1234"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "A1B2C3D4"
+                    },
+                    "xpEarned": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "isRedeemed": {
+                      "type": "boolean",
+                      "example": false
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request (e.g. out of range, not live, sold out, already claimed)"
@@ -5411,6 +5449,100 @@
           },
           "404": {
             "description": "Live Event not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/events/redeem/{claimId}": {
+      "post": {
+        "tags": [
+          "User Events"
+        ],
+        "summary": "Redeem live event claim code (swipe to redeem)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "claimId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully redeemed reward",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "claim": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "clksd83j00001u87b6hds1234"
+                        },
+                        "eventId": {
+                          "type": "string",
+                          "example": "clevent1234"
+                        },
+                        "userId": {
+                          "type": "string",
+                          "example": "cluser1234"
+                        },
+                        "code": {
+                          "type": "string",
+                          "example": "A1B2C3D4"
+                        },
+                        "xpEarned": {
+                          "type": "integer",
+                          "example": 100
+                        },
+                        "isRedeemed": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "redeemedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-07-23T10:40:00.000Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g. already redeemed, event not live, sold out)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (unauthorized to redeem this ticket)"
+          },
+          "404": {
+            "description": "Winning ticket not found"
           },
           "500": {
             "description": "Internal Server Error"
