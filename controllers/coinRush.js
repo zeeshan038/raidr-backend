@@ -232,10 +232,10 @@ export const SubmitCheckpointCompletion = async (req, res) => {
     const userId = req.user.id;
     const { checkpointId, lat, lng, qrCode } = req.body;
 
-    if (!checkpointId) {
+    if (!checkpointId && !qrCode) {
         return res.status(400).json({
             status: false,
-            msg: "checkpointId is required"
+            msg: "Either checkpointId or qrCode is required"
         });
     }
 
@@ -278,19 +278,29 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             });
         }
 
-        // Find the checkpoint
-        const checkpoint = event.checkpoints.find(cp => cp.id === checkpointId);
+        // Find the checkpoint (by qrCode for QR events, otherwise by checkpointId)
+        let checkpoint;
+        if (event.eventType === 'QR' && qrCode) {
+            checkpoint = event.checkpoints.find(cp => cp.qrCode === qrCode);
+        } else if (checkpointId) {
+            checkpoint = event.checkpoints.find(cp => cp.id === checkpointId);
+        }
+
         if (!checkpoint) {
             return res.status(404).json({
                 status: false,
-                msg: "Checkpoint not found in this event"
+                msg: event.eventType === 'QR'
+                    ? "Checkpoint matching scanned QR code not found in this event"
+                    : "Checkpoint not found in this event"
             });
         }
+
+        const actualCheckpointId = checkpoint.id;
 
         // Check if already completed
         const alreadyCompleted = await prisma.coinRushProgress.findUnique({
             where: {
-                eventId_userId_checkpointId: { eventId, userId, checkpointId }
+                eventId_userId_checkpointId: { eventId, userId, checkpointId: actualCheckpointId }
             }
         });
 
@@ -303,6 +313,12 @@ export const SubmitCheckpointCompletion = async (req, res) => {
 
         // Validate type constraints
         if (event.eventType === 'GPS') {
+            if (!checkpointId) {
+                return res.status(400).json({
+                    status: false,
+                    msg: "checkpointId is required for GPS checkpoints"
+                });
+            }
             if (lat === undefined || lng === undefined) {
                 return res.status(400).json({
                     status: false,
@@ -328,12 +344,6 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     msg: "qrCode is required for QR checkpoints"
                 });
             }
-            if (checkpoint.qrCode !== qrCode) {
-                return res.status(400).json({
-                    status: false,
-                    msg: "Invalid QR code"
-                });
-            }
         }
 
         // Record progress
@@ -341,7 +351,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             data: {
                 eventId,
                 userId,
-                checkpointId
+                checkpointId: actualCheckpointId
             }
         });
 
@@ -358,7 +368,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             type: 'coinrush_checkpoint_completed',
             eventId,
             userId,
-            checkpointId,
+            checkpointId: actualCheckpointId,
             sequence: checkpoint.sequence,
             progress: progressMessage
         });
