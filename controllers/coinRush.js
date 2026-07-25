@@ -137,7 +137,6 @@ export const GetCoinRushEventDetails = async (req, res) => {
                 participants: undefined, // remove raw relation list
                 progress: undefined,     // remove raw relation list
                 isJoined,
-                completedCheckpointIds,
                 totalParticipants: event._count.participants
             }
         });
@@ -145,7 +144,7 @@ export const GetCoinRushEventDetails = async (req, res) => {
         return res.status(500).json({
             status: false,
             msg: error.message
-        });
+        }); 
     }
 };
 
@@ -415,7 +414,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     completedAll: true,
                     isWinner: true,
                     claimId: newClaim.id,
-                    claimCode: uniqueCode
+                    claimCode: uniqueCode,
+                    isAchieved: true
                 });
             } else {
                 // Completed but not the winner
@@ -423,7 +423,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     status: true,
                     msg: "You completed all checkpoints, but someone else won first.",
                     completedAll: true,
-                    isWinner: false
+                    isWinner: false,
+                    isAchieved: true
                 });
             }
         }
@@ -432,7 +433,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             status: true,
             msg: `Checkpoint ${checkpoint.sequence} completed successfully`,
             completedAll: false,
-            progress: progressMessage
+            progress: progressMessage,
+            isAchieved: true
         });
 
     } catch (error) {

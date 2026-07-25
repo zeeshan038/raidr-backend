@@ -218,7 +218,6 @@ export const eventDetails = async (req, res) => {
                 progress: undefined,     // remove raw relation list
                 isJoined,
                 isCoinRush: true,
-                completedCheckpointIds,
                 totalParticipants: coinRushEvent._count.participants,
                 hasClaimed: !!existingCoinRushClaim,
                 isRedeemed: existingCoinRushClaim ? existingCoinRushClaim.isRedeemed : false,
