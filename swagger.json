@@ -5864,12 +5864,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["checkpointId"],
                 "properties": {
-                  "checkpointId": { "type": "string", "description": "ID of the checkpoint to complete" },
+                  "checkpointId": { "type": "string", "description": "ID of the checkpoint to complete (Required for GPS events)" },
                   "lat": { "type": "number", "description": "Player latitude (GPS events only)" },
                   "lng": { "type": "number", "description": "Player longitude (GPS events only)" },
-                  "qrCode": { "type": "string", "description": "Scanned QR code value (QR events only)" }
+                  "qrCode": { "type": "string", "description": "Scanned QR code value (Required for QR events if checkpointId is omitted)" }
                 }
               }
             }

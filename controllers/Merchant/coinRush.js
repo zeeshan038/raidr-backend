@@ -185,6 +185,18 @@ export const GetMerchantCoinRushEvents = async (req, res) => {
                 checkpoints: {
                     orderBy: { sequence: 'asc' }
                 },
+                claims: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                photoUrl: true
+                            }
+                        }
+                    }
+                },
                 _count: {
                     select: { participants: true }
                 }
