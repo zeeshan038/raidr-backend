@@ -46,3 +46,29 @@ export const calculateRadiusForUserLiveEvent = (users, eventLat, eventLng, radiu
         return distanceMeters <= (radiusKm * 1000);
     });
 };
+
+
+// Helper to generate random coordinates within a radius (in meters)
+export const generateRandomCoordinates = (centerLat, centerLng, radiusMeter, count) => {
+    const checkpoints = [];
+    const R = 6378137; // Earth radius in meters
+    for (let i = 1; i <= count; i++) {
+        // Random distance and bearing
+        const r = Math.random() * radiusMeter;
+        const theta = Math.random() * 2 * Math.PI;
+
+        const dLat = (r * Math.cos(theta)) / R;
+        const dLng = (r * Math.sin(theta)) / (R * Math.cos((centerLat * Math.PI) / 180));
+
+        const checkpointLat = centerLat + dLat * (180 / Math.PI);
+        const checkpointLng = centerLng + dLng * (180 / Math.PI);
+
+        checkpoints.push({
+            sequence: i,
+            latitude: checkpointLat,
+            longitude: checkpointLng,
+            description: `Checkpoint ${i}`
+        });
+    }
+    return checkpoints;
+};
