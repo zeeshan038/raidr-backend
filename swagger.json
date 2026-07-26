@@ -5932,12 +5932,81 @@
         "summary": "Redeem a Coin Rush claim (zero-touch winner reward handover)",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
-          { "name": "claimId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "claimId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
         ],
         "responses": {
-          "200": { "description": "Reward redeemed successfully" },
-          "400": { "description": "Already redeemed" },
-          "404": { "description": "Claim not found" }
+          "200": {
+            "description": "Reward redeemed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Reward successfully redeemed!" },
+                    "claim": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "example": "clksd83j00001u87b6hds1234" },
+                        "eventId": { "type": "string", "example": "900ec9b9-3dd2-4c44-8056-6a8015071cd0" },
+                        "userId": { "type": "string", "example": "user-uuid" },
+                        "code": { "type": "string", "example": "CLAIM-A1B2C3D4-5001" },
+                        "isRedeemed": { "type": "boolean", "example": true },
+                        "redeemedAt": { "type": "string", "format": "date-time", "example": "2026-07-25T01:00:04.123Z" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g. already redeemed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "msg": { "type": "string", "example": "This reward has already been redeemed" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Claim not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "msg": { "type": "string", "example": "Claim not found" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "msg": { "type": "string", "example": "Internal server error" }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
