@@ -35,26 +35,39 @@ export const getAllRewards = async (req, res) => {
             });
         }
 
+        let liveEvents = [];
+        let coinRushes = [];
+
         // 2. Fetch Live Event Claims
         if (filterType === 'all' || filterType === 'liveevents' || filterType === 'live_events' || filterType === 'events') {
-            details.liveEvents = await prisma.liveEventClaim.findMany({
+            liveEvents = await prisma.liveEventClaim.findMany({
                 where: { userId },
                 include: {
                     event: true
                 },
                 orderBy: { claimedAt: 'desc' }
             });
+            liveEvents = liveEvents.map(item => ({ ...item, isCoinRush: false }));
         }
 
         // 3. Fetch Coin Rush Claims
         if (filterType === 'all' || filterType === 'coinrushes' || filterType === 'coin_rushes' || filterType === 'coin_rush') {
-            details.coinRushes = await prisma.coinRushClaim.findMany({
+            coinRushes = await prisma.coinRushClaim.findMany({
                 where: { userId },
                 include: {
                     event: true
                 },
                 orderBy: { claimedAt: 'desc' }
             });
+            coinRushes = coinRushes.map(item => ({ ...item, isCoinRush: true }));
+        }
+
+        if (liveEvents.length > 0 || coinRushes.length > 0) {
+            const combinedEvents = [...liveEvents, ...coinRushes];
+            combinedEvents.sort((a, b) => new Date(b.claimedAt) - new Date(a.claimedAt));
+            details.events = combinedEvents;
+        } else if (filterType === 'all' || filterType === 'liveevents' || filterType === 'live_events' || filterType === 'events' || filterType === 'coinrushes' || filterType === 'coin_rushes' || filterType === 'coin_rush') {
+            details.events = [];
         }
 
         // 4. Fetch Merchant Ad Claims

@@ -186,8 +186,7 @@ try {
                                         type: 'object',
                                         properties: {
                                             boxes: { type: 'array', items: { type: 'object' } },
-                                            liveEvents: { type: 'array', items: { type: 'object' } },
-                                            coinRushes: { type: 'array', items: { type: 'object' } },
+                                            events: { type: 'array', items: { type: 'object' } },
                                             merchantAds: { type: 'array', items: { type: 'object' } }
                                         }
                                     }
@@ -217,7 +216,7 @@ try {
                                             isClaimed: false
                                         }
                                     ],
-                                    liveEvents: [
+                                    events: [
                                         {
                                             id: 'da51ef2e-2416-43ef-add5-5462dfd30df2',
                                             eventId: 'b2b6237c-8710-4da0-b87f-3d639dbd2e14',
@@ -229,6 +228,7 @@ try {
                                             xpEarned: 232,
                                             lat: 33.5650926,
                                             lng: 73.1519571,
+                                            isCoinRush: false,
                                             event: {
                                                 id: 'b2b6237c-8710-4da0-b87f-3d639dbd2e14',
                                                 title: 'tetsyumcd',
@@ -241,9 +241,7 @@ try {
                                                 status: 'completed',
                                                 xpReward: 232
                                             }
-                                        }
-                                    ],
-                                    coinRushes: [
+                                        },
                                         {
                                             id: 'a821af58-d29c-4418-9f4f-6f433255c84d',
                                             eventId: '15d37906-ad5a-4fdc-ba84-201973fc346c',
@@ -252,6 +250,7 @@ try {
                                             isRedeemed: true,
                                             redeemedAt: '2026-07-26T21:07:09.662Z',
                                             claimedAt: '2026-07-26T21:06:21.866Z',
+                                            isCoinRush: true,
                                             event: {
                                                 id: '15d37906-ad5a-4fdc-ba84-201973fc346c',
                                                 title: 'monal 4 mall event ',
