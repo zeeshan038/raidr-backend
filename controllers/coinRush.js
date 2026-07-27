@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { prisma } from '../config/db.js';
 import { haversineDistance } from '../utils/methods/methods.js';
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
+import { publishToUser } from '../sockets/eventPublisher.js';
 
 // Custom publisher function for Coin Rush to distinct from normal live event rooms
 const publishToCoinRushRoom = (eventId, payload) => {
@@ -113,7 +114,9 @@ export const GetCoinRushEventDetails = async (req, res) => {
             });
         }
 
+        const participant = event.participants[0];
         const isJoined = event.participants.length > 0;
+        const agreedToSafetyWarning = participant ? (participant.agreedToSafetyWarning || false) : false;
         
         // Determine which checkpoint IDs are completed
         const completedCheckpointIds = event.progress.map(p => p.checkpointId);
@@ -137,6 +140,7 @@ export const GetCoinRushEventDetails = async (req, res) => {
                 participants: undefined, // remove raw relation list
                 progress: undefined,     // remove raw relation list
                 isJoined,
+                agreedToSafetyWarning,
                 totalParticipants: event._count.participants
             }
         });
@@ -346,12 +350,49 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             }
         }
 
-        // Record progress
-        await prisma.coinRushProgress.create({
-            data: {
-                eventId,
-                userId,
-                checkpointId: actualCheckpointId
+        // Record progress and update user stats (XP / Level)
+        const xpAmount = checkpoint.xp || Math.floor(Math.random() * (200 - 50 + 1)) + 50;
+        let levelData = { level: 1, xp_progress: 0, leveledUp: false, bank: 0 };
+
+        await prisma.$transaction(async (tx) => {
+            await tx.coinRushProgress.create({
+                data: {
+                    eventId,
+                    userId,
+                    checkpointId: actualCheckpointId
+                }
+            });
+
+            const user = await tx.user.findUnique({
+                where: { id: userId },
+                select: { level: true, xp_progress: true }
+            });
+
+            if (user) {
+                let lv = Math.max(1, user.level);
+                let bank = Math.max(0, user.xp_progress) + xpAmount;
+                const xpRequired = (level) => 100 * level * level;
+
+                while (bank >= xpRequired(lv)) {
+                    bank -= xpRequired(lv);
+                    lv += 1;
+                }
+
+                await tx.user.update({
+                    where: { id: userId },
+                    data: {
+                        xp_earned: { increment: xpAmount },
+                        xp_progress: bank,
+                        level: lv
+                    }
+                });
+
+                levelData = {
+                    level: lv,
+                    xp_progress: bank,
+                    leveledUp: lv > user.level,
+                    bank
+                };
             }
         });
 
@@ -362,6 +403,15 @@ export const SubmitCheckpointCompletion = async (req, res) => {
 
         const totalCheckpoints = event.checkpointCount;
         const progressMessage = `${completedCount}/${totalCheckpoints}`;
+
+        // Broadcast real-time stats update to the user
+        publishToUser(userId, {
+            type: 'user_stats_updated',
+            xpAdded: xpAmount,
+            newXpProgress: levelData.bank,
+            newLevel: levelData.level,
+            leveledUp: levelData.leveledUp
+        });
 
         // Broadcast checkpoint completed
         publishToCoinRushRoom(eventId, {
@@ -425,7 +475,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     isWinner: true,
                     claimId: newClaim.id,
                     claimCode: uniqueCode,
-                    isAchieved: true
+                    isAchieved: true,
+                    xpEarned: xpAmount
                 });
             } else {
                 // Completed but not the winner
@@ -434,7 +485,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     msg: "You completed all checkpoints, but someone else won first.",
                     completedAll: true,
                     isWinner: false,
-                    isAchieved: true
+                    isAchieved: true,
+                    xpEarned: xpAmount
                 });
             }
         }
@@ -444,7 +496,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             msg: `Checkpoint ${checkpoint.sequence} completed successfully`,
             completedAll: false,
             progress: progressMessage,
-            isAchieved: true
+            isAchieved: true,
+            xpEarned: xpAmount
         });
 
     } catch (error) {

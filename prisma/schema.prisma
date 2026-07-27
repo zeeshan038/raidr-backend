@@ -16,6 +16,8 @@ model User {
   long                  String?
   isVerified             Boolean            @default(false)
   authProvider           String             @default("email")
+  signupMethod           String             @default("manual")
+  agreedToTerms          Boolean            @default(false)
   firebaseUid            String?            @unique
   photoUrl               String             @default("")
   otpCode                String?
@@ -97,6 +99,7 @@ model Trip {
   destinationLat        Float?
   destinationLng        Float?
   hotelLat              Float?
+  agreedToSafetyWarning  Boolean            @default(false)
   hotelLng              Float?
   heading               Float?
   user                  User       @relation(fields: [userId], references: [id])
@@ -274,12 +277,13 @@ model LiveEvent {
 }
 
 model LiveEventParticipant {
-  id        String    @id @default(uuid())
-  eventId   String
-  userId    String
-  joinedAt  DateTime  @default(now())
-  event     LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String    @id @default(uuid())
+  eventId               String
+  userId                String
+  agreedToSafetyWarning Boolean   @default(false)
+  joinedAt              DateTime  @default(now())
+  event                 LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -421,6 +425,7 @@ model CoinRushCheckpoint {
   longitude   Float?             // For GPS
   qrCode      String?            @unique // Unique code to scan for QR
   description String             @default("")
+  xp          Int                @default(0)
   createdAt   DateTime           @default(now())
 
   event       CoinRushEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -430,13 +435,14 @@ model CoinRushCheckpoint {
 }
 
 model CoinRushParticipant {
-  id        String        @id @default(uuid())
-  eventId   String
-  userId    String
-  joinedAt  DateTime      @default(now())
+  id                    String        @id @default(uuid())
+  eventId               String
+  userId                String
+  agreedToSafetyWarning Boolean       @default(false)
+  joinedAt              DateTime      @default(now())
   
-  event     CoinRushEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event                 CoinRushEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -474,4 +480,3 @@ model CoinRushClaim {
   @@index([eventId])
   @@index([userId])
 }
-

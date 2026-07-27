@@ -115,6 +115,180 @@ try {
         }
     };
 
+    
+    swaggerData.paths['/user/agree-safety'] = {
+        post: {
+            tags: ["User Profile"],
+            summary: "Agree Safety Warning",
+            description: "Set agreedToSafetyWarning to true for a trip, live event, or coin rush event",
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                type: { type: "string", enum: ["trip", "event", "coin_rush"], example: "trip" },
+                                id: { type: "string", example: "uuid-of-trip-or-event" },
+                                agreedToSafetyWarning: { type: "boolean", example: true }
+                            },
+                            required: ["type", "id"]
+                        }
+                    }
+                }
+            },
+            responses: {
+                "200": { description: "Safety warning agreed successfully" },
+                "400": { description: "Validation error" },
+                "404": { description: "Trip or Event not found" },
+                "500": { description: "Server error" }
+            }
+        }
+    };
+
+
+
+    
+    swaggerData.paths['/rewards/all'] = {
+        get: {
+            tags: ['Rewards'],
+            summary: 'Get All User Rewards',
+            description: 'Fetch all user rewards across Surprise Me, Route Stops, Mystery Boxes, Live Events, Coin Rush events, and Merchant Ads.',
+            security: [{ bearerAuth: [] }],
+            parameters: [
+                {
+                    name: 'type',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string', enum: ['all', 'boxes', 'liveEvents', 'coinRushes', 'merchantAds'] },
+                    description: 'Filter rewards by category (e.g. boxes, liveEvents, coinRushes, merchantAds)'
+                },
+                {
+                    name: 'source',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string' },
+                    description: 'Filter box collections by specific source (e.g., surprise_box, route_stop)'
+                }
+            ],
+            responses: {
+                '200': {
+                    description: 'Rewards fetched successfully',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    status: { type: 'boolean', example: true },
+                                    msg: { type: 'string', example: 'Rewards fetched successfully' },
+                                    details: {
+                                        type: 'object',
+                                        properties: {
+                                            boxes: { type: 'array', items: { type: 'object' } },
+                                            liveEvents: { type: 'array', items: { type: 'object' } },
+                                            coinRushes: { type: 'array', items: { type: 'object' } },
+                                            merchantAds: { type: 'array', items: { type: 'object' } }
+                                        }
+                                    }
+                                }
+                            },
+                            example: {
+                                status: true,
+                                msg: 'Rewards fetched successfully',
+                                details: {
+                                    boxes: [
+                                        {
+                                            id: '84fa681b-3ab1-4fab-ae49-94c014d660e2',
+                                            userId: 'e4abf66a-a5ce-48ae-827a-fe814cc525c6',
+                                            boxType: 'green',
+                                            xpEarned: 50,
+                                            distanceCoveredKm: 0,
+                                            source: 'route_stop',
+                                            lat: 25.2628,
+                                            lng: 55.3288,
+                                            createdAt: '2026-07-05T18:47:29.526Z',
+                                            adData: {
+                                                id: '40f32ef5-9b24-4311-86e1-36dd2f3de46a',
+                                                adTitle: '1+1 Drinks Special',
+                                                imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvqOhRuRlkj8hrkWewpf1RtjXmZaCKYEWkwqnUW_qBIA&s=10',
+                                                merchantName: 'Starbucks'
+                                            },
+                                            isClaimed: false
+                                        }
+                                    ],
+                                    liveEvents: [
+                                        {
+                                            id: 'da51ef2e-2416-43ef-add5-5462dfd30df2',
+                                            eventId: 'b2b6237c-8710-4da0-b87f-3d639dbd2e14',
+                                            userId: 'e4abf66a-a5ce-48ae-827a-fe814cc525c6',
+                                            code: '57B4B0FB',
+                                            isRedeemed: true,
+                                            redeemedAt: '2026-07-24T20:47:51.244Z',
+                                            claimedAt: '2026-07-24T20:47:16.683Z',
+                                            xpEarned: 232,
+                                            lat: 33.5650926,
+                                            lng: 73.1519571,
+                                            event: {
+                                                id: 'b2b6237c-8710-4da0-b87f-3d639dbd2e14',
+                                                title: 'tetsyumcd',
+                                                description: 'casd ',
+                                                address: '2 Soan Ave, Soan Gardens Block B Islamabad, Pakistan',
+                                                merchantId: '74c46e56-6df8-41b0-b873-5d2fd80d6464',
+                                                reward: 'Burger as a reward',
+                                                rewardQuantity: 3,
+                                                remainingQty: 2,
+                                                status: 'completed',
+                                                xpReward: 232
+                                            }
+                                        }
+                                    ],
+                                    coinRushes: [
+                                        {
+                                            id: 'a821af58-d29c-4418-9f4f-6f433255c84d',
+                                            eventId: '15d37906-ad5a-4fdc-ba84-201973fc346c',
+                                            userId: 'e4abf66a-a5ce-48ae-827a-fe814cc525c6',
+                                            code: 'CLAIM-96BFEB6C-1864',
+                                            isRedeemed: true,
+                                            redeemedAt: '2026-07-26T21:07:09.662Z',
+                                            claimedAt: '2026-07-26T21:06:21.866Z',
+                                            event: {
+                                                id: '15d37906-ad5a-4fdc-ba84-201973fc346c',
+                                                title: 'monal 4 mall event ',
+                                                description: 'monal 4 mall event ',
+                                                rewardType: 'PHYSICAL',
+                                                rewardTitle: 'Hundred Dollars Reward',
+                                                rewardValue: 233
+                                            }
+                                        }
+                                    ],
+                                    merchantAds: [
+                                        {
+                                            id: 'b5668e6d-1b06-49fb-baeb-4ba3fa9c2f2a',
+                                            adId: '40f32ef5-9b24-4311-86e1-36dd2f3de46a',
+                                            userId: 'e4abf66a-a5ce-48ae-827a-fe814cc525c6',
+                                            createdAt: '2026-06-27T15:48:54.513Z',
+                                            ad: {
+                                                id: '40f32ef5-9b24-4311-86e1-36dd2f3de46a',
+                                                adTitle: '1+1 Drinks Special',
+                                                mysteryBoxReward: 'Free Signature Smoothie'
+                                            },
+                                            code: {
+                                                code: 'B91591AD',
+                                                isClaimed: true,
+                                                isRedeemed: false
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+
     fs.writeFileSync(swaggerPath, JSON.stringify(swaggerData, null, 2), 'utf8');
     console.log("Successfully updated Merchant-Dashboard/swagger.json");
 } catch (error) {

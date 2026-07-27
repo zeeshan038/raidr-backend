@@ -132,6 +132,9 @@ export const eventDetails = async (req, res) => {
         const event = await prisma.liveEvent.findUnique({
             where: { id: eventId },
             include: {
+                participants: {
+                    where: { userId }
+                },
                 _count: {
                     select: { participants: true }
                 }
@@ -146,16 +149,21 @@ export const eventDetails = async (req, res) => {
                 }
             });
 
+            const liveParticipant = event.participants[0];
+            const agreedToSafetyWarning = liveParticipant ? (liveParticipant.agreedToSafetyWarning || false) : false;
+
             return res.status(200).json({
                 status: true,
                 msg: "Event details fetched successfully",
                 event: {
                     ...event,
+                    participants: undefined,
                     isCoinRush: false,
                     totalParticipants: event._count.participants,
                     hasClaimed: !!existingClaim,
                     isRedeemed: existingClaim ? existingClaim.isRedeemed : false,
-                    claimId: existingClaim ? existingClaim.id : undefined
+                    claimId: existingClaim ? existingClaim.id : undefined,
+                    agreedToSafetyWarning
                 }
             });
         }
@@ -186,7 +194,9 @@ export const eventDetails = async (req, res) => {
             });
         }
 
+        const coinRushParticipant = coinRushEvent.participants[0];
         const isJoined = coinRushEvent.participants.length > 0;
+        const coinRushAgreedToSafetyWarning = coinRushParticipant ? (coinRushParticipant.agreedToSafetyWarning || false) : false;
         
         // Determine which checkpoint IDs are completed
         const completedCheckpointIds = coinRushEvent.progress.map(p => p.checkpointId);
@@ -217,6 +227,7 @@ export const eventDetails = async (req, res) => {
                 participants: undefined, // remove raw relation list
                 progress: undefined,     // remove raw relation list
                 isJoined,
+                agreedToSafetyWarning: coinRushAgreedToSafetyWarning,
                 isCoinRush: true,
                 totalParticipants: coinRushEvent._count.participants,
                 hasClaimed: !!existingCoinRushClaim,
