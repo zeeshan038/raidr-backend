@@ -318,6 +318,46 @@ try {
                                     rewardType: { type: 'string', example: 'live_event' },
                                     reward: { type: 'object' }
                                 }
+                            },
+                            example: {
+                                status: true,
+                                msg: "Reward details fetched successfully",
+                                category: "live_event",
+                                rewardType: "live_event",
+                                reward: {
+                                    id: "da51ef2e-2416-43ef-add5-5462dfd30df2",
+                                    eventId: "b2b6237c-8710-4da0-b87f-3d639dbd2e14",
+                                    userId: "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
+                                    code: "57B4B0FB",
+                                    isRedeemed: true,
+                                    redeemedAt: "2026-07-24T20:47:51.244Z",
+                                    claimedAt: "2026-07-24T20:47:16.683Z",
+                                    xpEarned: 232,
+                                    lat: 33.5650926,
+                                    lng: 73.15195709999999,
+                                    event: {
+                                        id: "b2b6237c-8710-4da0-b87f-3d639dbd2e14",
+                                        title: "tetsyumcd",
+                                        description: "casd ",
+                                        address: "2 Soan Ave, Soan Gardens Block B Islamabad, Pakistan",
+                                        merchantId: "74c46e56-6df8-41b0-b873-5d2fd80d6464",
+                                        commanderAvatar: "",
+                                        imageUrl: "https://hel1.your-objectstorage.com/raidr-assets/eventReward/1784925796421_images.jpg",
+                                        latitude: 33.5650926,
+                                        longitude: 73.15195709999999,
+                                        startTime: "2026-07-24T20:45:00.000Z",
+                                        endTime: "2026-07-25T19:00:00.000Z",
+                                        reward: "Burger as a reward",
+                                        rewardQuantity: 3,
+                                        remainingQty: 2,
+                                        status: "completed",
+                                        xpReward: 232,
+                                        size: "small",
+                                        qrCode: "event-qr-998dfabbde786c6d0a2bb20172f184fd",
+                                        createdAt: "2026-07-24T20:43:20.472Z",
+                                        updatedAt: "2026-07-25T19:00:34.329Z"
+                                    }
+                                }
                             }
                         }
                     }

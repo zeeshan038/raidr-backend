@@ -2093,313 +2093,7 @@
         }
       }
     },
-    "/user/all-boxes": {
-      "get": {
-        "tags": [
-          "User Profile"
-        ],
-        "summary": "Get all boxes history",
-        "description": "Fetch the history of boxes collected by the user. Optionally filter by source.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "source",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Filter by source (e.g. 'surprise_me', 'route_stop')"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Box history fetched successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
-                    "currentLevel": {
-                      "type": "integer"
-                    },
-                    "totalGreenBoxes": {
-                      "type": "integer"
-                    },
-                    "totalGoldenBoxes": {
-                      "type": "integer"
-                    },
-                    "totalPurpleBoxes": {
-                      "type": "integer"
-                    },
-                    "history": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "boxType": {
-                            "type": "string"
-                          },
-                          "xpEarned": {
-                            "type": "integer"
-                          },
-                          "distanceCoveredKm": {
-                            "type": "number"
-                          },
-                          "source": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "lat": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "lng": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "adData": {
-                            "type": "object",
-                            "nullable": true,
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "adTitle": {
-                                "type": "string"
-                              },
-                              "imageUrl": {
-                                "type": "string"
-                              },
-                              "merchantName": {
-                                "type": "string"
-                              }
-                            }
-                          },
-                          "isClaimed": {
-                            "type": "boolean"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/user/live-events/claims": {
-      "get": {
-        "tags": [
-          "User Profile"
-        ],
-        "summary": "Get user live event claims",
-        "description": "Fetch the history of live events claimed by the user.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Live event claims fetched successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
-                    "history": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "userId": {
-                            "type": "string"
-                          },
-                          "code": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "claimedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "xpEarned": {
-                            "type": "integer"
-                          },
-                          "lat": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "lng": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "event": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "title": {
-                                "type": "string"
-                              },
-                              "description": {
-                                "type": "string"
-                              },
-                              "address": {
-                                "type": "string"
-                              },
-                              "merchantId": {
-                                "type": "string"
-                              },
-                              "commanderAvatar": {
-                                "type": "string"
-                              },
-                              "imageUrl": {
-                                "type": "string"
-                              },
-                              "latitude": {
-                                "type": "number"
-                              },
-                              "longitude": {
-                                "type": "number"
-                              },
-                              "startTime": {
-                                "type": "string",
-                                "format": "date-time"
-                              },
-                              "endTime": {
-                                "type": "string",
-                                "format": "date-time"
-                              },
-                              "reward": {
-                                "type": "string"
-                              },
-                              "rewardQuantity": {
-                                "type": "integer"
-                              },
-                              "remainingQty": {
-                                "type": "integer"
-                              },
-                              "status": {
-                                "type": "string"
-                              },
-                              "xpReward": {
-                                "type": "integer"
-                              },
-                              "size": {
-                                "type": "string"
-                              },
-                              "createdAt": {
-                                "type": "string",
-                                "format": "date-time"
-                              },
-                              "updatedAt": {
-                                "type": "string",
-                                "format": "date-time"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
+
     "/trip/weather": {
       "get": {
         "tags": [
@@ -7071,6 +6765,46 @@
                     },
                     "reward": {
                       "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Reward details fetched successfully",
+                  "category": "live_event",
+                  "rewardType": "live_event",
+                  "reward": {
+                    "id": "da51ef2e-2416-43ef-add5-5462dfd30df2",
+                    "eventId": "b2b6237c-8710-4da0-b87f-3d639dbd2e14",
+                    "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
+                    "code": "57B4B0FB",
+                    "isRedeemed": true,
+                    "redeemedAt": "2026-07-24T20:47:51.244Z",
+                    "claimedAt": "2026-07-24T20:47:16.683Z",
+                    "xpEarned": 232,
+                    "lat": 33.5650926,
+                    "lng": 73.15195709999999,
+                    "event": {
+                      "id": "b2b6237c-8710-4da0-b87f-3d639dbd2e14",
+                      "title": "tetsyumcd",
+                      "description": "casd ",
+                      "address": "2 Soan Ave, Soan Gardens Block B Islamabad, Pakistan",
+                      "merchantId": "74c46e56-6df8-41b0-b873-5d2fd80d6464",
+                      "commanderAvatar": "",
+                      "imageUrl": "https://hel1.your-objectstorage.com/raidr-assets/eventReward/1784925796421_images.jpg",
+                      "latitude": 33.5650926,
+                      "longitude": 73.15195709999999,
+                      "startTime": "2026-07-24T20:45:00.000Z",
+                      "endTime": "2026-07-25T19:00:00.000Z",
+                      "reward": "Burger as a reward",
+                      "rewardQuantity": 3,
+                      "remainingQty": 2,
+                      "status": "completed",
+                      "xpReward": 232,
+                      "size": "small",
+                      "qrCode": "event-qr-998dfabbde786c6d0a2bb20172f184fd",
+                      "createdAt": "2026-07-24T20:43:20.472Z",
+                      "updatedAt": "2026-07-25T19:00:34.329Z"
                     }
                   }
                 }
