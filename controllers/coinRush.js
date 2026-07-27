@@ -454,6 +454,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     type: 'coinrush_winner_announced',
                     eventId,
                     winnerId: userId,
+                    winnerName: req.user.name || "",
                     reward: {
                         type: event.rewardType,
                         title: event.rewardTitle,

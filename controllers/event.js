@@ -128,113 +128,109 @@ export const eventDetails = async (req, res) => {
     }
 
     try {
-        // Try Live Event first
-        const event = await prisma.liveEvent.findUnique({
-            where: { id: eventId },
-            include: {
-                participants: {
-                    where: { userId }
-                },
-                _count: {
-                    select: { participants: true }
+        // Fetch event data and claims in parallel (1 database round-trip)
+        const [liveEvent, coinRushEvent, liveClaim, coinRushClaim] = await Promise.all([
+            prisma.liveEvent.findUnique({
+                where: { id: eventId },
+                include: {
+                    participants: {
+                        where: { userId }
+                    },
+                    _count: {
+                        select: { participants: true }
+                    }
                 }
-            }
-        });
-
-        if (event) {
-            // Check if the current user has already claimed a reward for this event
-            const existingClaim = await prisma.liveEventClaim.findUnique({
+            }),
+            prisma.coinRushEvent.findUnique({
+                where: { id: eventId },
+                include: {
+                    checkpoints: {
+                        orderBy: { sequence: 'asc' }
+                    },
+                    participants: {
+                        where: { userId }
+                    },
+                    progress: {
+                        where: { userId }
+                    },
+                    _count: {
+                        select: { participants: true }
+                    }
+                }
+            }),
+            prisma.liveEventClaim.findUnique({
                 where: {
                     eventId_userId: { eventId, userId }
                 }
-            });
+            }),
+            prisma.coinRushClaim.findUnique({
+                where: {
+                    eventId_userId: { eventId, userId }
+                }
+            })
+        ]);
 
-            const liveParticipant = event.participants[0];
+        if (liveEvent) {
+            const liveParticipant = liveEvent.participants[0];
             const agreedToSafetyWarning = liveParticipant ? (liveParticipant.agreedToSafetyWarning || false) : false;
 
             return res.status(200).json({
                 status: true,
                 msg: "Event details fetched successfully",
                 event: {
-                    ...event,
+                    ...liveEvent,
                     participants: undefined,
                     isCoinRush: false,
-                    totalParticipants: event._count.participants,
-                    hasClaimed: !!existingClaim,
-                    isRedeemed: existingClaim ? existingClaim.isRedeemed : false,
-                    claimId: existingClaim ? existingClaim.id : undefined,
+                    totalParticipants: liveEvent._count.participants,
+                    hasClaimed: !!liveClaim,
+                    isRedeemed: liveClaim ? liveClaim.isRedeemed : false,
+                    claimId: liveClaim ? liveClaim.id : undefined,
                     agreedToSafetyWarning
                 }
             });
         }
 
-        // Try Coin Rush Event second
-        const coinRushEvent = await prisma.coinRushEvent.findUnique({
-            where: { id: eventId },
-            include: {
-                checkpoints: {
-                    orderBy: { sequence: 'asc' }
-                },
-                participants: {
-                    where: { userId }
-                },
-                progress: {
-                    where: { userId }
-                },
-                _count: {
-                    select: { participants: true }
-                }
-            }
-        });
+        if (coinRushEvent) {
+            const coinRushParticipant = coinRushEvent.participants[0];
+            const isJoined = coinRushEvent.participants.length > 0;
+            const coinRushAgreedToSafetyWarning = coinRushParticipant ? (coinRushParticipant.agreedToSafetyWarning || false) : false;
+            
+            // Determine which checkpoint IDs are completed
+            const completedCheckpointIds = coinRushEvent.progress.map(p => p.checkpointId);
 
-        if (!coinRushEvent) {
-            return res.status(404).json({
-                status: false,
-                msg: "Event not found"
+            // Hide qrCode strings for security and set isAchieved status
+            const safeCheckpoints = coinRushEvent.checkpoints.map(cp => {
+                const { qrCode, ...rest } = cp;
+                const isAchieved = completedCheckpointIds.includes(cp.id);
+                return {
+                    ...rest,
+                    isAchieved
+                };
+            });
+
+            return res.status(200).json({
+                status: true,
+                msg: "Event details fetched successfully",
+                event: {
+                    ...coinRushEvent,
+                    checkpoints: safeCheckpoints,
+                    participants: undefined,
+                    progress: undefined,
+                    isJoined,
+                    agreedToSafetyWarning: coinRushAgreedToSafetyWarning,
+                    isCoinRush: true,
+                    totalParticipants: coinRushEvent._count.participants,
+                    hasClaimed: !!coinRushClaim,
+                    isRedeemed: coinRushClaim ? coinRushClaim.isRedeemed : false,
+                    claimId: coinRushClaim ? coinRushClaim.id : undefined,
+                    claimCode: coinRushClaim ? coinRushClaim.code : undefined
+                }
             });
         }
 
-        const coinRushParticipant = coinRushEvent.participants[0];
-        const isJoined = coinRushEvent.participants.length > 0;
-        const coinRushAgreedToSafetyWarning = coinRushParticipant ? (coinRushParticipant.agreedToSafetyWarning || false) : false;
-        
-        // Determine which checkpoint IDs are completed
-        const completedCheckpointIds = coinRushEvent.progress.map(p => p.checkpointId);
-
-        // Hide qrCode strings for security and set isAchieved status
-        const safeCheckpoints = coinRushEvent.checkpoints.map(cp => {
-            const { qrCode, ...rest } = cp;
-            const isAchieved = completedCheckpointIds.includes(cp.id);
-            return {
-                ...rest,
-                isAchieved
-            };
-        });
-
-        // Check if there is already a claim
-        const existingCoinRushClaim = await prisma.coinRushClaim.findUnique({
-            where: {
-                eventId_userId: { eventId, userId }
-            }
-        });
-
-        return res.status(200).json({
-            status: true,
-            msg: "Event details fetched successfully",
-            event: {
-                ...coinRushEvent,
-                checkpoints: safeCheckpoints,
-                participants: undefined, // remove raw relation list
-                progress: undefined,     // remove raw relation list
-                isJoined,
-                agreedToSafetyWarning: coinRushAgreedToSafetyWarning,
-                isCoinRush: true,
-                totalParticipants: coinRushEvent._count.participants,
-                hasClaimed: !!existingCoinRushClaim,
-                isRedeemed: existingCoinRushClaim ? existingCoinRushClaim.isRedeemed : false,
-                claimId: existingCoinRushClaim ? existingCoinRushClaim.id : undefined,
-                claimCode: existingCoinRushClaim ? existingCoinRushClaim.code : undefined
-            }
+        return res.status(404).json({
+            status: false,
+            msg: "Event not found"
         });
 
     } catch (error) {
@@ -244,6 +240,7 @@ export const eventDetails = async (req, res) => {
         });
     }
 };
+
 
 /**
  * @Description Join Event
