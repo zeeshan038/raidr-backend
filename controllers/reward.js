@@ -41,7 +41,7 @@ export const getAllRewards = async (req, res) => {
                 where: { userId },
                 include: {
                     event: true
-                }, 
+                },
                 orderBy: { claimedAt: 'desc' }
             });
         }
@@ -76,6 +76,103 @@ export const getAllRewards = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in getAllRewards:", error);
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
+
+/**
+ * @Description Get full details for a single reward by ID (Box, Live Event Claim, Coin Rush Claim, or Merchant Ad Claim)
+ * @Route GET /api/rewards/detail/:id
+ * @Access Private
+ */
+export const rewardDetail = async (req, res) => {
+    const { id: userId } = req.user;
+    const { id: rewardId } = req.params;
+
+    if (!rewardId) {
+        return res.status(400).json({
+            status: false,
+            msg: "Reward ID is required"
+        });
+    }
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({
+                status: false,
+                msg: "User not found"
+            });
+        }
+
+        // 1. Check BoxCollectionLog
+        const box = await prisma.boxCollectionLog.findFirst({
+            where: { id: rewardId, userId }
+        });
+        if (box) {
+            return res.status(200).json({
+                status: true,
+                msg: "Reward details fetched successfully",
+                category: "box",
+                rewardType: box.source || box.boxType || "mystery_box",
+                reward: box
+            });
+        }
+
+        // 2. Check LiveEventClaim
+        const liveEventClaim = await prisma.liveEventClaim.findFirst({
+            where: { id: rewardId, userId },
+            include: { event: true }
+        });
+        if (liveEventClaim) {
+            return res.status(200).json({
+                status: true,
+                msg: "Reward details fetched successfully",
+                category: "live_event",
+                rewardType: "live_event",
+                reward: liveEventClaim
+            });
+        }
+
+        // 3. Check CoinRushClaim
+        const coinRushClaim = await prisma.coinRushClaim.findFirst({
+            where: { id: rewardId, userId },
+            include: { event: true }
+        });
+        if (coinRushClaim) {
+            return res.status(200).json({
+                status: true,
+                msg: "Reward details fetched successfully",
+                category: "coin_rush",
+                rewardType: "coin_rush",
+                reward: coinRushClaim
+            });
+        }
+
+        // 4. Check MerchantAdClaim
+        const adClaim = await prisma.merchantAdClaim.findFirst({
+            where: { id: rewardId, userId },
+            include: { ad: true, code: true }
+        });
+        if (adClaim) {
+            return res.status(200).json({
+                status: true,
+                msg: "Reward details fetched successfully",
+                category: "merchant_ad",
+                rewardType: "merchant_ad",
+                reward: adClaim
+            });
+        }
+
+        return res.status(404).json({
+            status: false,
+            msg: "Reward not found"
+        });
+    } catch (error) {
+        console.error("Error in rewardDetail:", error);
         return res.status(500).json({
             status: false,
             msg: error.message

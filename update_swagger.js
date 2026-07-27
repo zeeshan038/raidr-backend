@@ -289,6 +289,45 @@ try {
         }
     };
 
+    
+    swaggerData.paths['/rewards/detail/{id}'] = {
+        get: {
+            tags: ['Rewards'],
+            summary: 'Get Single Reward Details',
+            description: 'Fetch complete details for any reward by ID (Box, Live Event claim, Coin Rush claim, or Merchant Ad claim). Automatically checks all reward categories and returns all redemption codes, claim status, and attached event/ad details.',
+            security: [{ bearerAuth: [] }],
+            parameters: [
+                {
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' },
+                    description: 'Reward ID (Claim ID or Box Collection ID)'
+                }
+            ],
+            responses: {
+                '200': {
+                    description: 'Reward details fetched successfully',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    status: { type: 'boolean', example: true },
+                                    msg: { type: 'string', example: 'Reward details fetched successfully' },
+                                    category: { type: 'string', example: 'live_event' },
+                                    rewardType: { type: 'string', example: 'live_event' },
+                                    reward: { type: 'object' }
+                                }
+                            }
+                        }
+                    }
+                },
+                '404': { description: 'Reward not found' }
+            }
+        }
+    };
+
     fs.writeFileSync(swaggerPath, JSON.stringify(swaggerData, null, 2), 'utf8');
     console.log("Successfully updated Merchant-Dashboard/swagger.json");
 } catch (error) {
