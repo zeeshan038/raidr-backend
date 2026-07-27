@@ -832,6 +832,146 @@
             "example": "64d..."
           }
         }
+      },
+      "EventDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "merchantId": {
+            "type": "string"
+          },
+          "commanderAvatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reward": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardQuantity": {
+            "type": "integer",
+            "nullable": true
+          },
+          "remainingQty": {
+            "type": "integer",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "xpReward": {
+            "type": "integer",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "qrCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventType": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkpointCount": {
+            "type": "integer",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "nullable": true
+          },
+          "centerLat": {
+            "type": "number",
+            "nullable": true
+          },
+          "centerLng": {
+            "type": "number",
+            "nullable": true
+          },
+          "radiusMeter": {
+            "type": "number",
+            "nullable": true
+          },
+          "rewardType": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardClaimInstructions": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardValue": {
+            "type": "number",
+            "nullable": true
+          },
+          "winnerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "isJoined": {
+            "type": "boolean"
+          },
+          "isCoinRush": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     }
   },
@@ -5111,6 +5251,46 @@
             "description": "Events fetched successfully, includes 'isJoined' indicator per event",
             "content": {
               "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Events fetched successfully"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventDto"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "hasNextPage": {
+                          "type": "boolean",
+                          "example": false
+                        }
+                      }
+                    }
+                  }
+                },
                 "example": {
                   "status": true,
                   "msg": "Events fetched successfully",
@@ -5259,6 +5439,46 @@
             "description": "Joined events fetched successfully",
             "content": {
               "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Events fetched successfully"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventDto"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "hasNextPage": {
+                          "type": "boolean",
+                          "example": false
+                        }
+                      }
+                    }
+                  }
+                },
                 "example": {
                   "status": true,
                   "msg": "Events fetched successfully",
@@ -6650,12 +6870,11 @@
               "enum": [
                 "all",
                 "boxes",
-                "liveEvents",
-                "coinRushes",
+                "events",
                 "merchantAds"
               ]
             },
-            "description": "Filter rewards by category (e.g. boxes, liveEvents, coinRushes, merchantAds)"
+            "description": "Filter rewards by category (e.g. boxes, events, merchantAds)"
           },
           {
             "name": "source",
@@ -6692,13 +6911,7 @@
                             "type": "object"
                           }
                         },
-                        "liveEvents": {
-                          "type": "array",
-                          "items": {
-                            "type": "object"
-                          }
-                        },
-                        "coinRushes": {
+                        "events": {
                           "type": "array",
                           "items": {
                             "type": "object"
@@ -6738,7 +6951,7 @@
                         "isClaimed": false
                       }
                     ],
-                    "liveEvents": [
+                    "events": [
                       {
                         "id": "da51ef2e-2416-43ef-add5-5462dfd30df2",
                         "eventId": "b2b6237c-8710-4da0-b87f-3d639dbd2e14",
@@ -6750,6 +6963,7 @@
                         "xpEarned": 232,
                         "lat": 33.5650926,
                         "lng": 73.1519571,
+                        "isCoinRush": false,
                         "event": {
                           "id": "b2b6237c-8710-4da0-b87f-3d639dbd2e14",
                           "title": "tetsyumcd",
@@ -6762,9 +6976,7 @@
                           "status": "completed",
                           "xpReward": 232
                         }
-                      }
-                    ],
-                    "coinRushes": [
+                      },
                       {
                         "id": "a821af58-d29c-4418-9f4f-6f433255c84d",
                         "eventId": "15d37906-ad5a-4fdc-ba84-201973fc346c",
@@ -6773,6 +6985,7 @@
                         "isRedeemed": true,
                         "redeemedAt": "2026-07-26T21:07:09.662Z",
                         "claimedAt": "2026-07-26T21:06:21.866Z",
+                        "isCoinRush": true,
                         "event": {
                           "id": "15d37906-ad5a-4fdc-ba84-201973fc346c",
                           "title": "monal 4 mall event ",
