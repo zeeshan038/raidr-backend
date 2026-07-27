@@ -69,7 +69,10 @@ export const CreateCoinRushEvent = async (req, res) => {
                     parseFloat(centerLng),
                     parseFloat(radiusMeter),
                     checkpointCount
-                );
+                ).map(cp => ({
+                    ...cp,
+                    xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
+                }));
             } else if (Array.isArray(manualCheckpoints) && manualCheckpoints.length > 0) {
                 // Manual placement
                 if (manualCheckpoints.length !== checkpointCount) {
@@ -82,7 +85,8 @@ export const CreateCoinRushEvent = async (req, res) => {
                     sequence: idx + 1,
                     latitude: parseFloat(cp.latitude),
                     longitude: parseFloat(cp.longitude),
-                    description: cp.description || `Checkpoint ${idx + 1}`
+                    description: cp.description || `Checkpoint ${idx + 1}`,
+                    xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
                 }));
             } else {
                 return res.status(400).json({
@@ -95,7 +99,8 @@ export const CreateCoinRushEvent = async (req, res) => {
                 createdCheckpoints.push({
                     sequence: i,
                     qrCode: `cr_${crypto.randomBytes(12).toString('hex')}`,
-                    description: `Checkpoint ${i}`
+                    description: `Checkpoint ${i}`,
+                    xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
                 });
             }
         } else {

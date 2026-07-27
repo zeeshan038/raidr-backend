@@ -15,12 +15,15 @@ export const RegisterSchema = (payload) => {
             'string.min': 'Password must be at least 6 characters long',
             'any.required': 'Password is required',
             'string.empty': 'Password cannot be empty'
+        }),
+        agreedToTerms: Joi.boolean().valid(true).required().messages({
+            'any.only': 'You must agree to the Terms & Conditions',
+            'any.required': 'Agreement to Terms & Conditions is required'
         })
     }).unknown(false);
 
     return schema.validate(payload);
 }
-
 
 export const LoginSchema = (payload) => {
     const schema = Joi.object({
@@ -90,6 +93,21 @@ export const ResetPasswordSchema = (payload) => {
             'any.required': 'New Password is required',
             'string.empty': 'New Password cannot be empty'
         })
+    }).unknown(false);
+
+    return schema.validate(payload);
+}
+
+export const AgreeSafetySchema = (payload) => {
+    const schema = Joi.object({
+        type: Joi.string().valid('trip', 'event', 'coin_rush').required().messages({
+            'any.only': 'type must be one of [trip, event, coin_rush]',
+            'any.required': 'type is required'
+        }),
+        id: Joi.string().required().messages({
+            'any.required': 'id is required'
+        }),
+        agreedToSafetyWarning: Joi.boolean().optional()
     }).unknown(false);
 
     return schema.validate(payload);

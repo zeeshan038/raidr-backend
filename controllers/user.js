@@ -11,7 +11,8 @@ import {
     LoginSchema,
     UpdateSchema,
     ForgotPasswordSchema,
-    ResetPasswordSchema
+    ResetPasswordSchema,
+    AgreeSafetySchema
 } from "../schema/User.js";
 
 //Utils
@@ -58,6 +59,8 @@ export const registerUser = async (req, res) => {
                     where: { email: payload.email },
                     data: {
                         password: hashedPassword,
+                        signupMethod: "manual",
+                        agreedToTerms: payload.agreedToTerms,
                         otpCode: otp,
                         otpCreatedAt: new Date(),
                         otpUpdatedAt: new Date(),
@@ -73,6 +76,8 @@ export const registerUser = async (req, res) => {
                     email: payload.email,
                     password: hashedPassword,
                     isVerified: false,
+                    signupMethod: "manual",
+                    agreedToTerms: payload.agreedToTerms,
                     otpCode: otp,
                     otpCreatedAt: new Date(),
                     otpUpdatedAt: new Date(),
@@ -344,6 +349,8 @@ export const signInWithGoogle = async (req, res) => {
                     email: email,
                     name: name || "Google User",
                     authProvider: "google",
+                    signupMethod: "google",
+                    agreedToTerms: true,
                     firebaseUid: uid,
                     photoUrl: picture || "",
                     isVerified: true,
@@ -411,6 +418,8 @@ export const signInWithApple = async (req, res) => {
                     email: email,
                     name: name || "Apple User",
                     authProvider: "apple",
+                    signupMethod: "apple",
+                    agreedToTerms: true,
                     firebaseUid: uid,
                     photoUrl: picture || "",
                     isVerified: true,
@@ -846,86 +855,100 @@ export const getKeys = async (req, res) => {
 
 
 /**
- * @Description Get all boxes
- * @Route GET api/user/get-all-boxes
+ * @Description Agree safety warning for trip, live event, or coin rush
+ * @Route POST api/user/agree-safety
  * @Access Private
  */
-export const getAllBoxes = async (req, res) => {
-    const { id } = req.user;
-    const { source } = req.query;
+export const agreeSafetyWarning = async (req, res) => {
+    const payload = req.body;
+    const { error } = AgreeSafetySchema(payload);
+    if (error) {
+        return res.status(400).json({
+            status: false,
+            msg: error.details[0].message
+        });
+    }
+
+    const { type, id } = payload;
+    const userId = req.user.id;
+
     try {
-        const user = await prisma.user.findUnique({ where: { id: id } });
-        if (!user) {
-            return res.status(404).json({
-                status: false,
-                msg: "User not found"
+        if (type === 'trip') {
+            const trip = await prisma.trip.findFirst({
+                where: { id: id, userId: userId }
+            });
+            if (!trip) {
+                return res.status(404).json({
+                    status: false,
+                    msg: "Trip not found or does not belong to user"
+                });
+            }
+
+            await prisma.trip.update({
+                where: { id: id },
+                data: { agreedToSafetyWarning: true }
+            });
+
+            return res.status(200).json({
+                status: true,
+                msg: "Safety warning agreed for trip"
             });
         }
 
-        const whereClause = { userId: id };
-        if (source) {
-            whereClause.source = source;
-        }
+        if (type === 'event') {
+            const liveEvent = await prisma.liveEvent.findUnique({
+                where: { id: id }
+            });
+            if (!liveEvent) {
+                return res.status(404).json({
+                    status: false,
+                    msg: "Live Event not found"
+                });
+            }
 
-        const boxLogs = await prisma.boxCollectionLog.findMany({
-            where: whereClause,
-            orderBy: { createdAt: 'desc' }
-        });
+            await prisma.liveEventParticipant.upsert({
+                where: {
+                    eventId_userId: { eventId: id, userId: userId }
+                },
+                update: { agreedToSafetyWarning: true },
+                create: { eventId: id, userId: userId, agreedToSafetyWarning: true }
+            });
 
-        const history = boxLogs;
-
-        res.status(200).json({
-            status: true,
-            msg: "Box history fetched successfully",
-            currentLevel: user.level,
-            totalGreenBoxes: user.green_boxes_count,
-            totalGoldenBoxes: user.golden_boxes_count,
-            totalPurpleBoxes: user.purple_boxes_count,
-            history: history
-        });
-    } catch (error) {
-        res.status(500).json({
-            status: false,
-            msg: error.message
-        });
-    }
-}
-
-
-/**
- * @Description Get User Live Event Claims
- * @Route GET api/user/live-events/claims
- * @Access Private
- */
-export const getUserLiveEventClaims = async (req, res) => {
-    const { id } = req.user;
-    try {
-        const user = await prisma.user.findUnique({ where: { id: id } });
-        if (!user) {
-            return res.status(404).json({
-                status: false,
-                msg: "User not found"
+            return res.status(200).json({
+                status: true,
+                msg: "Safety warning agreed for live event"
             });
         }
 
-        const liveEventLogs = await prisma.liveEventClaim.findMany({
-            where: { userId: id },
-            include: { event: true },
-            orderBy: { claimedAt: 'desc' }
-        });
+        if (type === 'coin_rush') {
+            const coinRush = await prisma.coinRushEvent.findUnique({
+                where: { id: id }
+            });
+            if (!coinRush) {
+                return res.status(404).json({
+                    status: false,
+                    msg: "Coin Rush Event not found"
+                });
+            }
 
-        res.status(200).json({
-            status: true,
-            msg: "Live event claims fetched successfully",
-            history: liveEventLogs
-        });
-    } catch (error) {
-        res.status(500).json({
+            await prisma.coinRushParticipant.upsert({
+                where: {
+                    eventId_userId: { eventId: id, userId: userId }
+                },
+                update: { agreedToSafetyWarning: true },
+                create: { eventId: id, userId: userId, agreedToSafetyWarning: true }
+            });
+
+            return res.status(200).json({
+                status: true,
+                msg: "Safety warning agreed for coin rush event"
+            });
+        }
+    } catch (err) {
+        console.error("Error in agreeSafetyWarning:", err);
+        return res.status(500).json({
             status: false,
-            msg: error.message
+            msg: err.message
         });
     }
-}
-
-
-
+};

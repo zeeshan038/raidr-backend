@@ -17,10 +17,9 @@ import {
     updateAvatarUrl,
     getAvatars,
     getKeys,
-    getAllBoxes,
     UpdateLocation,
     UpdateFCM,
-    getUserLiveEventClaims
+    agreeSafetyWarning
 } from '../controllers/user.js';
 
 //middlewares
@@ -42,9 +41,8 @@ router.get('/whoami' , getUserProfile);
 router.delete('/delete' , deleteUser);
 router.patch('/update-photo-url' , updateAvatarUrl);
 router.get('/get-all-keys' , getKeys);
-router.get("/all-boxes" , getAllBoxes);
-router.get("/live-events/claims", getUserLiveEventClaims);
 router.patch("/update-location",UpdateLocation);
 router.patch('/update-fcm' , UpdateFCM);
+router.post('/agree-safety', agreeSafetyWarning);
 
 export default router;
