@@ -51,7 +51,7 @@ export const getAllRewards = async (req, res) => {
         }
 
         // 3. Fetch Coin Rush Claims
-        if (filterType === 'all' || filterType === 'coinrushes' || filterType === 'coin_rushes' || filterType === 'coin_rush') {
+        if (filterType === 'all' || filterType === 'coinrushes' || filterType === 'coin_rushes' || filterType === 'coin_rush' || filterType === 'events') {
             coinRushes = await prisma.coinRushClaim.findMany({
                 where: { userId },
                 include: {
