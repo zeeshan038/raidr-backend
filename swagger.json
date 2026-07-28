@@ -1011,6 +1011,57 @@
             "format": "date-time"
           }
         }
+      },
+      "EventDetailDto": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EventDto" },
+          {
+            "type": "object",
+            "properties": {
+              "claimCode": {
+                "type": "string",
+                "nullable": true,
+                "description": "Claim code issued to this user when they claimed the reward",
+                "example": "CLAIM-57B4B0FB"
+              },
+              "totalParticipants": {
+                "type": "number",
+                "description": "Total number of participants who joined this event",
+                "example": 42
+              },
+              "hasClaimed": {
+                "type": "boolean",
+                "description": "True if the current user has already claimed the reward",
+                "example": false
+              },
+              "isRedeemed": {
+                "type": "boolean",
+                "description": "True if the merchant has confirmed and handed over the reward",
+                "example": false
+              },
+              "claimId": {
+                "type": "string",
+                "nullable": true,
+                "description": "Claim record ID if this user has a claim",
+                "example": "3b0f718f-1f1b-c6ea-628a-3e727421a7e7"
+              },
+              "agreedToSafetyWarning": {
+                "type": "boolean",
+                "description": "Indicates whether the user has agreed to the safety warning for this event/coin rush",
+                "example": false
+              },
+              "_count": {
+                "type": "object",
+                "properties": {
+                  "participants": {
+                    "type": "number",
+                    "example": 0
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },
@@ -5294,267 +5345,7 @@
                       "example": "Event details fetched successfully"
                     },
                     "event": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "example": "07345993-64e3-4f4b-b2dc-7a412364a463"
-                        },
-                        "title": {
-                          "type": "string",
-                          "example": "Grand Outlet Opening Raid"
-                        },
-                        "description": {
-                          "type": "string",
-                          "example": "Join us at the outlet for a live pizza raid and claim vouchers!"
-                        },
-                        "address": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "2 Soan Ave, Soan Gardens Block B Islamabad, Pakistan"
-                        },
-                        "merchantId": {
-                          "type": "string",
-                          "example": "565dce23-6bb0-4de9-9df0-fd1a45692004"
-                        },
-                        "commanderAvatar": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "https://example.com/avatar.png"
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "https://example.com/reward-image.jpg"
-                        },
-                        "latitude": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 33.7294
-                        },
-                        "longitude": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 73.0516
-                        },
-                        "startTime": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true,
-                          "example": "2026-07-09T11:00:00.000Z"
-                        },
-                        "endTime": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true,
-                          "example": "2026-07-09T19:00:00.000Z"
-                        },
-                        "reward": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "Free Pizza Voucher"
-                        },
-                        "rewardQuantity": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 100
-                        },
-                        "remainingQty": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 100
-                        },
-                        "status": {
-                          "type": "string",
-                          "example": "scheduled"
-                        },
-                        "xpReward": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 199
-                        },
-                        "size": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "small"
-                        },
-                        "qrCode": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "event-qr-998dfabbde786c6d0a2bb20172f184fd"
-                        },
-                        "eventType": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "QR"
-                        },
-                        "checkpointCount": {
-                          "type": "integer",
-                          "nullable": true,
-                          "example": 4
-                        },
-                        "duration": {
-                          "type": "integer",
-                          "nullable": true,
-                          "example": 60
-                        },
-                        "centerLat": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 33.5650926
-                        },
-                        "centerLng": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 73.1519571
-                        },
-                        "radiusMeter": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 500
-                        },
-                        "rewardType": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "COUPON"
-                        },
-                        "rewardTitle": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "Free Coffee Coupon"
-                        },
-                        "rewardImageUrl": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "https://example.com/reward.png"
-                        },
-                        "rewardDescription": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "Get a free coffee"
-                        },
-                        "rewardClaimInstructions": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "Show QR at the counter"
-                        },
-                        "rewardValue": {
-                          "type": "number",
-                          "nullable": true,
-                          "example": 5
-                        },
-                        "winnerId": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "user-uuid"
-                        },
-                        "isJoined": {
-                          "type": "boolean",
-                          "nullable": true,
-                          "example": true
-                        },
-                        "claimCode": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "CLAIM-57B4B0FB"
-                        },
-                        "checkpoints": {
-                          "type": "array",
-                          "nullable": true,
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string",
-                                "example": "checkpoint-uuid"
-                              },
-                              "eventId": {
-                                "type": "string",
-                                "example": "event-uuid"
-                              },
-                              "sequence": {
-                                "type": "integer",
-                                "example": 1
-                              },
-                              "latitude": {
-                                "type": "number",
-                                "nullable": true,
-                                "example": 33.5650926
-                              },
-                              "longitude": {
-                                "type": "number",
-                                "nullable": true,
-                                "example": 73.1519571
-                              },
-                              "description": {
-                                "type": "string",
-                                "example": "Scan the QR code at the entrance"
-                              },
-                              "xp": {
-                                "type": "integer",
-                                "example": 50
-                              },
-                              "createdAt": {
-                                "type": "string",
-                                "format": "date-time",
-                                "example": "2026-07-25T18:00:00.000Z"
-                              },
-                              "isAchieved": {
-                                "type": "boolean",
-                                "example": true
-                              }
-                            }
-                          }
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "example": "2026-07-09T12:05:07.255Z"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "example": "2026-07-09T12:05:07.255Z"
-                        },
-                        "_count": {
-                          "type": "object",
-                          "properties": {
-                            "participants": {
-                              "type": "number",
-                              "example": 0
-                            }
-                          }
-                        },
-                        "totalParticipants": {
-                          "type": "number",
-                          "example": 0
-                        },
-                        "hasClaimed": {
-                          "type": "boolean",
-                          "example": false
-                        },
-                        "isRedeemed": {
-                          "type": "boolean",
-                          "description": "True if the merchant has confirmed and handed over the reward",
-                          "example": false
-                        },
-                        "isCoinRush": {
-                          "type": "boolean",
-                          "description": "True if this is a Coin Rush event",
-                          "example": false
-                        },
-                        "claimId": {
-                          "type": "string",
-                          "description": "Claim ID if already claimed",
-                          "nullable": true,
-                          "example": "3b0f718f-1f1b-c6ea-628a-3e727421a7e7"
-                        },
-                        "agreedToSafetyWarning": {
-                          "type": "boolean",
-                          "description": "Indicates whether the user has agreed to the safety warning for this event/coin rush",
-                          "example": false
-                        }
-                      }
+                      "$ref": "#/components/schemas/EventDetailDto"
                     }
                   }
                 }

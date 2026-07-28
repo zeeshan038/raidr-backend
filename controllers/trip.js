@@ -982,8 +982,19 @@ export const claimLiveEventReward = async (req, res) => {
         // 6. Generate a dynamic coupon/voucher code
         const assignedCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
-        // 7. Perform Claim in Transaction
-        const xpAwarded = event.xpReward || 0;
+        // 7. Perform Claim in Transaction (with level-up calculation)
+        const userForLevel = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { level: true, xp_progress: true }
+        });
+
+        let lv = Math.max(1, userForLevel.level);
+        let bank = Math.max(0, userForLevel.xp_progress) + xpAwarded;
+        const xpRequired = (level) => 100 * level * level;
+        while (bank >= xpRequired(lv)) {
+            bank -= xpRequired(lv);
+            lv += 1;
+        }
 
         const [claimDoc] = await prisma.$transaction([
             prisma.liveEventClaim.create({
@@ -1006,6 +1017,8 @@ export const claimLiveEventReward = async (req, res) => {
                 where: { id: userId },
                 data: {
                     xp_earned: { increment: xpAwarded },
+                    xp_progress: bank,
+                    level: lv,
                     rewards_claimed: { increment: 1 }
                 }
             })

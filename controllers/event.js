@@ -642,8 +642,21 @@ export const redeemLiveEventClaim = async (req, res) => {
             });
         }
 
-        // 6. Perform Redemption in Transaction
+        // 6. Perform Redemption in Transaction (with level-up calculation)
         const xpAwarded = claim.xpEarned || 0;
+
+        const userForLevel = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { level: true, xp_progress: true }
+        });
+
+        let lv = Math.max(1, userForLevel.level);
+        let bank = Math.max(0, userForLevel.xp_progress) + xpAwarded;
+        const xpRequired = (level) => 100 * level * level;
+        while (bank >= xpRequired(lv)) {
+            bank -= xpRequired(lv);
+            lv += 1;
+        }
 
         const [updatedClaim] = await prisma.$transaction([
             prisma.liveEventClaim.update({
@@ -663,6 +676,8 @@ export const redeemLiveEventClaim = async (req, res) => {
                 where: { id: userId },
                 data: {
                     xp_earned: { increment: xpAwarded },
+                    xp_progress: bank,
+                    level: lv,
                     rewards_claimed: { increment: 1 }
                 }
             })
