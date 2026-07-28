@@ -190,6 +190,20 @@ export const handleCheckEventAvailability = async (ws, payload) => {
         const xpAwarded = event.xpReward || 0;
         console.log(`[EventHandler] -> User has not claimed. Awarding ${xpAwarded} consolation XP...`);
 
+        // Level-up calculation
+        const userForLevel = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { level: true, xp_progress: true }
+        });
+
+        let lv = Math.max(1, userForLevel.level);
+        let bank = Math.max(0, userForLevel.xp_progress) + xpAwarded;
+        const xpRequired = (level) => 100 * level * level;
+        while (bank >= xpRequired(lv)) {
+            bank -= xpRequired(lv);
+            lv += 1;
+        }
+
         await prisma.$transaction([
             prisma.liveEventClaim.create({
                 data: {
@@ -203,7 +217,11 @@ export const handleCheckEventAvailability = async (ws, payload) => {
             }),
             prisma.user.update({
                 where: { id: userId },
-                data: { xp_earned: { increment: xpAwarded } }
+                data: {
+                    xp_earned: { increment: xpAwarded },
+                    xp_progress: bank,
+                    level: lv
+                }
             })
         ]);
 
@@ -211,7 +229,10 @@ export const handleCheckEventAvailability = async (ws, payload) => {
         ws.send(JSON.stringify({
             type: 'event_availability_response',
             status: 'sold_out_xp_awarded',
-            xpAwarded
+            xpAwarded,
+            newLevel: lv,
+            newXpProgress: bank,
+            leveledUp: lv > userForLevel.level
         }));
 
     } catch (err) {

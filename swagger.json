@@ -963,6 +963,45 @@
           "isCoinRush": {
             "type": "boolean"
           },
+          "checkpoints": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "eventId": {
+                  "type": "string"
+                },
+                "sequence": {
+                  "type": "integer"
+                },
+                "latitude": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "longitude": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "description": {
+                  "type": "string"
+                },
+                "xp": {
+                  "type": "integer"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "isAchieved": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -972,6 +1011,57 @@
             "format": "date-time"
           }
         }
+      },
+      "EventDetailDto": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EventDto" },
+          {
+            "type": "object",
+            "properties": {
+              "claimCode": {
+                "type": "string",
+                "nullable": true,
+                "description": "Claim code issued to this user when they claimed the reward",
+                "example": "CLAIM-57B4B0FB"
+              },
+              "totalParticipants": {
+                "type": "number",
+                "description": "Total number of participants who joined this event",
+                "example": 42
+              },
+              "hasClaimed": {
+                "type": "boolean",
+                "description": "True if the current user has already claimed the reward",
+                "example": false
+              },
+              "isRedeemed": {
+                "type": "boolean",
+                "description": "True if the merchant has confirmed and handed over the reward",
+                "example": false
+              },
+              "claimId": {
+                "type": "string",
+                "nullable": true,
+                "description": "Claim record ID if this user has a claim",
+                "example": "3b0f718f-1f1b-c6ea-628a-3e727421a7e7"
+              },
+              "agreedToSafetyWarning": {
+                "type": "boolean",
+                "description": "Indicates whether the user has agreed to the safety warning for this event/coin rush",
+                "example": false
+              },
+              "_count": {
+                "type": "object",
+                "properties": {
+                  "participants": {
+                    "type": "number",
+                    "example": 0
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },
@@ -5255,122 +5345,7 @@
                       "example": "Event details fetched successfully"
                     },
                     "event": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "example": "07345993-64e3-4f4b-b2dc-7a412364a463"
-                        },
-                        "title": {
-                          "type": "string",
-                          "example": "Grand Outlet Opening Raid"
-                        },
-                        "description": {
-                          "type": "string",
-                          "example": "Join us at the outlet for a live pizza raid and claim vouchers!"
-                        },
-                        "merchantId": {
-                          "type": "string",
-                          "example": "565dce23-6bb0-4de9-9df0-fd1a45692004"
-                        },
-                        "commanderAvatar": {
-                          "type": "string",
-                          "example": "https://example.com/avatar.png"
-                        },
-                        "imageUrl": {
-                          "type": "string",
-                          "example": "https://example.com/reward-image.jpg"
-                        },
-                        "latitude": {
-                          "type": "number",
-                          "example": 33.7294
-                        },
-                        "longitude": {
-                          "type": "number",
-                          "example": 73.0516
-                        },
-                        "startTime": {
-                          "type": "string",
-                          "format": "date-time",
-                          "example": "2026-07-09T11:00:00.000Z"
-                        },
-                        "endTime": {
-                          "type": "string",
-                          "format": "date-time",
-                          "example": "2026-07-09T19:00:00.000Z"
-                        },
-                        "reward": {
-                          "type": "string",
-                          "example": "Free Pizza Voucher"
-                        },
-                        "rewardQuantity": {
-                          "type": "number",
-                          "example": 100
-                        },
-                        "remainingQty": {
-                          "type": "number",
-                          "example": 100
-                        },
-                        "status": {
-                          "type": "string",
-                          "example": "scheduled"
-                        },
-                        "xpReward": {
-                          "type": "number",
-                          "example": 199
-                        },
-                        "size": {
-                          "type": "string",
-                          "example": "small"
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "example": "2026-07-09T12:05:07.255Z"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "example": "2026-07-09T12:05:07.255Z"
-                        },
-                        "_count": {
-                          "type": "object",
-                          "properties": {
-                            "participants": {
-                              "type": "number",
-                              "example": 0
-                            }
-                          }
-                        },
-                        "totalParticipants": {
-                          "type": "number",
-                          "example": 0
-                        },
-                        "hasClaimed": {
-                          "type": "boolean",
-                          "example": false
-                        },
-                        "isRedeemed": {
-                          "type": "boolean",
-                          "description": "True if the merchant has confirmed and handed over the reward",
-                          "example": false
-                        },
-                        "isCoinRush": {
-                          "type": "boolean",
-                          "description": "True if this is a Coin Rush event",
-                          "example": false
-                        },
-                        "claimId": {
-                          "type": "string",
-                          "description": "Claim ID if already claimed",
-                          "example": "3b0f718f-1f1b-c6ea-628a-3e727421a7e7"
-                        },
-                        "agreedToSafetyWarning": {
-                          "type": "boolean",
-                          "description": "Indicates whether the user has agreed to the safety warning for this event/coin rush",
-                          "example": false
-                        }
-                      }
+                      "$ref": "#/components/schemas/EventDetailDto"
                     }
                   }
                 }
