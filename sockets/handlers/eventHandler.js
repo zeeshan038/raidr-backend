@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '../../config/db.js';
-import { publishToEvent } from '../eventPublisher.js';
+import { publishToEvent, publishToUser } from '../eventPublisher.js';
 import { publishToCoinRush } from '../coinRushPublisher.js';
 
 /**
@@ -226,6 +226,16 @@ export const handleCheckEventAvailability = async (ws, payload) => {
         ]);
 
         console.log(`[EventHandler] -> Successfully awarded XP. Sending status: sold_out_xp_awarded`);
+        
+        // Broadcast real-time stats update to the user
+        publishToUser(userId, {
+            type: 'user_stats_updated',
+            xpAdded: xpAwarded,
+            newXpProgress: bank,
+            newLevel: lv,
+            leveledUp: lv > userForLevel.level
+        });
+
         ws.send(JSON.stringify({
             type: 'event_availability_response',
             status: 'sold_out_xp_awarded',

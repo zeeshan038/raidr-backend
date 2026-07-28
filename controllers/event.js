@@ -4,7 +4,8 @@ import { prisma } from "../config/db.js";
 import {
     publishParticipantJoined,
     publishInventoryUpdated,
-    publishCommanderMessage
+    publishCommanderMessage,
+    publishToUser
 } from "../sockets/eventPublisher.js";
 import { generateDynamicXP, haversineDistance } from "../utils/methods/methods.js";
 
@@ -696,6 +697,15 @@ export const redeemLiveEventClaim = async (req, res) => {
             `A player just redeemed a reward! ${updatedEvent.remainingQty} remaining.`,
             'system'
         );
+
+        // Broadcast real-time stats update to the user
+        publishToUser(userId, {
+            type: 'user_stats_updated',
+            xpAdded: xpAwarded,
+            newXpProgress: bank,
+            newLevel: lv,
+            leveledUp: lv > userForLevel.level
+        });
 
         return res.status(200).json({
             status: true,

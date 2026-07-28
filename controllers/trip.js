@@ -25,6 +25,7 @@ import {
     resolveStartPointForPlan
 } from "../utils/tripUtils.js"
 import { haversineDistance, generateDynamicXP } from "../utils/methods/methods.js"
+import { publishToUser } from "../sockets/eventPublisher.js";
 
 
 /**
@@ -1023,6 +1024,15 @@ export const claimLiveEventReward = async (req, res) => {
                 }
             })
         ]);
+
+        // Broadcast real-time stats update to the user
+        publishToUser(userId, {
+            type: 'user_stats_updated',
+            xpAdded: xpAwarded,
+            newXpProgress: bank,
+            newLevel: lv,
+            leveledUp: lv > userForLevel.level
+        });
 
         return res.status(200).json({
             status: true,
