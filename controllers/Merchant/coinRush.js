@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { prisma } from '../../config/db.js';
-import { generateRandomCoordinates } from '../../utils/methods/methods.js';
+import { generateRandomCoordinates, calculateRadiusForUserLiveEvent } from '../../utils/methods/methods.js';
+import { sendNotification } from '../../utils/Notification.js';
 
 
 
@@ -138,6 +139,35 @@ export const CreateCoinRushEvent = async (req, res) => {
                 checkpoints: true
             }
         });
+
+        // Notify nearby users within a 20km radius of the event center coordinates
+        if (newEvent.centerLat && newEvent.centerLng) {
+            try {
+                const usersWithTokens = await prisma.user.findMany({
+                    where: {
+                        fcmToken: { not: null }
+                    },
+                    select: { id: true, lat: true, long: true, fcmToken: true }
+                });
+
+                const nearbyUsers = calculateRadiusForUserLiveEvent(
+                    usersWithTokens,
+                    newEvent.centerLat,
+                    newEvent.centerLng,
+                    600
+                );
+
+                for (const user of nearbyUsers) {
+                    sendNotification(
+                        user.fcmToken,
+                        "🪙 New Coin Rush Event Scheduled!",
+                        `"${newEvent.title}" has been scheduled near you. Join now and race to collect rewards!`
+                    ).catch(err => console.error(`[CoinRush Create Notif] Failed to send to user ${user.id}:`, err));
+                }
+            } catch (notifErr) {
+                console.error("Error sending notifications on Coin Rush creation:", notifErr);
+            }
+        }
 
         return res.status(201).json({
             status: true,
