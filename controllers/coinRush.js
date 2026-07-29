@@ -335,7 +335,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                 checkpoint.latitude,
                 checkpoint.longitude
             );
-            if (dist > 5) { // 5 meters radius check
+            if (dist > 15) { // 15 meters radius check
                 return res.status(400).json({
                     status: false,
                     msg: `You are not within range. Distance is ${dist.toFixed(1)} meters.`
