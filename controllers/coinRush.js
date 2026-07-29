@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { prisma } from '../config/db.js';
-import { haversineDistance } from '../utils/methods/methods.js';
+import { haversineDistance, isSameCountryOrClose } from '../utils/methods/methods.js';
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
 import { publishToUser } from '../sockets/eventPublisher.js';
 
@@ -32,22 +32,14 @@ export const GetCoinRushEvents = async (req, res) => {
     }
 
     try {
-        const [events, totalEvents] = await prisma.$transaction([
-            prisma.coinRushEvent.findMany({
-                skip,
-                take: limit,
-                where: { status: statusFilter },
-                include: {
-                    participants: {
-                        where: { userId: req.user.id }
-                    }
-                },
-                orderBy: { startTime: 'asc' }
-            }),
-            prisma.coinRushEvent.count({
-                where: { status: statusFilter }
-            })
-        ]);
+        const events = await prisma.coinRushEvent.findMany({
+            where: { status: statusFilter },
+            include: {
+                participants: {
+                    where: { userId: req.user.id }
+                }
+            }
+        });
 
         const formattedEvents = events.map(event => {
             const isJoined = event.participants.length > 0;
@@ -58,12 +50,44 @@ export const GetCoinRushEvents = async (req, res) => {
             };
         });
 
+        const userLat = req.user.lat ? parseFloat(req.user.lat) : null;
+        const userLng = req.user.long ? parseFloat(req.user.long) : null;
+
+        let filteredEvents = formattedEvents;
+
+        if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
+            // Filter by same country or proximity
+            filteredEvents = formattedEvents.filter(event => {
+                return isSameCountryOrClose(userLat, userLng, event.centerLat, event.centerLng);
+            });
+
+            // Calculate distance and sort nearest to farthest
+            filteredEvents = filteredEvents.map(event => {
+                const distance = haversineDistance(userLat, userLng, event.centerLat, event.centerLng);
+                return {
+                    ...event,
+                    distance // in meters
+                };
+            });
+
+            filteredEvents.sort((a, b) => a.distance - b.distance);
+        } else {
+            // Fallback: sort by startTime
+            filteredEvents.sort((a, b) => {
+                const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
+                const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
+                return timeA - timeB;
+            });
+        }
+
+        const totalEvents = filteredEvents.length;
+        const paginatedEvents = filteredEvents.slice(skip, skip + limit);
         const totalPages = Math.ceil(totalEvents / limit);
 
         return res.status(200).json({
             status: true,
             msg: "Coin Rush events fetched successfully",
-            events: formattedEvents,
+            events: paginatedEvents,
             pagination: {
                 page,
                 limit,

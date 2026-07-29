@@ -72,3 +72,13 @@ export const generateRandomCoordinates = (centerLat, centerLng, radiusMeter, cou
     }
     return checkpoints;
 };
+
+export const isSameCountryOrClose = (lat1, lon1, lat2, lon2) => {
+    if (lat1 === null || lat1 === undefined || lon1 === null || lon1 === undefined ||
+        lat2 === null || lat2 === undefined || lon2 === null || lon2 === undefined) {
+        return false;
+    }
+    const dist = haversineDistance(parseFloat(lat1), parseFloat(lon1), parseFloat(lat2), parseFloat(lon2));
+    // 500 km limit dynamically restricts discovery to the user's region/country without hardcoded lists
+    return dist <= 500000; 
+};

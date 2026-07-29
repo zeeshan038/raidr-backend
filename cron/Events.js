@@ -70,7 +70,7 @@ export const startEventStatusCron = () => {
             if (eventsToStart.length > 0) {
                 const allUsersWithTokens = await prisma.user.findMany({
                     where: { fcmToken: { not: null } },
-                    select: { id: true, fcmToken: true }
+                    select: { id: true, fcmToken: true, lat: true, long: true }
                 });
 
                 for (const event of eventsToStart) {
@@ -81,7 +81,8 @@ export const startEventStatusCron = () => {
                     console.log(`[Cron] Event ${event.id} is now LIVE`);
                     publishEventStatusChanged(event.id, 'live');
 
-                    for (const user of allUsersWithTokens) {
+                    const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.latitude, event.longitude, 20);
+                    for (const user of nearbyUsers) {
                         sendNotification(user.fcmToken, "🚀 The Raid Is Live!", `"${event.title}" has officially started. Head there now and secure your rewards before others do!`)
                             .catch(err => console.error(`Cron Notif Err for user ${user.id}:`, err));
                     }
@@ -106,15 +107,19 @@ export const startEventStatusCron = () => {
                 where: {
                     status: 'live',
                     endTime: { lte: now }
+                },
+                include: {
+                    participants: {
+                        include: {
+                            user: {
+                                select: { id: true, fcmToken: true }
+                            }
+                        }
+                    }
                 }
             }); 
 
             if (eventsToComplete.length > 0) {
-                const allUsersWithTokens = await prisma.user.findMany({
-                    where: { fcmToken: { not: null } },
-                    select: { id: true, fcmToken: true }
-                });
-
                 for (const event of eventsToComplete) {
                     await prisma.liveEvent.update({
                         where: { id: event.id },
@@ -124,9 +129,11 @@ export const startEventStatusCron = () => {
                     publishEventStatusChanged(event.id, 'completed');
                     publishCommanderMessage(event.id, '🛑 The event has ended! Thank you for participating! 🎉', 'system');
 
-                    for (const user of allUsersWithTokens) {
-                        sendNotification(user.fcmToken, "✅ Raid Completed!", `"${event.title}" has officially ended. Thanks for joining us, and we'll see you at the next adventure!`)
-                            .catch(err => console.error(`Cron Notif Err for user ${user.id}:`, err));
+                    for (const part of event.participants) {
+                        if (part.user && part.user.fcmToken) {
+                            sendNotification(part.user.fcmToken, "✅ Raid Completed!", `"${event.title}" has officially ended. Thanks for joining us, and we'll see you at the next adventure!`)
+                                .catch(err => console.error(`Cron Notif Err for user ${part.user.id}:`, err));
+                        }
                     }
                 }
             }
@@ -161,12 +168,14 @@ export const startEventStatusCron = () => {
             if (coinRush10Mins.length > 0) {
                 const allUsersWithTokens = await prisma.user.findMany({
                     where: { fcmToken: { not: null } },
-                    select: { id: true, fcmToken: true }
+                    select: { id: true, fcmToken: true, lat: true, long: true }
                 });
 
                 for (const event of coinRush10Mins) {
+                    if (!event.centerLat || !event.centerLng) continue;
                     const participantIds = event.participants.map(p => p.userId);
-                    for (const user of allUsersWithTokens) {
+                    const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.centerLat, event.centerLng, 600);
+                    for (const user of nearbyUsers) {
                         if (!participantIds.includes(user.id)) {
                             sendNotification(user.fcmToken, "🪙 Coin Rush in 10 Minutes!", `"${event.title}" is starting soon. Join now and race to collect coins!`)
                                 .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${user.id}:`, err));
@@ -186,7 +195,7 @@ export const startEventStatusCron = () => {
             if (coinRushToStart.length > 0) {
                 const allUsersWithTokens = await prisma.user.findMany({
                     where: { fcmToken: { not: null } },
-                    select: { id: true, fcmToken: true }
+                    select: { id: true, fcmToken: true, lat: true, long: true }
                 });
 
                 for (const event of coinRushToStart) {
@@ -202,9 +211,12 @@ export const startEventStatusCron = () => {
                         status: 'live'
                     });
 
-                    for (const user of allUsersWithTokens) {
-                        sendNotification(user.fcmToken, "🪙 Coin Rush Is Live!", `"${event.title}" has started! Race to hit checkpoints and grab the reward before anyone else!`)
-                            .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${user.id}:`, err));
+                    if (event.centerLat && event.centerLng) {
+                        const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.centerLat, event.centerLng, 600);
+                        for (const user of nearbyUsers) {
+                            sendNotification(user.fcmToken, "🪙 Coin Rush Is Live!", `"${event.title}" has started! Race to hit checkpoints and grab the reward before anyone else!`)
+                                .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${user.id}:`, err));
+                        }
                     }
                 }
             }
@@ -215,15 +227,19 @@ export const startEventStatusCron = () => {
                 where: {
                     status: 'live',
                     endTime: { lte: now }
+                },
+                include: {
+                    participants: {
+                        include: {
+                            user: {
+                                select: { id: true, fcmToken: true }
+                            }
+                        }
+                    }
                 }
             });
 
             if (coinRushToComplete.length > 0) {
-                const allUsersWithTokens = await prisma.user.findMany({
-                    where: { fcmToken: { not: null } },
-                    select: { id: true, fcmToken: true }
-                });
-
                 for (const event of coinRushToComplete) {
                     await prisma.coinRushEvent.update({
                         where: { id: event.id },
@@ -237,9 +253,11 @@ export const startEventStatusCron = () => {
                         status: 'completed'
                     });
 
-                    for (const user of allUsersWithTokens) {
-                        sendNotification(user.fcmToken, "✅ Coin Rush Completed!", `"${event.title}" has ended. See if you made it to the top and claimed a reward!`)
-                            .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${user.id}:`, err));
+                    for (const part of event.participants) {
+                        if (part.user && part.user.fcmToken) {
+                            sendNotification(part.user.fcmToken, "✅ Coin Rush Completed!", `"${event.title}" has ended. See if you made it to the top and claimed a reward!`)
+                                .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${part.user.id}:`, err));
+                        }
                     }
                 }
             }
