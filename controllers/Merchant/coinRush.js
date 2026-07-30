@@ -62,15 +62,18 @@ export const CreateCoinRushEvent = async (req, res) => {
     try {
         let createdCheckpoints = [];
 
+        let finalCenterLat = centerLat ? parseFloat(centerLat) : null;
+        let finalCenterLng = centerLng ? parseFloat(centerLng) : null;
+
         if (eventType === 'GPS') {
             if (centerLat !== undefined && centerLng !== undefined && radiusMeter !== undefined) {
                 // Auto generate
-                createdCheckpoints = generateRandomCoordinates(
+                createdCheckpoints = (await generateRandomCoordinates(
                     parseFloat(centerLat),
                     parseFloat(centerLng),
                     parseFloat(radiusMeter),
                     checkpointCount
-                ).map(cp => ({
+                )).map(cp => ({
                     ...cp,
                     xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
                 }));
@@ -89,6 +92,12 @@ export const CreateCoinRushEvent = async (req, res) => {
                     description: cp.description || `Checkpoint ${idx + 1}`,
                     xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
                 }));
+
+                // Auto-resolve center to first checkpoint for manual GPS events
+                if (createdCheckpoints.length > 0) {
+                    finalCenterLat = createdCheckpoints[0].latitude;
+                    finalCenterLng = createdCheckpoints[0].longitude;
+                }
             } else {
                 return res.status(400).json({
                     status: false,
@@ -121,8 +130,8 @@ export const CreateCoinRushEvent = async (req, res) => {
                 duration: parseInt(duration),
                 startTime: parsedStart,
                 endTime: parsedEnd,
-                centerLat: centerLat ? parseFloat(centerLat) : null,
-                centerLng: centerLng ? parseFloat(centerLng) : null,
+                centerLat: finalCenterLat,
+                centerLng: finalCenterLng,
                 radiusMeter: radiusMeter ? parseFloat(radiusMeter) : null,
                 rewardType,
                 rewardTitle,
