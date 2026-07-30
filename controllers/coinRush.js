@@ -58,12 +58,17 @@ export const GetCoinRushEvents = async (req, res) => {
         if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
             // Filter by same country or proximity
             filteredEvents = formattedEvents.filter(event => {
+                if (event.centerLat === null || event.centerLng === null || event.centerLat === undefined || event.centerLng === undefined) {
+                    return true;
+                }
                 return isSameCountryOrClose(userLat, userLng, event.centerLat, event.centerLng);
             });
 
             // Calculate distance and sort nearest to farthest
             filteredEvents = filteredEvents.map(event => {
-                const distance = haversineDistance(userLat, userLng, event.centerLat, event.centerLng);
+                const distance = (event.centerLat !== null && event.centerLng !== null && event.centerLat !== undefined && event.centerLng !== undefined)
+                    ? haversineDistance(userLat, userLng, event.centerLat, event.centerLng)
+                    : Infinity;
                 return {
                     ...event,
                     distance // in meters

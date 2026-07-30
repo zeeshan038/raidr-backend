@@ -92,6 +92,9 @@ export const GetEvents = async (req, res) => {
             filteredEvents = mergedEvents.filter(event => {
                 const eventLat = event.isCoinRush ? event.centerLat : event.latitude;
                 const eventLng = event.isCoinRush ? event.centerLng : event.longitude;
+                if (eventLat === null || eventLng === null || eventLat === undefined || eventLng === undefined) {
+                    return true;
+                }
                 return isSameCountryOrClose(userLat, userLng, eventLat, eventLng);
             });
 
@@ -99,7 +102,9 @@ export const GetEvents = async (req, res) => {
             filteredEvents = filteredEvents.map(event => {
                 const eventLat = event.isCoinRush ? event.centerLat : event.latitude;
                 const eventLng = event.isCoinRush ? event.centerLng : event.longitude;
-                const distance = haversineDistance(userLat, userLng, eventLat, eventLng);
+                const distance = (eventLat !== null && eventLng !== null && eventLat !== undefined && eventLng !== undefined)
+                    ? haversineDistance(userLat, userLng, eventLat, eventLng)
+                    : Infinity;
                 return {
                     ...event,
                     distance // in meters
