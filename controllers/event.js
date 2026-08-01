@@ -22,12 +22,17 @@ export const GetEvents = async (req, res) => {
     const { id: userId } = req.user;
 
     let statusFilter;
+    let participantFilter = undefined;
     if (status === "live") {
         statusFilter = "live";
     } else if (status === "scheduled") {
         statusFilter = "scheduled";
     } else if (status === "ended") {
         statusFilter = { in: ["completed", "cancelled"] };
+        participantFilter = { some: { userId: userId } };
+    } else if (status === "joined") {
+        statusFilter = { in: ["live", "scheduled"] };
+        participantFilter = { some: { userId: userId } };
     } else {
         statusFilter = { in: ["live", "scheduled"] };
     }
@@ -36,25 +41,29 @@ export const GetEvents = async (req, res) => {
         const [liveEvents, coinRushEvents] = await Promise.all([
             prisma.liveEvent.findMany({
                 where: {
-                    status: statusFilter
+                    status: statusFilter,
+                    ...(participantFilter && { participants: participantFilter })
                 },
                 include: {
                     participants: {
-                        where: {
-                            userId: userId
-                        }
+                        where: { userId: userId }
+                    },
+                    claims: {
+                        where: { userId: userId }
                     }
                 }
             }),
             prisma.coinRushEvent.findMany({
                 where: {
-                    status: statusFilter
+                    status: statusFilter,
+                    ...(participantFilter && { participants: participantFilter })
                 },
                 include: {
                     participants: {
-                        where: {
-                            userId: userId
-                        }
+                        where: { userId: userId }
+                    },
+                    claims: {
+                        where: { userId: userId }
                     }
                 }
             })
@@ -62,32 +71,56 @@ export const GetEvents = async (req, res) => {
 
         const formattedLiveEvents = liveEvents.map(event => {
             const isJoined = event.participants.length > 0;
-            const { participants, ...eventData } = event;
+            const hasCompleted = event.claims && event.claims.length > 0;
+            const { participants, claims, ...eventData } = event;
             return {
                 ...eventData,
                 isJoined,
+                hasCompleted,
                 isCoinRush: false
             };
         });
 
         const formattedCoinRushEvents = coinRushEvents.map(event => {
             const isJoined = event.participants.length > 0;
-            const { participants, ...eventData } = event;
+            const hasCompleted = event.claims && event.claims.length > 0;
+            const { participants, claims, ...eventData } = event;
             return {
                 ...eventData,
                 isJoined,
+                hasCompleted,
                 isCoinRush: true
             };
         });
 
-        const mergedEvents = [...formattedLiveEvents, ...formattedCoinRushEvents];
+        let mergedEvents = [...formattedLiveEvents, ...formattedCoinRushEvents];
+
+        // Move completed events based on claims dynamically
+        mergedEvents = mergedEvents.filter(event => {
+            if (status === "live" || status === "scheduled" || status === "joined") {
+                // If it's technically live/scheduled globally, but the user has already completed it, exclude it from live tabs
+                return !event.hasCompleted;
+            }
+            if (status === "ended") {
+                // Include if globally ended OR user has already completed it locally
+                return event.hasCompleted || event.status === "completed" || event.status === "cancelled";
+            }
+            return true;
+        });
 
         const userLat = req.user.lat ? parseFloat(req.user.lat) : null;
         const userLng = req.user.long ? parseFloat(req.user.long) : null;
 
         let filteredEvents = mergedEvents;
 
-        if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
+        if (status === "joined") {
+            // Task 2: order by nearest in time chronologically
+            filteredEvents.sort((a, b) => {
+                const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
+                const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
+                return timeA - timeB;
+            });
+        } else if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
             // Filter by same country or proximity
             filteredEvents = mergedEvents.filter(event => {
                 const eventLat = event.isCoinRush ? event.centerLat : event.latitude;

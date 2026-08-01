@@ -1,10 +1,9 @@
 import { generateRandomCoordinates } from './utils/methods/methods.js';
 
 async function runTest() {
-    // Coordinate for Shalimar Gardens, Lahore (A well-defined public park)
     const lat = 31.5862;
     const lng = 74.3820;
-    const radius = 200; // 200 meters search radius
+    const radius = 200; 
     const count = 5;
 
     console.log(`\n=== Testing Auto-Generation inside Boundaries ===`);

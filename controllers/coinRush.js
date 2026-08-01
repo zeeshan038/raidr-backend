@@ -243,6 +243,17 @@ export const JoinCoinRushEvent = async (req, res) => {
             totalParticipants: updatedCount
         });
 
+        // Get the user's name for the commander message
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        const userName = user?.name || "A player";
+
+        publishToCoinRushRoom(eventId, {
+            type: 'event_commander_message',
+            eventId,
+            text: `🎉 Welcome ${userName} to the coin rush! Let's get ready! 🚀`,
+            sender: 'system'
+        });
+
         return res.status(200).json({
             status: true,
             msg: "Successfully joined Coin Rush event"
@@ -430,6 +441,21 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             where: { eventId, userId }
         });
 
+        // Find out how many people are ahead of them
+        const progressStats = await prisma.coinRushProgress.groupBy({
+            by: ['userId'],
+            where: { eventId },
+            _count: { checkpointId: true }
+        });
+
+        const usersAhead = progressStats.filter(stat => stat._count.checkpointId > completedCount).length;
+        let responseMsg = `Checkpoint ${checkpoint.sequence} completed successfully`;
+        if (usersAhead > 0) {
+            responseMsg = `⚡ Hurry up! ${usersAhead} people are collecting coins faster than you. Complete the next checkpoint to catch up!`;
+        } else {
+            responseMsg = `🏆 Great job! You're ahead of everyone else. Keep it up and complete all the checkpoints to stay on top!`;
+        }
+
         const totalCheckpoints = event.checkpointCount;
         const progressMessage = `${completedCount}/${totalCheckpoints}`;
 
@@ -523,7 +549,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
 
         return res.status(200).json({
             status: true,
-            msg: `Checkpoint ${checkpoint.sequence} completed successfully`,
+            msg: responseMsg,
             completedAll: false,
             progress: progressMessage,
             isAchieved: true,
