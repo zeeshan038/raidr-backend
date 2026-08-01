@@ -53,3 +53,58 @@ export const LoginSchema = (payload) => {
 
     return schema.validate(payload);
 }
+
+//Update User
+export const UpdateUserSchema = (payload) => {
+    const schema = Joi.object({
+        name: Joi.string().required().messages({
+            'any.required': 'Owner Name is required',
+            'string.empty': 'Owner Name cannot be empty'
+        }),
+        email: Joi.string().email().required().messages({
+            'string.email': 'Invalid email format',
+            'any.required': 'Email is required',
+            'string.empty': 'Email cannot be empty'
+        }),
+        phone: Joi.string().allow('').optional()
+    }).unknown(false);
+
+    return schema.validate(payload);
+}
+
+//Update Business
+export const UpdateBusinessSchema = (payload) => {
+    const schema = Joi.object({
+        businessName: Joi.string().required().messages({
+            'any.required': 'Business Name is required',
+            'string.empty': 'Business Name cannot be empty'
+        }),
+        address: Joi.string().required().messages({
+            'any.required': 'Business Address is required',
+            'string.empty': 'Business Address cannot be empty'
+        })
+    }).unknown(false);
+
+    return schema.validate(payload);
+}
+
+//Change Password
+export const ChangePasswordSchema = (payload) => {
+    const schema = Joi.object({
+        currentPassword: Joi.string().required().messages({
+            'any.required': 'Current Password is required',
+            'string.empty': 'Current Password cannot be empty'
+        }),
+        newPassword: Joi.string().min(6).required().messages({
+            'string.min': 'New Password must be at least 6 characters long',
+            'any.required': 'New Password is required',
+            'string.empty': 'New Password cannot be empty'
+        }),
+        confirmPassword: Joi.any().valid(Joi.ref('newPassword')).required().messages({
+            'any.only': 'Confirm Password does not match New Password',
+            'any.required': 'Confirm Password is required'
+        })
+    }).unknown(false);
+
+    return schema.validate(payload);
+}

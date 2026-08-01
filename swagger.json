@@ -5019,12 +5019,13 @@
           {
             "name": "status",
             "in": "query",
-            "description": "Category of events: live, scheduled, ended",
+            "description": "Category of events: live, scheduled, joined, ended",
             "schema": {
               "type": "string",
               "enum": [
                 "live",
                 "scheduled",
+                "joined",
                 "ended"
               ]
             }
