@@ -8,6 +8,9 @@ import "./config/firebase.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import hpp from "hpp";
 
 
 // Reload
@@ -17,17 +20,32 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5173",
   "https://business.raidr-app.com",
-  "https://admin.raidr-app.com"
+  "https://admin.raidr-app.com",
+  "https://dev.business.raidr-app.com",
+  "https://dev.admin.raidr-app.com"
 ];
 
 app.use(cors({
   origin: allowedOrigins
 }));
 
+// Security Middlewares
+app.use(helmet());
+app.use(hpp());
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use('/api', limiter);
+
+
 app.use(express.json({
   verify: (req, res, buf) => {
     if (req.originalUrl && req.originalUrl.startsWith('/api/merchant/payments/webhook')) {
-      console.log("webhook starting",req.originalUrl)
+      console.log("webhook starting", req.originalUrl)
       req.rawBody = buf;
     }
   }
@@ -39,14 +57,14 @@ startEventStatusCron();
 
 // Start Live Tracking architecture (Wrapped in try/catch in case dependencies aren't installed yet)
 const initializeLiveTracking = async () => {
-    try {
-        const { startWebSocketServer } = await import("./sockets/liveTracking.js");
-        const { startGpsWorker } = await import("./workers/gpsWorker.js");
-        startWebSocketServer();
-        startGpsWorker();
-    } catch (err) {
-        console.log('[App] Scalable live tracking architecture failed to start. Error:', err);
-    }
+  try {
+    const { startWebSocketServer } = await import("./sockets/liveTracking.js");
+    const { startGpsWorker } = await import("./workers/gpsWorker.js");
+    startWebSocketServer();
+    startGpsWorker();
+  } catch (err) {
+    console.log('[App] Scalable live tracking architecture failed to start. Error:', err);
+  }
 };
 initializeLiveTracking();
 
@@ -66,9 +84,9 @@ const swaggerOptions = {
 };
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(null, swaggerOptions));
 
-app.use("/api",Routes);
+app.use("/api", Routes);
 
-app.get("/check-server",(req,res)=>{
+app.get("/check-server", (req, res) => {
   res.send("OK");
 });
 
@@ -76,4 +94,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Your app is running on PORT ${PORT}`);
 });
- 
