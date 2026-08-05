@@ -139,6 +139,14 @@ export const stripeWebhooks = async (req, res) => {
                     prisma.merchant.update({
                         where: { id: merchantId },
                         data: { credits: { increment: coinsAmount } }
+                    }),
+                    prisma.merchantCreditLog.create({
+                        data: {
+                            merchantId: merchantId,
+                            amount: coinsAmount,
+                            type: 'purchase',
+                            description: `Purchased ${coinsAmount} credits`
+                        }
                     })
                 ]);
                 console.log(`Credits added! New credit balance: ${updatedMerchant.credits}`);
@@ -175,3 +183,72 @@ export const stripeWebhooks = async (req, res) => {
     return res.sendStatus(200);
 };
 
+/**
+ * @description Get Billing History
+ * @route GET /api/merchant/payments/history
+ * @access Private
+ */
+export const getBillingHistory = async (req, res) => {
+    try {
+        const merchantId = req.merchant.id;
+
+        const history = await prisma.merchantCreditLog.findMany({
+            where: { merchantId },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return res.status(200).json({
+            status: true,
+            history
+        });
+    } catch (error) {
+        console.error("Error fetching billing history:", error);
+        return res.status(500).json({ status: false, msg: error.message });
+    }
+};
+
+/**
+ * @description Get Merchant Purchase History
+ * @route GET /api/merchant/payments/purchase-history
+ * @access Private
+ */
+export const getMerchantPurchaseHistory = async (req, res) => {
+    const merchantId = req.merchant.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    try {
+        const [transactions, total] = await prisma.$transaction([
+            prisma.merchantCreditPurchase.findMany({
+                where: { merchantId },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.merchantCreditPurchase.count({
+                where: { merchantId }
+            })
+        ]);
+
+        const hasNextPage = skip + transactions.length < total;
+
+        return res.status(200).json({
+            status: true,
+            msg: 'Purchase history fetched successfully',
+            data: transactions,
+            pagination: {
+                page,
+                limit,
+                total,
+                hasNextPage
+            }
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
