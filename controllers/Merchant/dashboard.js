@@ -275,4 +275,162 @@ export const GetRewardBreakdown = async (req, res) => {
     }
 }
 
-    
+/**
+ * @Description Get Peak Activity Hours (Check-ins/Scans)
+ * @Route GET /merchant/dashboard/peak-activity
+ * @Access Private
+ */
+export const GetPeakActivityHours = async (req, res) => {
+    const { id } = req.merchant;
+
+    try {
+        // Fetch Live Event Claims (scans) for this merchant
+        const liveEventClaims = await prisma.liveEventClaim.findMany({
+            where: {
+                event: {
+                    merchantId: id
+                }
+            },
+            select: {
+                claimedAt: true
+            }
+        });
+
+        // Fetch Coin Rush Progress (scans/checkpoints) for this merchant
+        const coinRushProgress = await prisma.coinRushProgress.findMany({
+            where: {
+                event: {
+                    merchantId: id
+                }
+            },
+            select: {
+                completedAt: true
+            }
+        });
+
+        // Combine all timestamps
+        const allTimestamps = [
+            ...liveEventClaims.map(c => c.claimedAt),
+            ...coinRushProgress.map(p => p.completedAt)
+        ];
+
+        // Initialize 2-hour buckets from 08:00 to 22:00
+        const hourBuckets = {
+            "08:00": 0,
+            "10:00": 0,
+            "12:00": 0,
+            "14:00": 0,
+            "16:00": 0,
+            "18:00": 0,
+            "20:00": 0,
+            "22:00": 0
+        };
+
+        // Categorize timestamps into buckets
+        allTimestamps.forEach(date => {
+            const hour = date.getHours(); // 0-23
+            
+            // Map hours to our specific buckets
+            if (hour >= 6 && hour < 10) hourBuckets["08:00"]++;
+            else if (hour >= 10 && hour < 12) hourBuckets["10:00"]++;
+            else if (hour >= 12 && hour < 14) hourBuckets["12:00"]++;
+            else if (hour >= 14 && hour < 16) hourBuckets["14:00"]++;
+            else if (hour >= 16 && hour < 18) hourBuckets["16:00"]++;
+            else if (hour >= 18 && hour < 20) hourBuckets["18:00"]++;
+            else if (hour >= 20 && hour < 22) hourBuckets["20:00"]++;
+            else if (hour >= 22 || hour < 6) hourBuckets["22:00"]++;
+        });
+
+        const chartData = Object.entries(hourBuckets).map(([time, scans]) => ({
+            time,
+            scans
+        }));
+
+        return res.status(200).json({
+            status: true,
+            msg: "Peak activity hours fetched successfully",
+            data: chartData
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}
+
+
+/**
+ * @Description Get Event Stats (Live Raidr, Coin Rush, Completion, Checkpoints)
+ * @Route GET /merchant/dashboard/event-stats
+ * @Access Private
+ */
+export const GetEventStats = async (req, res) => {
+    const { id } = req.merchant;
+
+    try {
+        const liveRaidrEventsCount = await prisma.liveEvent.count({
+            where: {
+                merchantId: id,
+                status: "live"
+            }
+        });
+
+        const liveCoinRushEventsCount = await prisma.coinRushEvent.count({
+            where: {
+                merchantId: id,
+                status: "live"
+            }
+        });
+
+        const activeCoinRushCheckpointsCount = await prisma.coinRushCheckpoint.count({
+            where: {
+                event: {
+                    merchantId: id,
+                    status: "live"
+                }
+            }
+        });
+
+        // Completion Rate Calculation
+        // Total participants vs total claims across all events
+        const totalLiveEventParticipants = await prisma.liveEventParticipant.count({
+            where: { event: { merchantId: id } }
+        });
+        const totalLiveEventClaims = await prisma.liveEventClaim.count({
+            where: { event: { merchantId: id } }
+        });
+
+        const totalCoinRushParticipants = await prisma.coinRushParticipant.count({
+            where: { event: { merchantId: id } }
+        });
+        const totalCoinRushClaims = await prisma.coinRushClaim.count({
+            where: { event: { merchantId: id } }
+        });
+
+        const totalParticipants = totalLiveEventParticipants + totalCoinRushParticipants;
+        const totalClaims = totalLiveEventClaims + totalCoinRushClaims;
+
+        let completionRate = 0;
+        if (totalParticipants > 0) {
+            completionRate = (totalClaims / totalParticipants) * 100;
+        }
+
+        return res.status(200).json({
+            status: true,
+            msg: "Event stats fetched successfully",
+            data: {
+                liveRaidrEvents: liveRaidrEventsCount,
+                liveCoinRushEvents: liveCoinRushEventsCount,
+                completionRate: parseFloat(completionRate.toFixed(1)),
+                coinRushCheckpoints: activeCoinRushCheckpointsCount
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+}

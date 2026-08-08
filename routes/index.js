@@ -37,6 +37,7 @@ router.use('/merchant',MerchantRoutes);
 //User Routes
 import CoinRushRoutes from './coinRush.js'
 import RewardsRoutes from './rewards.js'
+import ReviewRoutes from './review.js'
 router.use("/user",UserRoutes);
 router.use("/trip",TripRoutes);
 router.use("/upload",UploadRoutes);
@@ -44,6 +45,7 @@ router.use('/store',UserStoreRoutes);
 router.use('/events',EventRoutes)
 router.use('/coin-rush', CoinRushRoutes)
 router.use('/rewards', RewardsRoutes)
+router.use('/review', ReviewRoutes)
 
 //Admin 
 router.use("/admin/store",AdminStoreRoutes)

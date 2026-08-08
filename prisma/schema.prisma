@@ -42,6 +42,7 @@ model User {
   updatedAt              DateTime           @updatedAt
   avatarFrontUrl         String             @default("https://hel1.your-objectstorage.com/raidr-assets/avatars/1_front.png")
   isNewUser              Boolean            @default(false)
+  isReviewed             Boolean            @default(false)
   adImpressions          AdImpression[]
   boxCollectionLogs      BoxCollectionLog[]
   adClaims               MerchantAdClaim[]
@@ -54,6 +55,7 @@ model User {
   coinRushParticipations CoinRushParticipant[]
   coinRushClaims         CoinRushClaim[]
   coinRushProgress       CoinRushProgress[]
+  reviews                Review[]
 }
 
 model BoxCollectionLog {
@@ -478,5 +480,20 @@ model CoinRushClaim {
 
   @@unique([eventId, userId])
   @@index([eventId])
+  @@index([userId])
+}
+
+
+
+
+//Model For review
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId])
 }
