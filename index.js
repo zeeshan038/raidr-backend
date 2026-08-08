@@ -30,7 +30,10 @@ app.use(cors({
 }));
 
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(hpp());
 
 // Rate Limiting
