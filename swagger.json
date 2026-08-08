@@ -188,6 +188,9 @@
           "isVerified": {
             "type": "boolean"
           },
+          "isReviewed": {
+            "type": "boolean"
+          },
           "authProvider": {
             "type": "string",
             "enum": [
@@ -1014,7 +1017,9 @@
       },
       "EventDetailDto": {
         "allOf": [
-          { "$ref": "#/components/schemas/EventDto" },
+          {
+            "$ref": "#/components/schemas/EventDto"
+          },
           {
             "type": "object",
             "properties": {
@@ -1066,6 +1071,54 @@
     }
   },
   "paths": {
+    "/review/add": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Add a new review",
+        "description": "Submit a rating and comment.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "example": 5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "example": "Great experience!"
+                  }
+                },
+                "required": [
+                  "rating"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review submitted successfully"
+          },
+          "400": {
+            "description": "Rating is required"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/admin/register": {
       "post": {
         "tags": [
@@ -2183,7 +2236,6 @@
         }
       }
     },
-
     "/trip/weather": {
       "get": {
         "tags": [
@@ -6540,11 +6592,12 @@
               "enum": [
                 "all",
                 "boxes",
-                "events",
+                "liveEvents",
+                "coinRushes",
                 "merchantAds"
               ]
             },
-            "description": "Filter rewards by category (e.g. boxes, events, merchantAds)"
+            "description": "Filter rewards by category (e.g. boxes, liveEvents, coinRushes, merchantAds)"
           },
           {
             "name": "source",

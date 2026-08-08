@@ -367,6 +367,35 @@ try {
         }
     };
 
+    swaggerData.paths['/review/add'] = {
+        post: {
+            tags: ["Review"],
+            summary: "Add a new review",
+            description: "Submit a rating and comment.",
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                rating: { type: "integer", example: 5 },
+                                comment: { type: "string", example: "Great experience!" }
+                            },
+                            required: ["rating"]
+                        }
+                    }
+                }
+            },
+            responses: {
+                "200": { description: "Review submitted successfully" },
+                "400": { description: "Rating is required" },
+                "500": { description: "Internal server error" }
+            }
+        }
+    };
+
     fs.writeFileSync(swaggerPath, JSON.stringify(swaggerData, null, 2), 'utf8');
     console.log("Successfully updated Merchant-Dashboard/swagger.json");
 } catch (error) {
