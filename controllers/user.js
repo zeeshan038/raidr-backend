@@ -246,8 +246,7 @@ export const sendOTP = async (req, res) => {
         res.status(200).json({
             status: true,
             msg: "OTP sent successfully",
-            user: userResponse,
-            otp
+            user: userResponse
         })
     } catch (error) {
         res.status(500).json({
@@ -715,6 +714,20 @@ export const resetPassword = async (req, res) => {
             return res.status(400).json({
                 status: false,
                 msg: "User not found"
+            });
+        }
+
+        if (!user.otpCode || user.otpCode !== payload.otpCode) {
+            return res.status(400).json({
+                status: false,
+                msg: "Invalid OTP code"
+            });
+        }
+
+        if (user.otpCodeExpireTime && new Date() > new Date(user.otpCodeExpireTime)) {
+            return res.status(400).json({
+                status: false,
+                msg: "OTP code has expired"
             });
         }
 

@@ -88,6 +88,10 @@ export const ResetPasswordSchema = (payload) => {
             'any.required': 'Email is required',
             'string.empty': 'Email cannot be empty'
         }),
+        otpCode: Joi.string().required().messages({
+            'any.required': 'OTP is required',
+            'string.empty': 'OTP cannot be empty'
+        }),
         newPassword: Joi.string().min(6).required().messages({
             'string.min': 'Password must be at least 6 characters long',
             'any.required': 'New Password is required',
