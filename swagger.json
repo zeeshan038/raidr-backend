@@ -120,12 +120,16 @@
         "type": "object",
         "required": [
           "email",
+          "otpCode",
           "newPassword"
         ],
         "properties": {
           "email": {
             "type": "string",
             "format": "email"
+          },
+          "otpCode": {
+            "type": "string"
           },
           "newPassword": {
             "type": "string",
