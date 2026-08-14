@@ -40,28 +40,50 @@ export const startWebSocketServer = () => {
         upgrade: (res, req, context) => {
             const token = req.getQuery('token');
             const squadId = req.getQuery('squadId');
+            const secWebSocketKey = req.getHeader('sec-websocket-key');
+            const secWebSocketProtocol = req.getHeader('sec-websocket-protocol');
+            const secWebSocketExtensions = req.getHeader('sec-websocket-extensions');
 
             let isAborted = false;
             res.onAborted(() => { isAborted = true; });
 
-            try {
-                if (!token) throw new Error('No token provided');
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                
-                if (!isAborted) {
-                    res.upgrade(
-                        { userId: decoded.user?.id || decoded.user?._id || decoded.id, squadId },
-                        req.getHeader('sec-websocket-key'),
-                        req.getHeader('sec-websocket-protocol'),
-                        req.getHeader('sec-websocket-extensions'),
-                        context
-                    );
+            const authenticate = async () => {
+                try {
+                    if (!token) throw new Error('No token provided');
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                    const userId = decoded.user?.id || decoded.user?._id || decoded.id;
+
+                    if (squadId) {
+                        const trip = await prisma.trip.findFirst({
+                            where: { id: squadId }
+                        });
+                        
+                        if (!trip || (trip.userId !== userId && !trip.isShared)) {
+                            throw new Error('Unauthorized squad access');
+                        }
+                    }
+
+                    if (!isAborted) {
+                        res.cork(() => {
+                            res.upgrade(
+                                { userId, squadId },
+                                secWebSocketKey,
+                                secWebSocketProtocol,
+                                secWebSocketExtensions,
+                                context
+                            );
+                        });
+                    }
+                } catch (error) {
+                    if (!isAborted) {
+                        res.cork(() => {
+                            res.writeStatus('401 Unauthorized').end('Unauthorized');
+                        });
+                    }
                 }
-            } catch (error) {
-                if (!isAborted) {
-                    res.writeStatus('401 Unauthorized').end('Invalid token');
-                }
-            }
+            };
+            
+            authenticate();
         },
 
         /* On connection */
@@ -79,7 +101,7 @@ export const startWebSocketServer = () => {
                 const payload = JSON.parse(Buffer.from(message).toString());
                 payload.userId = ws.userId;
 
-                // ── Live Event Room ───────────────────────────────────────
+                // Live Event Room 
                 // When the mobile app opens an event screen it sends this
                 // payload to subscribe to real-time event broadcasts.
                 if (payload.type === 'join_event') {
@@ -87,13 +109,13 @@ export const startWebSocketServer = () => {
                     return;
                 }
 
-                // ── Coin Rush Room ────────────────────────────────────────
+                // Coin Rush Room 
                 if (payload.type === 'join_coin_rush') {
                     await handleJoinCoinRushRoom(ws, payload);
                     return;
                 }
 
-                // ── Player location for event map ─────────────────────────
+                // Player location for event map 
                 if (payload.type === 'player_location') {
                     handlePlayerLocationUpdate(ws, payload);
                     return;
@@ -186,7 +208,7 @@ export const startWebSocketServer = () => {
                     }
                     return;
                 }
- 
+
                 // Handle Distance Sync Events
                 if (payload.type === 'sync_distance') {
                     if (payload.distanceCoveredKm > 0) {
@@ -198,7 +220,7 @@ export const startWebSocketServer = () => {
                             removeOnFail: 100
                         });
                     }
-                    return; 
+                    return;
                 }
 
                 //  Hot GPS: Write to Redis instantly (expires in 60s)

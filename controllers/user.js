@@ -225,28 +225,9 @@ export const sendOTP = async (req, res) => {
             text: `Your OTP for Raidr is ${otp}. It will expire in 10 minutes.`
         });
 
-        // Map to old Mongoose format for frontend compatibility
-        const userResponse = {
-            ...updatedUser,
-            _id: updatedUser.id,
-            otp: {
-                otpCode: updatedUser.otpCode,
-                createdAt: updatedUser.otpCreatedAt,
-                updatedAt: updatedUser.otpUpdatedAt,
-                codeExpireTime: updatedUser.otpCodeExpireTime
-            }
-        };
-        delete userResponse.id;
-        delete userResponse.isNewUser;
-        delete userResponse.otpCode;
-        delete userResponse.otpCreatedAt;
-        delete userResponse.otpUpdatedAt;
-        delete userResponse.otpCodeExpireTime;
-
         res.status(200).json({
             status: true,
-            msg: "OTP sent successfully",
-            user: userResponse
+            msg: "OTP sent successfully"
         })
     } catch (error) {
         res.status(500).json({
