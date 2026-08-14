@@ -36,6 +36,10 @@ app.use(helmet({
 }));
 app.use(hpp());
 
+// Trust the reverse proxy (like Cloudflare, NGINX, or a Load Balancer)
+// This ensures rate limits apply to the actual user's IP instead of the proxy's IP.
+app.set('trust proxy', 1);
+
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

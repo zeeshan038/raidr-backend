@@ -1,5 +1,6 @@
 import express from "express";
 const router = express.Router();
+import { verifyUser } from "../middlewares/verifyUser.js";
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -14,7 +15,11 @@ import sharp from "sharp";
 // Multer
 import multer from "multer";
 const storage = multer.memoryStorage();
-const uploadImage = multer({ storage: storage, fileFilter: imageFilter });
+const uploadImage = multer({ 
+    storage: storage, 
+    fileFilter: imageFilter,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 // Functions
 function imageFilter(req, file, cb) {
@@ -26,7 +31,7 @@ function imageFilter(req, file, cb) {
 }
 
 // Upload Image Route
-router.route("/image").post(uploadImage.single("image"), async (req, res) => {
+router.route("/image").post(verifyUser, uploadImage.single("image"), async (req, res) => {
     const containerName = process.env.HETZNER_BUCKET || req.query.containerName || "images";
 
     const folderName = req.query.folder ? `${req.query.folder}/` : "";
