@@ -5820,6 +5820,99 @@
         }
       }
     },
+    "/coin-rush/details/{eventId}": {
+      "get": {
+        "tags": [
+          "Coin Rush - User"
+        ],
+        "summary": "Get Coin Rush event details",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details including the live leaderboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Coin Rush details fetched successfully"
+                    },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "event-123"
+                        },
+                        "title": {
+                          "type": "string",
+                          "example": "Neon Drop Race"
+                        },
+                        "leaderboard": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "userId": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "photoUrl": {
+                                "type": "string"
+                              },
+                              "coins": {
+                                "type": "integer"
+                              },
+                              "lastCompletedAt": {
+                                "type": "number"
+                              },
+                              "joinedAt": {
+                                "type": "number"
+                              },
+                              "rank": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/coin-rush/join/{eventId}": {
       "post": {
         "tags": [
