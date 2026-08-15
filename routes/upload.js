@@ -1,7 +1,53 @@
 import express from "express";
 const router = express.Router();
-import { verifyUser } from "../middlewares/verifyUser.js";
+import jwt from "jsonwebtoken";
+import { prisma } from "../config/db.js";
 
+const verifyAnyAuth = async (req, res, next) => {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+        token = req.headers.authorization.split(" ")[1];
+        try {
+            const decoded = jwt.verify(token.trim(), process.env.JWT_SECRET);
+
+            // Try Admin
+            if (decoded.user && decoded.user.role === 'admin') {
+                const admin = await prisma.admin.findUnique({ where: { id: decoded.user.id } });
+                if (admin) {
+                    req.admin = admin;
+                    return next();
+                }
+            }
+
+            // Extract ID for User or Merchant
+            const id = typeof decoded.user === 'string' ? decoded.user : (decoded.user?._id || decoded.user?.id || decoded.id);
+            if (id) {
+                // Try Merchant
+                const merchant = await prisma.merchant.findUnique({ where: { id } });
+                if (merchant) {
+                    req.merchant = merchant;
+                    req.user = merchant;
+                    return next();
+                }
+
+                // Try User
+                const user = await prisma.user.findUnique({ where: { id } });
+                if (user) {
+                    req.user = user;
+                    return next();
+                }
+            }
+
+            return res.status(401).json({ status: false, msg: "Not authorized, user/merchant/admin not found" });
+        } catch (error) {
+            return res.status(401).json({ status: false, msg: "Not authorized, token failed" });
+        }
+    }
+
+    if (!token) {
+        return res.status(401).json({ status: false, msg: "Not authorized, no token" });
+    }
+};
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 // Helper to sanitize filenames for object storage
@@ -15,8 +61,8 @@ import sharp from "sharp";
 // Multer
 import multer from "multer";
 const storage = multer.memoryStorage();
-const uploadImage = multer({ 
-    storage: storage, 
+const uploadImage = multer({
+    storage: storage,
     fileFilter: imageFilter,
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
@@ -31,7 +77,7 @@ function imageFilter(req, file, cb) {
 }
 
 // Upload Image Route
-router.route("/image").post(verifyUser, uploadImage.single("image"), async (req, res) => {
+router.route("/image").post(verifyAnyAuth, uploadImage.single("image"), async (req, res) => {
     const containerName = process.env.HETZNER_BUCKET || req.query.containerName || "images";
 
     const folderName = req.query.folder ? `${req.query.folder}/` : "";

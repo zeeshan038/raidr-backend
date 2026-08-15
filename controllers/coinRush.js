@@ -9,6 +9,65 @@ const publishToCoinRushRoom = (eventId, payload) => {
     publishToCoinRush(eventId, payload);
 };
 
+const getCoinRushLeaderboard = async (eventId) => {
+    const participants = await prisma.coinRushParticipant.findMany({
+        where: { eventId },
+        include: {
+            user: {
+                select: { id: true, name: true, photoUrl: true }
+            }
+        }
+    });
+
+    const progressStats = await prisma.coinRushProgress.groupBy({
+        by: ['userId'],
+        where: { eventId },
+        _count: { checkpointId: true },
+        _max: { completedAt: true }
+    });
+
+    const leaderboard = participants.map(p => {
+        const stat = progressStats.find(s => s.userId === p.userId);
+        return {
+            userId: p.userId,
+            name: p.user.name || "A player",
+            photoUrl: p.user.photoUrl || "",
+            coins: stat ? stat._count.checkpointId : 0,
+            lastCompletedAt: stat && stat._max.completedAt ? stat._max.completedAt.getTime() : 0,
+            joinedAt: p.joinedAt.getTime()
+        };
+    });
+
+    leaderboard.sort((a, b) => {
+        if (b.coins !== a.coins) {
+            return b.coins - a.coins;
+        }
+        if (a.coins > 0) {
+            return a.lastCompletedAt - b.lastCompletedAt;
+        }
+        return a.joinedAt - b.joinedAt;
+    });
+
+    leaderboard.forEach((entry, index) => {
+        entry.rank = index + 1;
+    });
+
+    return leaderboard;
+};
+
+const broadcastCoinRushLeaderboard = async (eventId) => {
+    try {
+        const leaderboard = await getCoinRushLeaderboard(eventId);
+        publishToCoinRushRoom(eventId, {
+            type: 'coinrush_leaderboard_updated',
+            eventId,
+            leaderboard
+        });
+    } catch (err) {
+        console.error('[CoinRush] Error broadcasting leaderboard:', err);
+    }
+};
+
 /**
  * @Description Get all Coin Rush events (Discovery)
  * @Route GET /api/user/coin-rush/discovery
@@ -160,6 +219,8 @@ export const GetCoinRushEventDetails = async (req, res) => {
             };
         });
 
+        const leaderboard = await getCoinRushLeaderboard(eventId);
+
         return res.status(200).json({
             status: true,
             msg: "Coin Rush details fetched successfully",
@@ -170,7 +231,8 @@ export const GetCoinRushEventDetails = async (req, res) => {
                 progress: undefined,     // remove raw relation list
                 isJoined,
                 agreedToSafetyWarning,
-                totalParticipants: event._count.participants
+                totalParticipants: event._count.participants,
+                leaderboard
             }
         });
     } catch (error) {
@@ -253,6 +315,9 @@ export const JoinCoinRushEvent = async (req, res) => {
             text: `🎉 Welcome ${userName} to the coin rush! Let's get ready! 🚀`,
             sender: 'system'
         });
+
+        // Broadcast updated leaderboard
+        await broadcastCoinRushLeaderboard(eventId);
 
         return res.status(200).json({
             status: true,
@@ -477,6 +542,9 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             sequence: checkpoint.sequence,
             progress: progressMessage
         });
+
+        // Broadcast updated leaderboard
+        await broadcastCoinRushLeaderboard(eventId);
 
         if (completedCount === totalCheckpoints) {
             const freshEvent = await prisma.coinRushEvent.findUnique({
