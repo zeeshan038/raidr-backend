@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - zeeshan
+      - zeeshan-dev
 
 jobs:
   deploy:
@@ -17,6 +17,13 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /root/raidr-backend
-            git pull origin zeeshan
+            if [ "${{ github.ref_name }}" == "main" ]; then
+              TARGET_DIR="/root/raidr-backend-prod"
+            else
+              TARGET_DIR="/root/raidr-backend"
+            fi
+            
+            echo "Deploying branch ${{ github.ref_name }} to $TARGET_DIR"
+            cd $TARGET_DIR
+            git pull origin ${{ github.ref_name }}
             docker compose up -d --build
