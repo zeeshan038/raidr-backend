@@ -2020,15 +2020,6 @@
                         "googleApiKey": {
                           "type": "string"
                         },
-                        "openWeatherApiKey": {
-                          "type": "string"
-                        },
-                        "openRouterApiKey": {
-                          "type": "string"
-                        },
-                        "openAiApiKey": {
-                          "type": "string"
-                        },
                         "mapboxToken": {
                           "type": "string"
                         }

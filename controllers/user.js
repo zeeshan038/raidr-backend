@@ -828,9 +828,6 @@ export const getKeys = async (req, res) => {
     try {
         const allKeys = {
             googleApiKey: process.env.GOOGLE_PLACES_API_KEY,
-            openWeatherApiKey: process.env.OPENWEATHER_API_KEY,
-            openRouterApiKey: process.env.OPENROUTER_API_KEY,
-            openAiApiKey: process.env.OPENAI_API_KEY,
             mapboxToken: process.env.MAPBOX_TOKEN
         };
 
