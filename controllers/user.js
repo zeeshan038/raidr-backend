@@ -824,6 +824,7 @@ export const getAvatars = async (req, res) => {
  * @Route POST api/user/get-keys
  * @Access Private
  */
+/*
 export const getKeys = async (req, res) => {
     try {
         const allKeys = {
@@ -843,6 +844,7 @@ export const getKeys = async (req, res) => {
         });
     }
 };
+*/
 
 
 /**

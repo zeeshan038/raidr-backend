@@ -16,7 +16,7 @@ import {
     resetPassword,
     updateAvatarUrl,
     getAvatars,
-    getKeys,
+    // getKeys,
     UpdateLocation,
     UpdateFCM,
     agreeSafetyWarning
@@ -40,7 +40,7 @@ router.put('/update' , updateUser);
 router.get('/whoami' , getUserProfile);
 router.delete('/delete' , deleteUser);
 router.patch('/update-photo-url' , updateAvatarUrl);
-router.get('/get-all-keys' , getKeys);
+// router.get('/get-all-keys' , getKeys);
 router.patch("/update-location",UpdateLocation);
 router.patch('/update-fcm' , UpdateFCM);
 router.post('/agree-safety', agreeSafetyWarning);
