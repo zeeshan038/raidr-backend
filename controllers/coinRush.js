@@ -227,8 +227,8 @@ export const GetCoinRushEventDetails = async (req, res) => {
             event: {
                 ...event,
                 checkpoints: safeCheckpoints,
-                participants: undefined, // remove raw relation list
-                progress: undefined,     // remove raw relation list
+                participants: undefined, 
+                progress: undefined,    
                 isJoined,
                 agreedToSafetyWarning,
                 totalParticipants: event._count.participants,
@@ -339,7 +339,7 @@ export const JoinCoinRushEvent = async (req, res) => {
 export const SubmitCheckpointCompletion = async (req, res) => {
     const { eventId } = req.params;
     const userId = req.user.id;
-    const { checkpointId, lat, lng, qrCode } = req.body;
+    const { checkpointId, lat, lng, qrCode, answer, secretCode, photoUrl } = req.body;
 
     if (!checkpointId && !qrCode) {
         return res.status(400).json({
@@ -389,7 +389,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
 
         // Find the checkpoint (by qrCode for QR events, otherwise by checkpointId)
         let checkpoint;
-        if (event.eventType === 'QR' && qrCode) {
+        if (qrCode) {
             checkpoint = event.checkpoints.find(cp => cp.qrCode === qrCode);
         } else if (checkpointId) {
             checkpoint = event.checkpoints.find(cp => cp.id === checkpointId);
@@ -398,9 +398,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
         if (!checkpoint) {
             return res.status(404).json({
                 status: false,
-                msg: event.eventType === 'QR'
-                    ? "Checkpoint matching scanned QR code not found in this event"
-                    : "Checkpoint not found in this event"
+                msg: "Checkpoint not found in this event"
             });
         }
 
@@ -421,7 +419,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
         }
 
         // Validate type constraints
-        if (event.eventType === 'GPS') {
+        if (checkpoint.type === 'GPS') {
             if (!checkpointId) {
                 return res.status(400).json({
                     status: false,
@@ -446,13 +444,32 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     msg: `You are not within range. Distance is ${dist.toFixed(1)} meters.`
                 });
             }
-        } else if (event.eventType === 'QR') {
+        } else if (checkpoint.type === 'QR') {
             if (!qrCode) {
                 return res.status(400).json({
                     status: false,
                     msg: "qrCode is required for QR checkpoints"
                 });
             }
+        } else if (checkpoint.type === 'QNA') {
+            if (!answer) {
+                return res.status(400).json({ status: false, msg: "answer is required for Q&A checkpoints" });
+            }
+            if (answer.trim().toLowerCase() !== (checkpoint.answer || "").trim().toLowerCase()) {
+                return res.status(400).json({ status: false, msg: "Incorrect answer" });
+            }
+        } else if (checkpoint.type === 'SECRET_CODE') {
+            if (!secretCode) {
+                return res.status(400).json({ status: false, msg: "secretCode is required" });
+            }
+            if (secretCode.trim() !== (checkpoint.secretCode || "").trim()) {
+                return res.status(400).json({ status: false, msg: "Invalid secret code" });
+            }
+        } else if (checkpoint.type === 'PHOTO') {
+            if (!photoUrl) {
+                return res.status(400).json({ status: false, msg: "photoUrl is required for PHOTO checkpoints" });
+            }
+            // For now, accept the photo URL as completion. AI fraud detection can be added here later.
         }
 
         // Record progress and update user stats (XP / Level)
@@ -488,7 +505,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     data: {
                         xp_earned: { increment: xpAmount },
                         xp_progress: bank,
-                        level: lv
+                        level: lv,
+                        raidrCoins: { increment: 1 }
                     }
                 });
 
@@ -528,6 +546,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
         publishToUser(userId, {
             type: 'user_stats_updated',
             xpAdded: xpAmount,
+            coinsAdded: 1,
             newXpProgress: levelData.bank,
             newLevel: levelData.level,
             leveledUp: levelData.leveledUp
@@ -684,3 +703,4 @@ export const RedeemCoinRushClaim = async (req, res) => {
         });
     }
 };
+

@@ -5795,6 +5795,23 @@
                           "type": "string",
                           "example": "Neon Drop Race"
                         },
+                        "checkpoints": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "type": { "type": "string", "example": "CODE" },
+                              "sequence": { "type": "integer" },
+                              "hint": { "type": "string" },
+                              "latitude": { "type": "number" },
+                              "longitude": { "type": "number" },
+                              "referencePhotoUrl": { "type": "string" },
+                              "photoRequirements": { "type": "string" },
+                              "isAchieved": { "type": "boolean" }
+                            }
+                          }
+                        },
                         "leaderboard": {
                           "type": "array",
                           "items": {
@@ -5955,19 +5972,31 @@
                 "properties": {
                   "checkpointId": {
                     "type": "string",
-                    "description": "ID of the checkpoint to complete (Required for GPS events)"
+                    "description": "ID of the checkpoint to complete (Required for GPS, CODE, QA, PHOTO)"
                   },
                   "lat": {
                     "type": "number",
-                    "description": "Player latitude (GPS events only)"
+                    "description": "Player latitude (Required for GPS)"
                   },
                   "lng": {
                     "type": "number",
-                    "description": "Player longitude (GPS events only)"
+                    "description": "Player longitude (Required for GPS)"
                   },
                   "qrCode": {
                     "type": "string",
-                    "description": "Scanned QR code value (Required for QR events if checkpointId is omitted)"
+                    "description": "Scanned QR code value (Required for QR)"
+                  },
+                  "secretCode": {
+                    "type": "string",
+                    "description": "Secret code input (Required for CODE)"
+                  },
+                  "answer": {
+                    "type": "string",
+                    "description": "Answer input (Required for QA)"
+                  },
+                  "photoUrl": {
+                    "type": "string",
+                    "description": "Uploaded image URL (Required for PHOTO)"
                   }
                 }
               }

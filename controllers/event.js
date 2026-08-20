@@ -260,7 +260,7 @@ export const eventDetails = async (req, res) => {
             const coinRushParticipant = coinRushEvent.participants[0];
             const isJoined = coinRushEvent.participants.length > 0;
             const coinRushAgreedToSafetyWarning = coinRushParticipant ? (coinRushParticipant.agreedToSafetyWarning || false) : false;
-            
+
             // Determine which checkpoint IDs are completed
             const completedCheckpointIds = coinRushEvent.progress.map(p => p.checkpointId);
 
