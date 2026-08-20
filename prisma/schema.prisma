@@ -55,6 +55,7 @@ model User {
   coinRushParticipations CoinRushParticipant[]
   coinRushClaims         CoinRushClaim[]
   coinRushProgress       CoinRushProgress[]
+  coinRushAttempts       CoinRushAttempt[]
   reviews                Review[]
 }
 
@@ -385,7 +386,7 @@ model CoinRushEvent {
   title                   String
   description             String
   merchantId              String
-  eventType               String                 // "GPS" or "QR"
+  eventType               String                 // "GPS", "QR", or "HYBRID"
   status                  String                 @default("draft") // draft, pending_approval, scheduled, live, completed, cancelled
   checkpointCount         Int                    @default(5)
   duration                Int                    // Duration in minutes
@@ -420,20 +421,41 @@ model CoinRushEvent {
 }
 
 model CoinRushCheckpoint {
-  id          String             @id @default(uuid())
-  eventId     String
-  sequence    Int                // 1 to N
-  latitude    Float?             // For GPS
-  longitude   Float?             // For GPS
-  qrCode      String?            @unique // Unique code to scan for QR
-  description String             @default("")
-  xp          Int                @default(0)
-  createdAt   DateTime           @default(now())
+  id                String             @id @default(uuid())
+  eventId           String
+  sequence          Int                // 1 to N
+  type              String             @default("GPS") // "GPS", "QR", "PHOTO", "QNA", "SECRET_CODE"
+  latitude          Float?             // For GPS
+  longitude         Float?             // For GPS
+  qrCode            String?            @unique // Unique code to scan for QR
+  question          String?            // For QNA
+  answer            String?            // For QNA
+  secretCode        String?            // For SECRET_CODE
+  photoRequirements String?            // For PHOTO
+  referencePhotoUrl String?            // For PHOTO
+  description       String             @default("")
+  xp                Int                @default(0)
+  createdAt         DateTime           @default(now())
 
   event       CoinRushEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
   progress    CoinRushProgress[]
+  attempts    CoinRushAttempt[]
 
   @@index([eventId])
+}
+
+model CoinRushAttempt {
+  id           String             @id @default(uuid())
+  userId       String
+  checkpointId String
+  attempts     Int                @default(0)
+  lockedUntil  DateTime?
+  updatedAt    DateTime           @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkpoint   CoinRushCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, checkpointId])
 }
 
 model CoinRushParticipant {

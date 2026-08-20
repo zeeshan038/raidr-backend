@@ -1,5 +1,13 @@
+//NPM Packages 
 import crypto from 'crypto';
+
+//Prisma
 import { prisma } from '../../config/db.js';
+
+//Schema
+import { CreateHybridCoinRushEventSchema, CreateCoinRushEventSchema } from '../../schema/Merchant/CoinRush.js';
+
+//Utils 
 import { generateRandomCoordinates, calculateRadiusForUserLiveEvent } from '../../utils/methods/methods.js';
 import { sendNotification } from '../../utils/Notification.js';
 
@@ -12,42 +20,35 @@ import { sendNotification } from '../../utils/Notification.js';
  */
 export const CreateCoinRushEvent = async (req, res) => {
     const { id: merchantId } = req.merchant;
+    const payload = req.body;
+
+    const result = CreateCoinRushEventSchema(payload);
+    if (result.error) {
+        return res.status(400).json({
+            status: false,
+            msg: result.error.message
+        });
+    }
+
     const {
         title,
         description,
         eventType,
-        checkpointCount = 5,
+        checkpointCount,
         duration,
         startTime,
         endTime,
-        // For GPS Auto
         centerLat,
         centerLng,
         radiusMeter,
-        // For GPS Manual
         checkpoints: manualCheckpoints,
-        // Reward fields
         rewardType,
         rewardTitle,
-        rewardImageUrl = '',
-        rewardDescription = '',
-        rewardClaimInstructions = '',
-        rewardValue = 0.0
-    } = req.body;
-
-    if (!title || !description || !eventType || !duration || !rewardType || !rewardTitle) {
-        return res.status(400).json({
-            status: false,
-            msg: "Missing required fields (title, description, eventType, duration, rewardType, rewardTitle)"
-        });
-    }
-
-    if (checkpointCount < 3 || checkpointCount > 10) {
-        return res.status(400).json({
-            status: false,
-            msg: "Checkpoint count must be between 3 and 10"
-        });
-    }
+        rewardImageUrl,
+        rewardDescription,
+        rewardClaimInstructions,
+        rewardValue
+    } = result.value;
 
     const parsedStart = startTime ? new Date(startTime) : new Date();
     const parsedEnd = endTime ? new Date(endTime) : new Date(parsedStart.getTime() + duration * 60 * 1000);
@@ -378,6 +379,131 @@ export const DeleteCoinRushEvent = async (req, res) => {
             status: true,
             msg: "Coin Rush event deleted successfully"
         });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            msg: error.message
+        });
+    }
+};
+
+/**
+ * @Description Create new Dedicated Hybrid Coin Rush event
+ * @Route POST /api/merchant/coin-rush/hybrid/create
+ * @Access Private (Merchant)
+ */
+export const CreateHybridCoinRushEvent = async (req, res) => {
+    const { id: merchantId } = req.merchant;
+    const payload = req.body;
+    
+ const result = CreateHybridCoinRushEventSchema(payload)
+     if (result.error) {
+         return res.status(400).json({
+             status: false,
+             msg: result.error.message
+         })
+     }
+    const { startTime, endTime, duration, checkpoints, checkpointCount } = payload;
+
+    const parsedStart = startTime ? new Date(startTime) : new Date();
+    const parsedEnd = endTime ? new Date(endTime) : new Date(parsedStart.getTime() + duration * 60 * 1000);
+
+    if (parsedEnd <= parsedStart) {
+        return res.status(400).json({
+            status: false,
+            msg: "End time must be after start time"
+        });
+    }
+
+    if (!Array.isArray(checkpoints) || checkpoints.length !== checkpointCount) {
+        return res.status(400).json({
+            status: false,
+            msg: `Provided checkpoints length does not match checkpointCount (${checkpointCount})`
+        });
+    }
+
+    // Enforce PHOTO is last
+    let sortedCheckpoints = [...checkpoints];
+    const photoIndex = sortedCheckpoints.findIndex(cp => cp.type === 'PHOTO');
+    if (photoIndex !== -1) {
+        const photoCp = sortedCheckpoints.splice(photoIndex, 1)[0];
+        sortedCheckpoints.push(photoCp); 
+    }
+
+    try {
+        const createdCheckpoints = sortedCheckpoints.map((cp, idx) => {
+            let cpData = {
+                sequence: idx + 1,
+                type: cp.type || 'GPS',
+                description: cp.description || `Checkpoint ${idx + 1}`,
+                xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
+            };
+
+            if (cpData.type === 'GPS') {
+                if (cp.latitude === undefined || cp.longitude === undefined) {
+                    throw new Error(`GPS Checkpoint ${idx + 1} is missing latitude/longitude`);
+                }
+                cpData.latitude = parseFloat(cp.latitude);
+                cpData.longitude = parseFloat(cp.longitude);
+            } else if (cpData.type === 'QR') {
+                cpData.qrCode = `cr_${crypto.randomBytes(12).toString('hex')}`;
+            } else if (cpData.type === 'SECRET_CODE' || cpData.type === 'CODE') {
+                cpData.type = 'SECRET_CODE';
+                if (!cp.secretCode || cp.secretCode.length < 1 || cp.secretCode.length > 8) {
+                    throw new Error(`Secret code must be between 1 and 8 characters for checkpoint ${idx + 1}`);
+                }
+                cpData.secretCode = cp.secretCode;
+            } else if (cpData.type === 'QNA' || cpData.type === 'QA') {
+                cpData.type = 'QNA';
+                if (!cp.question || !cp.answer) {
+                    throw new Error(`Question and answer are required for QA checkpoint ${idx + 1}`);
+                }
+                cpData.question = cp.question;
+                cpData.answer = cp.answer;
+            } else if (cpData.type === 'PHOTO') {
+                cpData.photoRequirements = cp.photoRequirements || cp.aiPrompt || null;
+                if (cp.referencePhotoUrl) {
+                    cpData.referencePhotoUrl = cp.referencePhotoUrl;
+                }
+            } else {
+                throw new Error(`Invalid checkpoint type: ${cp.type}`);
+            }
+            
+            return cpData;
+        });
+
+        const newEvent = await prisma.coinRushEvent.create({
+            data: {
+                title : payload.title,
+                description : payload.description,
+                merchantId,
+                eventType: 'HYBRID',
+                checkpointCount:payload.checkpointCount,
+                duration: parseInt(payload.duration),
+                startTime: parsedStart,
+                endTime: parsedEnd,
+                rewardType:payload.rewardType,
+                rewardTitle:payload.rewardTitle,
+                rewardImageUrl:payload.rewardImageUrl,
+                rewardDescription:payload.rewardDescription,
+                rewardClaimInstructions:payload.rewardClaimInstructions,
+                rewardValue: parseFloat(payload.rewardValue),
+                status: "scheduled", 
+                checkpoints: {
+                    create: createdCheckpoints
+                }
+            },
+            include: {
+                checkpoints: true
+            }
+        });
+
+        return res.status(201).json({
+            status: true,
+            msg: "Dedicated Hybrid Coin Rush event created successfully",
+            event: newEvent
+        });
+
     } catch (error) {
         return res.status(500).json({
             status: false,
