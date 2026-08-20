@@ -6897,6 +6897,71 @@
             "description": "Reward not found"
           }
         }
+    },
+    "/upload/image": {
+      "post": {
+        "tags": [
+          "Upload"
+        ],
+        "summary": "Upload an image",
+        "description": "Upload an image (e.g., for PHOTO checkpoints, avatars). Uses multipart/form-data. The image will be compressed, resized, and uploaded to object storage.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The image file to upload"
+                  }
+                },
+                "required": [
+                  "image"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image Uploaded and Compressed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://hel1.your-objectstorage.com/raidr-assets/avatars/1784925796421.webp"
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Image Uploaded and Compressed successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid image file"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
       }
     }
   }
