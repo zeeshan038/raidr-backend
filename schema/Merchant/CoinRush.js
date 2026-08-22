@@ -67,6 +67,8 @@ export const CreateHybridCoinRushEventSchema = (payload) => {
         }),
         startTime: Joi.date().optional(),
         endTime: Joi.date().optional(),
+        latitude: Joi.number().optional(),
+        longitude: Joi.number().optional(),
         checkpoints: Joi.array().items(checkpointSchema).required().messages({
             'any.required': 'checkpoints array is required'
         }),

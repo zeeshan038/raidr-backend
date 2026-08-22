@@ -248,3 +248,68 @@ Example:
     'Almost ready...'
   ];
 }
+
+export async function compareImagesWithAI(referencePhotoUrl, userPhotoUrl, photoRequirements) {
+    const prompt = `You are an AI tasked with validating if a user-submitted photo matches a reference photo or specific requirements for a scavenger hunt checkpoint.
+    
+    ${photoRequirements ? `The merchant has provided these specific requirements for the photo: "${photoRequirements}"` : ''}
+    
+    IMPORTANT RULES:
+    1. The user's photo MUST contain a human face (a selfie).
+    2. The background or object in the user's photo MUST match the reference image (if provided) or satisfy the text requirements.
+    
+    Compare the two images provided (if there is a reference image) or evaluate the user's photo against the requirements. The first image (if two are provided) is the reference image. The last image is ALWAYS the photo submitted by the user.
+    Does the user's photo follow BOTH rules above?
+    Reply strictly with a JSON object in this format: {"isMatch": true/false, "reason": "A short explanation of why it matches or not."}`;
+
+    const messages = [
+        {
+            role: "user",
+            content: [
+                { type: "text", text: prompt }
+            ]
+        }
+    ];
+
+    if (referencePhotoUrl) {
+        messages[0].content.push({ type: "image_url", image_url: { url: referencePhotoUrl } });
+    }
+    if (userPhotoUrl) {
+        messages[0].content.push({ type: "image_url", image_url: { url: userPhotoUrl } });
+    }
+
+    try {
+        const apiKey = process.env.OPENAI_API_KEY;
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: "gpt-4o",
+                temperature: 0.2,
+                messages: messages,
+                response_format: { type: "json_object" },
+                max_tokens: 300,
+            })
+        });
+
+        const data = await res.json();
+        
+        // Ensure we catch API errors like rate limits or bad URLs
+        if (data.error) {
+            console.error("OpenAI Image Comparison API Error:", data.error);
+            return { isMatch: false, reason: "AI Verification Failed due to an API error." };
+        }
+
+        if (data.choices && data.choices.length > 0) {
+            const aiResponse = JSON.parse(data.choices[0].message.content);
+            return aiResponse;
+        }
+    } catch (error) {
+        console.error("OpenAI Image Comparison Network Error:", error);
+    }
+
+    return { isMatch: false, reason: "Failed to compare images." };
+}

@@ -403,7 +403,7 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
              msg: result.error.message
          })
      }
-    const { startTime, endTime, duration, checkpoints, checkpointCount } = payload;
+    const { startTime, endTime, duration, checkpoints, checkpointCount, latitude, longitude } = payload;
 
     const parsedStart = startTime ? new Date(startTime) : new Date();
     const parsedEnd = endTime ? new Date(endTime) : new Date(parsedStart.getTime() + duration * 60 * 1000);
@@ -413,6 +413,18 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
             status: false,
             msg: "End time must be after start time"
         });
+    }
+
+    let finalCenterLat = latitude !== undefined ? parseFloat(latitude) : null;
+    let finalCenterLng = longitude !== undefined ? parseFloat(longitude) : null;
+    let finalRadiusMeter = 500;
+
+    if (finalCenterLat === null || finalCenterLng === null || isNaN(finalCenterLat) || isNaN(finalCenterLng)) {
+        const cpWithCoords = checkpoints.find(cp => cp.latitude !== undefined && cp.longitude !== undefined);
+        if (cpWithCoords) {
+            finalCenterLat = parseFloat(cpWithCoords.latitude);
+            finalCenterLng = parseFloat(cpWithCoords.longitude);
+        }
     }
 
     if (!Array.isArray(checkpoints) || checkpoints.length !== checkpointCount) {
@@ -482,6 +494,9 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
                 duration: parseInt(payload.duration),
                 startTime: parsedStart,
                 endTime: parsedEnd,
+                centerLat: finalCenterLat,
+                centerLng: finalCenterLng,
+                radiusMeter: finalRadiusMeter,
                 rewardType:payload.rewardType,
                 rewardTitle:payload.rewardTitle,
                 rewardImageUrl:payload.rewardImageUrl,
@@ -497,6 +512,35 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
                 checkpoints: true
             }
         });
+
+        // Notify nearby users within a 20km radius of the event center coordinates
+        if (newEvent.centerLat && newEvent.centerLng) {
+            try {
+                const usersWithTokens = await prisma.user.findMany({
+                    where: {
+                        fcmToken: { not: null }
+                    },
+                    select: { id: true, lat: true, long: true, fcmToken: true }
+                });
+
+                const nearbyUsers = calculateRadiusForUserLiveEvent(
+                    usersWithTokens,
+                    newEvent.centerLat,
+                    newEvent.centerLng,
+                    500 // 500km radius as requested
+                );
+
+                for (const user of nearbyUsers) {
+                    sendNotification(
+                        user.fcmToken,
+                        "🪙 New Hybrid Coin Rush Event Scheduled!",
+                        `"${newEvent.title}" has been scheduled near you. Join now and race to collect rewards!`
+                    ).catch(err => console.error(`[Hybrid CoinRush Create Notif] Failed to send to user ${user.id}:`, err));
+                }
+            } catch (notifErr) {
+                console.error("Error sending notifications on Hybrid Coin Rush creation:", notifErr);
+            }
+        }
 
         return res.status(201).json({
             status: true,
