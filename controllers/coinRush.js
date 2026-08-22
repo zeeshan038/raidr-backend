@@ -3,6 +3,7 @@ import { prisma } from '../config/db.js';
 import { haversineDistance, isSameCountryOrClose } from '../utils/methods/methods.js';
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
 import { publishToUser } from '../sockets/eventPublisher.js';
+import { compareImagesWithAI } from '../utils/Openai.js';
 
 // Custom publisher function for Coin Rush to distinct from normal live event rooms
 const publishToCoinRushRoom = (eventId, payload) => {
@@ -419,7 +420,9 @@ export const SubmitCheckpointCompletion = async (req, res) => {
         }
 
         // Validate type constraints
-        if (checkpoint.type === 'GPS') {
+        const actualType = event.eventType === 'HYBRID' ? checkpoint.type : event.eventType;
+
+        if (actualType === 'GPS') {
             if (!checkpointId) {
                 return res.status(400).json({
                     status: false,
@@ -444,32 +447,41 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     msg: `You are not within range. Distance is ${dist.toFixed(1)} meters.`
                 });
             }
-        } else if (checkpoint.type === 'QR') {
+        } else if (actualType === 'QR') {
             if (!qrCode) {
                 return res.status(400).json({
                     status: false,
                     msg: "qrCode is required for QR checkpoints"
                 });
             }
-        } else if (checkpoint.type === 'QNA') {
+        } else if (actualType === 'QNA') {
             if (!answer) {
                 return res.status(400).json({ status: false, msg: "answer is required for Q&A checkpoints" });
             }
             if (answer.trim().toLowerCase() !== (checkpoint.answer || "").trim().toLowerCase()) {
                 return res.status(400).json({ status: false, msg: "Incorrect answer" });
             }
-        } else if (checkpoint.type === 'SECRET_CODE') {
+        } else if (actualType === 'SECRET_CODE') {
             if (!secretCode) {
                 return res.status(400).json({ status: false, msg: "secretCode is required" });
             }
             if (secretCode.trim() !== (checkpoint.secretCode || "").trim()) {
                 return res.status(400).json({ status: false, msg: "Invalid secret code" });
             }
-        } else if (checkpoint.type === 'PHOTO') {
+        } else if (actualType === 'PHOTO') {
             if (!photoUrl) {
                 return res.status(400).json({ status: false, msg: "photoUrl is required for PHOTO checkpoints" });
             }
-            // For now, accept the photo URL as completion. AI fraud detection can be added here later.
+            
+            // Verify with AI
+            const aiResult = await compareImagesWithAI(checkpoint.referencePhotoUrl, photoUrl, checkpoint.photoRequirements);
+            if (!aiResult.isMatch) {
+                return res.status(400).json({
+                    status: false,
+                    msg: "Photo verification failed",
+                    reason: aiResult.reason || "Failed to verify the photo."
+                });
+            }
         }
 
         // Record progress and update user stats (XP / Level)
