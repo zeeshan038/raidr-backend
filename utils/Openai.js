@@ -1,5 +1,4 @@
 
-
 /**
  * @Description This function is used to rank the locations based on the user's preferences.
  @ @type Function
@@ -59,7 +58,6 @@ export async function rankLocationsWithAI({
             const order = aiResponse.order;
 
             if (Array.isArray(order)) {
-                // Apply the order
                 const ranked = [];
                 const addedIndices = new Set();
 
@@ -271,11 +269,27 @@ export async function compareImagesWithAI(referencePhotoUrl, userPhotoUrl, photo
         }
     ];
 
+    const urlToBase64 = async (url) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) return url;
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const contentType = response.headers.get('content-type') || 'image/jpeg';
+            return `data:${contentType};base64,${buffer.toString('base64')}`;
+        } catch (error) {
+            console.error("Error converting image to base64:", error);
+            return url;
+        }
+    };
+
     if (referencePhotoUrl) {
-        messages[0].content.push({ type: "image_url", image_url: { url: referencePhotoUrl } });
+        const base64Ref = await urlToBase64(referencePhotoUrl);
+        messages[0].content.push({ type: "image_url", image_url: { url: base64Ref } });
     }
     if (userPhotoUrl) {
-        messages[0].content.push({ type: "image_url", image_url: { url: userPhotoUrl } });
+        const base64User = await urlToBase64(userPhotoUrl);
+        messages[0].content.push({ type: "image_url", image_url: { url: base64User } });
     }
 
     try {
@@ -300,7 +314,7 @@ export async function compareImagesWithAI(referencePhotoUrl, userPhotoUrl, photo
         // Ensure we catch API errors like rate limits or bad URLs
         if (data.error) {
             console.error("OpenAI Image Comparison API Error:", data.error);
-            return { isMatch: false, reason: "AI Verification Failed due to an API error." };
+            return { isMatch: false, reason: `AI Error: ${data.error.message || JSON.stringify(data.error)}` };
         }
 
         if (data.choices && data.choices.length > 0) {
