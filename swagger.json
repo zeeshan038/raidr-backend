@@ -5770,7 +5770,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Event details including the live leaderboard",
+            "description": "Event details including the live leaderboard. Note: Future checkpoints are hidden, and sensitive answers (qrCode, answer, secretCode) are omitted from the payload for security.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6048,6 +6048,19 @@
                       "type": "integer",
                       "description": "The amount of XP earned from completing this checkpoint",
                       "example": 125
+                    },
+                    "nextCheckpoint": {
+                      "type": "object",
+                      "description": "The sanitized details of the immediate next checkpoint, if any remain.",
+                      "nullable": true,
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string", "example": "QR" },
+                        "sequence": { "type": "integer" },
+                        "description": { "type": "string" },
+                        "latitude": { "type": "number" },
+                        "longitude": { "type": "number" }
+                      }
                     }
                   }
                 }
@@ -6055,7 +6068,7 @@
             }
           },
           "400": {
-            "description": "Not in range / Invalid QR / Already completed",
+            "description": "Not in range / Invalid QR / Already completed / Sequence skipped",
             "content": {
               "application/json": {
                 "schema": {
@@ -6345,6 +6358,13 @@
                   "rewardValue": {
                     "type": "number",
                     "example": 500
+                  },
+                  "winnersCount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 3,
+                    "description": "Number of players who can win a prize (1-5)"
                   }
                 }
               }

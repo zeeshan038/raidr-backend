@@ -61,6 +61,10 @@ export const CreateHybridCoinRushEventSchema = (payload) => {
             'number.min': 'Hybrid events must have at least 3 checkpoints',
             'number.max': 'Hybrid events can have at most 10 checkpoints'
         }),
+        winnersCount: Joi.number().integer().min(1).max(5).optional().default(1).messages({
+            'number.min': 'There must be at least 1 winner',
+            'number.max': 'There can be at most 5 winners'
+        }),
         duration: Joi.number().integer().min(1).required().messages({
             'number.base': 'Duration must be a number (minutes)',
             'any.required': 'Duration is required',
@@ -112,6 +116,10 @@ export const CreateCoinRushEventSchema = (payload) => {
         checkpointCount: Joi.number().integer().min(3).max(10).optional().default(5).messages({
             'number.min': 'Checkpoint count must be between 3 and 10',
             'number.max': 'Checkpoint count must be between 3 and 10'
+        }),
+        winnersCount: Joi.number().integer().min(1).max(5).optional().default(1).messages({
+            'number.min': 'There must be at least 1 winner',
+            'number.max': 'There can be at most 5 winners'
         }),
         duration: Joi.number().integer().min(1).required().messages({
             'number.base': 'Duration must be a number (minutes)',
