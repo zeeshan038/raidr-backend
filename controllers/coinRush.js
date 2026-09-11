@@ -27,15 +27,23 @@ const getCoinRushLeaderboard = async (eventId) => {
         _max: { completedAt: true }
     });
 
+    const claims = await prisma.coinRushClaim.findMany({
+        where: { eventId },
+        orderBy: { claimedAt: 'asc' }
+    });
+
     const leaderboard = participants.map(p => {
         const stat = progressStats.find(s => s.userId === p.userId);
+        const claimIndex = claims.findIndex(c => c.userId === p.userId);
         return {
             userId: p.userId,
             name: p.user.name || "A player",
             photoUrl: p.user.photoUrl || "",
             coins: stat ? stat._count.checkpointId : 0,
             lastCompletedAt: stat && stat._max.completedAt ? stat._max.completedAt.getTime() : 0,
-            joinedAt: p.joinedAt.getTime()
+            joinedAt: p.joinedAt.getTime(),
+            isWinner: claimIndex !== -1,
+            winnerPosition: claimIndex !== -1 ? claimIndex + 1 : null
         };
     });
 
@@ -210,14 +218,21 @@ export const GetCoinRushEventDetails = async (req, res) => {
         // Determine which checkpoint IDs are completed
         const completedCheckpointIds = event.progress.map(p => p.checkpointId);
 
-        // Hide qrCode strings for security and set isAchieved status
-        const safeCheckpoints = event.checkpoints.map(cp => {
-            const { qrCode, ...rest } = cp;
+        // Hide Future Checkpoints: Slice the array up to the user's current progress + 1
+        const completedCount = completedCheckpointIds.length;
+        const visibleCheckpoints = event.checkpoints.slice(0, completedCount + 1);
+
+        // Hide sensitive answers for security and set isAchieved status
+        const safeCheckpoints = visibleCheckpoints.map(cp => {
             const isAchieved = completedCheckpointIds.includes(cp.id);
-            return {
-                ...rest,
-                isAchieved
-            };
+            const safeCp = { ...cp, isAchieved };
+            
+            // Delete sensitive answers from the payload so users cannot cheat by inspecting API responses
+            delete safeCp.qrCode;
+            delete safeCp.answer;
+            delete safeCp.secretCode;
+
+            return safeCp;
         });
 
         const leaderboard = await getCoinRushLeaderboard(eventId);
@@ -405,6 +420,19 @@ export const SubmitCheckpointCompletion = async (req, res) => {
 
         const actualCheckpointId = checkpoint.id;
 
+        // Fetch how many checkpoints the user has completed so far
+        const currentCompletedCount = await prisma.coinRushProgress.count({
+            where: { eventId, userId }
+        });
+
+        // Strict Sequence Validation: Ensure the submitted checkpoint is exactly the next one
+        if (checkpoint.sequence !== currentCompletedCount + 1) {
+            return res.status(400).json({
+                status: false,
+                msg: "You cannot skip checkpoints! Please complete your current checkpoint first."
+            });
+        }
+
         // Check if already completed
         const alreadyCompleted = await prisma.coinRushProgress.findUnique({
             where: {
@@ -582,26 +610,22 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                 where: { id: eventId }
             });
 
-            if (!freshEvent.winnerId) {
+            const existingClaimsCount = await prisma.coinRushClaim.count({
+                where: { eventId }
+            });
+
+            if (existingClaimsCount < freshEvent.winnersCount) {
                 const uniqueCode = `CLAIM-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${Date.now().toString().slice(-4)}`;
+                const position = existingClaimsCount + 1;
+                let positionText = position === 1 ? "1st" : position === 2 ? "2nd" : position === 3 ? "3rd" : `${position}th`;
                 
-                const [_, newClaim] = await prisma.$transaction([
-                    prisma.coinRushEvent.update({
-                        where: { id: eventId },
-                        data: {
-                            winnerId: userId,
-                            status: 'completed',
-                            endTime: new Date()
-                        }
-                    }),
-                    prisma.coinRushClaim.create({
-                        data: {
-                            eventId,
-                            userId,
-                            code: uniqueCode
-                        }
-                    })
-                ]);
+                const newClaim = await prisma.coinRushClaim.create({
+                    data: {
+                        eventId,
+                        userId,
+                        code: uniqueCode
+                    }
+                });
 
                 // Broadcast winner announced
                 publishToCoinRushRoom(eventId, {
@@ -609,6 +633,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     eventId,
                     winnerId: userId,
                     winnerName: req.user.name || "",
+                    position: positionText,
                     reward: {
                         type: event.rewardType,
                         title: event.rewardTitle,
@@ -616,16 +641,16 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     }
                 });
 
-                // Broadcast event finished
+                // Broadcast non-intrusive notification to other players
                 publishToCoinRushRoom(eventId, {
-                    type: 'coinrush_event_finished',
+                    type: 'coinrush_position_claimed',
                     eventId,
-                    status: 'completed'
+                    message: `${positionText} Place Claimed! Keep Going!`
                 });
 
                 return res.status(200).json({
                     status: true,
-                    msg: "Congratulations! You completed all checkpoints first and won the event!",
+                    msg: `Congratulations! You finished in ${positionText} place and won a prize!`,
                     completedAll: true,
                     isWinner: true,
                     claimId: newClaim.id,
@@ -634,15 +659,26 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     xpEarned: xpAmount
                 });
             } else {
-                // Completed but not the winner
+                // Completed but all prizes are claimed
                 return res.status(200).json({
                     status: true,
-                    msg: "You completed all checkpoints, but someone else won first.",
+                    msg: "You completed the raid! All prizes were already claimed.",
                     completedAll: true,
                     isWinner: false,
                     isAchieved: true,
                     xpEarned: xpAmount
                 });
+            }
+        }
+
+        let safeNextCheckpoint = null;
+        if (completedCount < totalCheckpoints) {
+            const nextCp = event.checkpoints[completedCount];
+            if (nextCp) {
+                safeNextCheckpoint = { ...nextCp, isAchieved: false };
+                delete safeNextCheckpoint.qrCode;
+                delete safeNextCheckpoint.answer;
+                delete safeNextCheckpoint.secretCode;
             }
         }
 
@@ -652,7 +688,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             completedAll: false,
             progress: progressMessage,
             isAchieved: true,
-            xpEarned: xpAmount
+            xpEarned: xpAmount,
+            nextCheckpoint: safeNextCheckpoint
         });
 
     } catch (error) {

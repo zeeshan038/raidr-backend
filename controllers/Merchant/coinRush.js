@@ -47,7 +47,8 @@ export const CreateCoinRushEvent = async (req, res) => {
         rewardImageUrl,
         rewardDescription,
         rewardClaimInstructions,
-        rewardValue
+        rewardValue,
+        winnersCount
     } = result.value;
 
     const parsedStart = startTime ? new Date(startTime) : new Date();
@@ -140,6 +141,7 @@ export const CreateCoinRushEvent = async (req, res) => {
                 rewardDescription,
                 rewardClaimInstructions,
                 rewardValue: parseFloat(rewardValue),
+                winnersCount: parseInt(winnersCount) || 1,
                 status: "scheduled", // default active status
                 checkpoints: {
                     create: createdCheckpoints
