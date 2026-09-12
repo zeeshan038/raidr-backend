@@ -194,7 +194,6 @@ export const eventDetails = async (req, res) => {
     }
 
     try {
-        // Fetch event data and claims in parallel (1 database round-trip)
         const [liveEvent, coinRushEvent, liveClaim, coinRushClaim] = await Promise.all([
             prisma.liveEvent.findUnique({
                 where: { id: eventId },

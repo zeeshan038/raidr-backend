@@ -327,6 +327,13 @@ export const UpdateCoinRushEvent = async (req, res) => {
             });
         }
 
+        if (event.status === 'live') {
+            return res.status(400).json({
+                status: false,
+                msg: "Cannot update event configuration while the raid is currently live."
+            });
+        }
+
         const updatedEvent = await prisma.coinRushEvent.update({
             where: { id: eventId },
             data: updateData
