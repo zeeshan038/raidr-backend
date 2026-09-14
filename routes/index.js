@@ -8,6 +8,7 @@ import UploadRoutes from "./upload.js"
 import UserStoreRoutes from './store.js'
 import EventRoutes from './events.js'
 import TestRoutes from './test.js'
+import SinglePlayerRoutes from './singlePlayer.js'
 
 //Merchant 
 import MerchantRoutes from "./Merchant/merchant.js"
@@ -24,6 +25,8 @@ import AdminEventRoutes from "./Admin/event.js"
 import UserManagmentRoutes from "./Admin/userManagment.js"
 import MerchantManagmentRoutes from "./Admin/merchantManagement.js"
 import AdminDashboardRoutes from "./Admin/dashboard.js"
+import AdminSinglePlayerRoutes from "./Admin/singlePlayer.js"
+import AdminSponsoredThemeRoutes from "./Admin/sponsoredTheme.js"
 
 //Merchant Routes 
 router.use('/merchant/ads',AdsRoutes);
@@ -46,6 +49,7 @@ router.use('/events',EventRoutes)
 router.use('/coin-rush', CoinRushRoutes)
 router.use('/rewards', RewardsRoutes)
 router.use('/review', ReviewRoutes)
+router.use('/single-player', SinglePlayerRoutes)
 
 //Admin 
 router.use("/admin/store",AdminStoreRoutes)
@@ -54,6 +58,8 @@ router.use("/admin/events",AdminEventRoutes)
 router.use("/admin/user",UserManagmentRoutes)
 router.use("/admin/merchants",MerchantManagmentRoutes)
 router.use("/admin/dashboard",AdminDashboardRoutes)
+router.use("/admin/single-player", AdminSinglePlayerRoutes);
+router.use("/admin/sponsored-themes", AdminSponsoredThemeRoutes);
 
 //Test
 router.use("/test", TestRoutes)
