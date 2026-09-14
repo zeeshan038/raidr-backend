@@ -1101,6 +1101,7 @@
                           "radius": { "type": "number", "example": 50 },
                           "isActive": { "type": "boolean", "example": true },
                           "coinsPerHour": { "type": "number", "example": 60 },
+                          "imageUrl": { "type": "string", "nullable": true },
                           "currentOwnerId": { "type": "string", "nullable": true },
                           "shieldExpiresAt": { "type": "string", "format": "date-time", "nullable": true }
                         }
@@ -1326,6 +1327,98 @@
           "200": {
             "description": "Success",
             "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "data": { "type": "object", "properties": { "dailyDrops": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "rewardType": { "type": "string" }, "createdAt": { "type": "string" } } } }, "rareDrops": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "rewardType": { "type": "string" }, "createdAt": { "type": "string" } } } }, "raidZones": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" } } } } } } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/dashboard": {
+      "get": {
+        "tags": ["Single Player"],
+        "summary": "Get aggregate dashboard data",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "number" },
+            "description": "User's current latitude"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "number" },
+            "description": "User's current longitude"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "dashboard": {
+                          "type": "object",
+                          "properties": {
+                            "ownedZonesCount": { "type": "integer" },
+                            "maxZonesCount": { "type": "integer" },
+                            "passiveIncomePerHour": { "type": "number" },
+                            "daysUntilNextRareDrop": { "type": "integer" }
+                          }
+                        },
+                        "dailyDrop": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "string" },
+                            "latitude": { "type": "number" },
+                            "longitude": { "type": "number" },
+                            "isCollected": { "type": "boolean" },
+                            "isRare": { "type": "boolean" },
+                            "rewardType": { "type": "string" },
+                            "distanceMeters": { "type": "number" },
+                            "isNewlySpawned": { "type": "boolean" }
+                          }
+                        },
+                        "zones": {
+                          "type": "array",
+                          "items": { 
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "name": { "type": "string" },
+                              "latitude": { "type": "number" },
+                              "longitude": { "type": "number" },
+                              "radius": { "type": "number" },
+                              "isActive": { "type": "boolean" },
+                              "coinsPerHour": { "type": "number" },
+                              "imageUrl": { "type": "string", "nullable": true },
+                              "currentOwnerId": { "type": "string", "nullable": true },
+                              "shieldExpiresAt": { "type": "string", "nullable": true },
+                              "isConquered": { "type": "boolean" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (Missing lat/lng)",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
           },
           "500": {
             "description": "Server error",

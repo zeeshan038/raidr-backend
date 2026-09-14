@@ -18,6 +18,28 @@ export const createZone = async (req, res) => {
       });
     }
   try {
+    let imageUrl = null;
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+
+    // Fetch image from Google Places API if key is present
+    if (apiKey && payload.latitude && payload.longitude && payload.name) {
+      try {
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(payload.name)}&inputtype=textquery&locationbias=point:${payload.latitude},${payload.longitude}&fields=photos&key=${apiKey}`;
+        const searchRes = await fetch(searchUrl);
+        const searchData = await searchRes.json();
+
+        if (searchData.candidates && searchData.candidates.length > 0) {
+          const candidate = searchData.candidates[0];
+          if (candidate.photos && candidate.photos.length > 0) {
+            const photoRef = candidate.photos[0].photo_reference;
+            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoRef}&key=${apiKey}`;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch Google Place Image:", err.message);
+      }
+    }
+
     const zone = await prisma.singlePlayerZone.create({
       data: {
         name: payload.name,
@@ -26,6 +48,7 @@ export const createZone = async (req, res) => {
         radius: payload.radius ? parseInt(payload.radius) : 50,
         isActive: payload.isActive !== undefined ? payload.isActive : true,
         coinsPerHour: payload.coinsPerHour !== undefined ? parseInt(payload.coinsPerHour) : 60,
+        imageUrl: imageUrl,
       },
     });
 

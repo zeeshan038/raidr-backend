@@ -535,6 +535,7 @@ model SinglePlayerZone {
   radius            Int       @default(50) // Radius in meters
   isActive          Boolean   @default(true)
   coinsPerHour      Int       @default(60)
+  imageUrl          String?
   
   currentOwnerId    String?
   shieldExpiresAt   DateTime?

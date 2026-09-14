@@ -432,3 +432,105 @@ export const getSinglePlayerHistory = async (req, res) => {
     res.status(500).json({ status: false, msg: error.message });
   }
 };
+
+/**
+ * @Description Get aggregate dashboard data (Zones, Daily Drop, and Stats) in one API
+ * @Route GET /api/single-player/dashboard
+ * @Access Private
+ */
+export const getSinglePlayerDashboard = async (req, res) => {
+  const userId = req.user.id;
+  const { latitude, longitude } = req.query;
+
+  try {
+    if (!latitude || !longitude) {
+      return res.status(400).json({ status: false, msg: "Latitude and longitude are required in query params" });
+    }
+
+    const userLat = parseFloat(latitude);
+    const userLng = parseFloat(longitude);
+
+    // 1. Fetch User Data (for multiplier)
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    // 2. Fetch Zones
+    const zones = await prisma.singlePlayerZone.findMany({
+      where: { isActive: true }
+    });
+
+    // 3. Calculate Dashboard Stats
+    const ownedZones = zones.filter(z => z.currentOwnerId === userId);
+    const ownedZonesCount = ownedZones.length;
+    let passiveIncome = ownedZones.reduce((sum, zone) => sum + zone.coinsPerHour, 0);
+
+    const hasActiveBoost = user.coinBoostExpiresAt && new Date(user.coinBoostExpiresAt) > new Date();
+    if (hasActiveBoost && user.coinBoostMultiplier) {
+      passiveIncome = Math.round(passiveIncome * user.coinBoostMultiplier);
+    }
+
+    // 4. Handle Daily Drop
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let dailyDrop = await prisma.dailyDrop.findFirst({
+      where: {
+        userId,
+        createdAt: { gte: today }
+      }
+    });
+
+    let isNewDrop = false;
+    if (!dailyDrop) {
+      // Spawn new drop if they don't have one today
+      // Generate random offset between 50 and 150 meters
+      const radiusInDegrees = 150 / 111320;
+      const u = Math.random();
+      const v = Math.random();
+      const w = radiusInDegrees * Math.sqrt(u);
+      const t = 2 * Math.PI * v;
+      const offsetLat = w * Math.cos(t);
+      const offsetLng = w * Math.sin(t) / Math.cos(userLat * Math.PI / 180);
+
+      const isRare = Math.random() < 0.15;
+      dailyDrop = await prisma.dailyDrop.create({
+        data: {
+          userId,
+          latitude: userLat + offsetLat,
+          longitude: userLng + offsetLng,
+          isRare,
+          rewardType: isRare ? "2X_BOOST_24H" : "100_COINS"
+        }
+      });
+      isNewDrop = true;
+    }
+
+    // Calculate distance to drop
+    const dropDistance = haversineDistance(dailyDrop.latitude, dailyDrop.longitude, userLat, userLng);
+
+    // Add isConquered to zones for the frontend
+    const processedZones = zones.map(zone => ({
+      ...zone,
+      isConquered: zone.currentOwnerId === userId
+    }));
+
+    res.status(200).json({
+      status: true,
+      data: {
+        dashboard: {
+          ownedZonesCount,
+          maxZonesCount: 5, // Default limit for now
+          passiveIncomePerHour: passiveIncome,
+          daysUntilNextRareDrop: 3 // Placeholder until deterministic logic is decided
+        },
+        dailyDrop: {
+          ...dailyDrop,
+          distanceMeters: Math.round(dropDistance),
+          isNewlySpawned: isNewDrop
+        },
+        zones: processedZones
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
