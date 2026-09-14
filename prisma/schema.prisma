@@ -57,6 +57,11 @@ model User {
   coinRushProgress       CoinRushProgress[]
   coinRushAttempts       CoinRushAttempt[]
   reviews                Review[]
+  ownedSinglePlayerZones SinglePlayerZone[] @relation("OwnedSinglePlayerZones")
+  dailyDrops             DailyDrop[]
+  
+  coinBoostMultiplier    Float?             @default(1.0)
+  coinBoostExpiresAt     DateTime?
 }
 
 model BoxCollectionLog {
@@ -369,16 +374,18 @@ model Admin {
 }
 
 model Store {
-    id          String   @id @default(uuid())
-    name        String
-    frontUrl    String   
-    backUrl     String    
-    price       Int      @default(0)
-    isNew       Boolean  @default(false)
-    isFeatured  Boolean  @default(false)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-    owners      UserOwnedAvatar[]
+    id                  String            @id @default(uuid())
+    name                String
+    frontUrl            String   
+    backUrl             String    
+    price               Int               @default(0)
+    isNew               Boolean           @default(false)
+    isFeatured          Boolean           @default(false)
+    spCaptureTimeSec    Int               @default(30)
+    spShieldDurationMin Int               @default(60)
+    createdAt           DateTime          @default(now())
+    updatedAt           DateTime          @updatedAt
+    owners              UserOwnedAvatar[]
 }
 
 model CoinRushEvent {
@@ -518,4 +525,53 @@ model Review {
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId])
+}
+
+model SinglePlayerZone {
+  id                String    @id @default(uuid())
+  name              String
+  latitude          Float
+  longitude         Float
+  radius            Int       @default(50) // Radius in meters
+  isActive          Boolean   @default(true)
+  coinsPerHour      Int       @default(60)
+  imageUrl          String?
+  
+  currentOwnerId    String?
+  shieldExpiresAt   DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  owner             User?     @relation("OwnedSinglePlayerZones", fields: [currentOwnerId], references: [id])
+  
+  @@index([isActive])
+}
+
+model DailyDrop {
+  id          String   @id @default(uuid())
+  userId      String
+  latitude    Float
+  longitude   Float
+  isCollected Boolean  @default(false)
+  isRare      Boolean  @default(false)
+  rewardType  String   @default("100_COINS") // e.g., "100_COINS", "2X_BOOST_24H"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+}
+
+model SponsoredTheme {
+  id               String   @id @default(uuid())
+  name             String   // e.g., "McDonalds Week"
+  startDate        DateTime
+  endDate          DateTime
+  dropImageUrl     String?  // Optional custom graphics
+  zoneImageUrl     String?
+  mapLogoUrl       String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

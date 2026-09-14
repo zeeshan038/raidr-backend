@@ -1075,6 +1075,358 @@
     }
   },
   "paths": {
+    "/single-player/zones": {
+      "get": {
+        "tags": ["Single Player"],
+        "summary": "Get all single player zones",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "data": { 
+                      "type": "array", 
+                      "items": { 
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "example": "123e4567-e89b-12d3-a456-426614174000" },
+                          "name": { "type": "string", "example": "Central Park Gate" },
+                          "latitude": { "type": "number", "example": 40.7829 },
+                          "longitude": { "type": "number", "example": -73.9654 },
+                          "radius": { "type": "number", "example": 50 },
+                          "isActive": { "type": "boolean", "example": true },
+                          "coinsPerHour": { "type": "number", "example": 60 },
+                          "imageUrl": { "type": "string", "nullable": true },
+                          "currentOwnerId": { "type": "string", "nullable": true },
+                          "shieldExpiresAt": { "type": "string", "format": "date-time", "nullable": true }
+                        }
+                      } 
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/start": {
+      "post": {
+        "tags": ["Single Player"],
+        "summary": "Start capturing a zone",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": { "type": "number", "example": 40.7829 },
+                  "longitude": { "type": "number", "example": -73.9654 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "msg": { "type": "string", "example": "Capture started" }, "captureTimeSec": { "type": "number", "example": 30 } } } } }
+          },
+          "400": {
+            "description": "Bad Request (e.g. Too far away)",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "404": {
+            "description": "Zone not found",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/complete": {
+      "post": {
+        "tags": ["Single Player"],
+        "summary": "Complete capturing a zone",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": { "type": "number", "example": 40.7829 },
+                  "longitude": { "type": "number", "example": -73.9654 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "msg": { "type": "string", "example": "Zone captured successfully" }, "shieldExpiresAt": { "type": "string", "format": "date-time" } } } } }
+          },
+          "400": {
+            "description": "Bad Request (e.g. Capture time not met)",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/daily-drop": {
+      "post": {
+        "tags": ["Single Player"],
+        "summary": "Spawn or get today's daily drop",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": { "type": "number" },
+                  "longitude": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returned existing drop",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "data": { "type": "object", "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "latitude": { "type": "number" }, "longitude": { "type": "number" }, "isCollected": { "type": "boolean" }, "isRare": { "type": "boolean" }, "rewardType": { "type": "string" } } } } } } }
+          },
+          "201": {
+            "description": "Created new drop",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "msg": { "type": "string", "example": "New daily drop spawned" }, "data": { "type": "object", "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "latitude": { "type": "number" }, "longitude": { "type": "number" }, "isCollected": { "type": "boolean" }, "isRare": { "type": "boolean" }, "rewardType": { "type": "string" } } } } } } }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/daily-drop/collect": {
+      "post": {
+        "tags": ["Single Player"],
+        "summary": "Collect daily drop",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dropId": { "type": "string" },
+                  "latitude": { "type": "number" },
+                  "longitude": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "msg": { "type": "string", "example": "You found 100 Coins!" } } } } }
+          },
+          "400": {
+            "description": "Bad Request (e.g. Too far away or Already collected)",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "403": {
+            "description": "Forbidden (Not your drop)",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "404": {
+            "description": "Drop not found",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/theme": {
+      "get": {
+        "tags": ["Single Player"],
+        "summary": "Get active sponsored theme",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "data": { "type": "object", "nullable": true, "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "startDate": { "type": "string", "format": "date-time" }, "endDate": { "type": "string", "format": "date-time" }, "dropImageUrl": { "type": "string" }, "zoneImageUrl": { "type": "string" }, "mapLogoUrl": { "type": "string" } } }, "msg": { "type": "string" } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/history": {
+      "get": {
+        "tags": ["Single Player"],
+        "summary": "Get player history",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Type of history (dailyDrops, rareDrops, raidZones)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": true }, "data": { "type": "object", "properties": { "dailyDrops": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "rewardType": { "type": "string" }, "createdAt": { "type": "string" } } } }, "rareDrops": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "rewardType": { "type": "string" }, "createdAt": { "type": "string" } } } }, "raidZones": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" } } } } } } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/single-player/dashboard": {
+      "get": {
+        "tags": ["Single Player"],
+        "summary": "Get aggregate dashboard data",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "number" },
+            "description": "User's current latitude"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "number" },
+            "description": "User's current longitude"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "dashboard": {
+                          "type": "object",
+                          "properties": {
+                            "ownedZonesCount": { "type": "integer" },
+                            "maxZonesCount": { "type": "integer" },
+                            "passiveIncomePerHour": { "type": "number" },
+                            "daysUntilNextRareDrop": { "type": "integer" }
+                          }
+                        },
+                        "dailyDrop": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "string" },
+                            "latitude": { "type": "number" },
+                            "longitude": { "type": "number" },
+                            "isCollected": { "type": "boolean" },
+                            "isRare": { "type": "boolean" },
+                            "rewardType": { "type": "string" },
+                            "distanceMeters": { "type": "number" },
+                            "isNewlySpawned": { "type": "boolean" }
+                          }
+                        },
+                        "zones": {
+                          "type": "array",
+                          "items": { 
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "name": { "type": "string" },
+                              "latitude": { "type": "number" },
+                              "longitude": { "type": "number" },
+                              "radius": { "type": "number" },
+                              "isActive": { "type": "boolean" },
+                              "coinsPerHour": { "type": "number" },
+                              "imageUrl": { "type": "string", "nullable": true },
+                              "currentOwnerId": { "type": "string", "nullable": true },
+                              "shieldExpiresAt": { "type": "string", "nullable": true },
+                              "isConquered": { "type": "boolean" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (Missing lat/lng)",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "boolean", "example": false }, "msg": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
     "/review/add": {
       "post": {
         "tags": [
