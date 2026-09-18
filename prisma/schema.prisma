@@ -59,6 +59,7 @@ model User {
   reviews                Review[]
   ownedSinglePlayerZones SinglePlayerZone[] @relation("OwnedSinglePlayerZones")
   dailyDrops             DailyDrop[]
+  userVouchers           UserVoucher[]
   
   coinBoostMultiplier    Float?             @default(1.0)
   coinBoostExpiresAt     DateTime?
@@ -555,7 +556,10 @@ model DailyDrop {
   longitude   Float
   isCollected Boolean  @default(false)
   isRare      Boolean  @default(false)
-  rewardType  String   @default("100_COINS") // e.g., "100_COINS", "2X_BOOST_24H"
+  rewardType  String   @default("100_COINS") // e.g., "100_COINS", "2X_BOOST_24H", "INSTANT_CAPTURE", "AVATAR", "VOUCHER"
+  rewardAmount      Int?     // For coins
+  rewardAvatarId    String?  // If it's an avatar reward
+  rewardVoucherId   String?  // If it's a commercial voucher
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -572,6 +576,37 @@ model SponsoredTheme {
   zoneImageUrl     String?
   mapLogoUrl       String?
   isActive         Boolean  @default(true)
+  latitude         Float?   // Optional location bounding
+  longitude        Float?
+  radius           Float?   @default(5000) // Default radius in meters
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+model CommercialVoucher {
+  id              String      @id @default(uuid())
+  title           String      // e.g., "Free Coffee & Pastry"
+  description     String?
+  sponsorName     String      // e.g., "Local Cafe"
+  imageUrl        String?     // Logo of the business
+  redemptionCode  String?     // The actual coupon code
+  quantity        Int         // How many of these can be dropped in total?
+  isActive        Boolean     @default(true)
+  
+  userVouchers    UserVoucher[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model UserVoucher {
+  id              String      @id @default(uuid())
+  userId          String
+  voucherId       String
+  isRedeemed      Boolean     @default(false)
+  redeemedAt      DateTime?
+  createdAt       DateTime    @default(now())
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voucher         CommercialVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 }

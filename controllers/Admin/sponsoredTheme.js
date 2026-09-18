@@ -1,9 +1,15 @@
 import { prisma } from "../../config/db.js";
+import { generateThemeImages } from "../../utils/GeminiAi.js";
 
-// Create Theme
+
+/**
+ * @Description Create Theme
+ * @Route POST /api/admin/sponsored-theme
+ * @Access Private
+ */
 export const createTheme = async (req, res) => {
   try {
-    const { name, startDate, endDate, dropImageUrl, zoneImageUrl, mapLogoUrl } = req.body;
+    const { name, startDate, endDate, dropImageUrl, zoneImageUrl, mapLogoUrl, isActive, latitude, longitude, radius } = req.body;
     
     if (!name || !startDate || !endDate) {
       return res.status(400).json({ status: false, msg: "Name, startDate, and endDate are required" });
@@ -16,7 +22,11 @@ export const createTheme = async (req, res) => {
         endDate: new Date(endDate),
         dropImageUrl,
         zoneImageUrl,
-        mapLogoUrl
+        mapLogoUrl,
+        isActive: isActive !== undefined ? isActive : true,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        radius: radius ? parseFloat(radius) : 5000
       }
     });
 
@@ -26,7 +36,11 @@ export const createTheme = async (req, res) => {
   }
 };
 
-// Get All Themes
+/**
+ * @Description Get All Themes
+ * @Route GET /api/admin/sponsored-theme
+ * @Access Private
+ */
 export const getThemes = async (req, res) => {
   try {
     const themes = await prisma.sponsoredTheme.findMany({
@@ -38,11 +52,16 @@ export const getThemes = async (req, res) => {
   }
 };
 
-// Update Theme
+
+/**
+ * @Description Update Theme
+ * @Route PUT /api/admin/sponsored-theme/:id
+ * @Access Private
+ */
 export const updateTheme = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, startDate, endDate, dropImageUrl, zoneImageUrl, mapLogoUrl, isActive } = req.body;
+    const { name, startDate, endDate, dropImageUrl, zoneImageUrl, mapLogoUrl, isActive, latitude, longitude, radius } = req.body;
 
     const theme = await prisma.sponsoredTheme.update({
       where: { id },
@@ -50,10 +69,13 @@ export const updateTheme = async (req, res) => {
         ...(name && { name }),
         ...(startDate && { startDate: new Date(startDate) }),
         ...(endDate && { endDate: new Date(endDate) }),
-        ...(dropImageUrl !== undefined && { dropImageUrl }),
-        ...(zoneImageUrl !== undefined && { zoneImageUrl }),
-        ...(mapLogoUrl !== undefined && { mapLogoUrl }),
-        ...(isActive !== undefined && { isActive })
+        ...(dropImageUrl && { dropImageUrl }),
+        ...(zoneImageUrl && { zoneImageUrl }),
+        ...(mapLogoUrl && { mapLogoUrl }),
+        ...(isActive !== undefined && { isActive }),
+        ...(latitude !== undefined && { latitude: latitude ? parseFloat(latitude) : null }),
+        ...(longitude !== undefined && { longitude: longitude ? parseFloat(longitude) : null }),
+        ...(radius !== undefined && { radius: radius ? parseFloat(radius) : null })
       }
     });
 
@@ -63,7 +85,11 @@ export const updateTheme = async (req, res) => {
   }
 };
 
-// Delete Theme
+/**
+ * @Description Delete Theme
+ * @Route DELETE /api/admin/sponsored-theme/:id
+ * @Access Private
+ */
 export const deleteTheme = async (req, res) => {
   try {
     const { id } = req.params;
@@ -71,5 +97,26 @@ export const deleteTheme = async (req, res) => {
     res.status(200).json({ status: true, msg: "Theme deleted successfully" });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+/**
+ * @Description Generate Theme Images using Gemini API
+ * @Route POST /api/admin/sponsored-theme/generate-images
+ * @Access Private
+ */
+export const generateThemeImagesController = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ status: false, msg: "Theme name is required" });
+    }
+    const images = await generateThemeImages(name);
+    res.status(200).json({ status: true, msg: "Images generated successfully", data: images });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      msg: error.message
+    });
   }
 };

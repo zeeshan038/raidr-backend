@@ -27,6 +27,7 @@ import MerchantManagmentRoutes from "./Admin/merchantManagement.js"
 import AdminDashboardRoutes from "./Admin/dashboard.js"
 import AdminSinglePlayerRoutes from "./Admin/singlePlayer.js"
 import AdminSponsoredThemeRoutes from "./Admin/sponsoredTheme.js"
+import AdminCommercialVoucherRoutes from "./Admin/commercialVoucher.js"
 
 //Merchant Routes 
 router.use('/merchant/ads',AdsRoutes);
@@ -60,6 +61,7 @@ router.use("/admin/merchants",MerchantManagmentRoutes)
 router.use("/admin/dashboard",AdminDashboardRoutes)
 router.use("/admin/single-player", AdminSinglePlayerRoutes);
 router.use("/admin/sponsored-themes", AdminSponsoredThemeRoutes);
+router.use('/admin/vouchers', AdminCommercialVoucherRoutes);
 
 //Test
 router.use("/test", TestRoutes)
