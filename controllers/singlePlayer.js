@@ -323,11 +323,14 @@ export const collectDailyDrop = async (req, res) => {
     }
 
     let rewardMsg = "You found 100 Coins!";
+    let rewardData = null;
+    
     if (drop.rewardType === "100_COINS") {
       await prisma.user.update({
         where: { id: userId },
-        data: { raidrCoins: { increment: 100 } }
+        data: { raidrCoins: { increment: drop.rewardAmount || 100 } }
       });
+      rewardMsg = `You found ${drop.rewardAmount || 100} Coins!`;
     } else if (drop.rewardType === "2X_BOOST_24H") {
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await prisma.user.update({
@@ -338,6 +341,33 @@ export const collectDailyDrop = async (req, res) => {
         }
       });
       rewardMsg = "You found a Rare Drop! 2x Passive Coins for 24 hours.";
+    } else if (drop.rewardType === "INSTANT_CAPTURE") {
+      rewardMsg = "You found a Rare Drop! 1x Instant Capture added.";
+    } else if (drop.rewardType === "AVATAR") {
+      if (drop.rewardAvatarId) {
+        try {
+          await prisma.userOwnedAvatar.create({
+            data: { userId, avatarId: drop.rewardAvatarId }
+          });
+        } catch (e) {
+          // Already owned or invalid avatar
+        }
+        rewardMsg = "You found a Rare Drop! New Avatar unlocked.";
+      }
+    } else if (drop.rewardType === "VOUCHER") {
+      if (drop.rewardVoucherId) {
+        const userVoucher = await prisma.userVoucher.create({
+          data: { userId, voucherId: drop.rewardVoucherId },
+          include: { voucher: true }
+        });
+        rewardMsg = `You won a ${userVoucher.voucher.title}!`;
+        rewardData = {
+          redemptionCode: userVoucher.voucher.redemptionCode,
+          title: userVoucher.voucher.title,
+          sponsor: userVoucher.voucher.sponsorName,
+          imageUrl: userVoucher.voucher.imageUrl
+        };
+      }
     }
 
     await prisma.dailyDrop.update({
@@ -345,7 +375,7 @@ export const collectDailyDrop = async (req, res) => {
       data: { isCollected: true }
     });
 
-    res.status(200).json({ status: true, msg: rewardMsg });
+    res.status(200).json({ status: true, msg: rewardMsg, rewardData });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
   }
@@ -358,7 +388,10 @@ export const collectDailyDrop = async (req, res) => {
  */
 export const getActiveTheme = async (req, res) => {
   try {
+    const { lat, lng } = req.query;
     const now = new Date();
+    
+    // Find the current active theme
     const activeTheme = await prisma.sponsoredTheme.findFirst({
       where: {
         isActive: true,
@@ -371,6 +404,24 @@ export const getActiveTheme = async (req, res) => {
     });
 
     if (activeTheme) {
+      // If the theme has a specific location, check distance
+      if (activeTheme.latitude !== null && activeTheme.longitude !== null) {
+        if (!lat || !lng) {
+          return res.status(200).json({ status: true, data: null, msg: "Theme requires location. Please provide lat and lng." });
+        }
+        
+        const userLat = parseFloat(lat);
+        const userLng = parseFloat(lng);
+        const radius = activeTheme.radius || 5000;
+        
+        const distance = haversineDistance(userLat, userLng, activeTheme.latitude, activeTheme.longitude);
+        
+        if (distance > radius) {
+          return res.status(200).json({ status: true, data: null, msg: `You are too far away from the active theme. Distance: ${Math.round(distance)}m, Radius: ${radius}m` });
+        }
+      }
+      
+      // If no location restrictions or user is within radius
       return res.status(200).json({ status: true, data: activeTheme });
     } else {
       return res.status(200).json({ status: true, data: null, msg: "No active theme" });
@@ -433,6 +484,7 @@ export const getSinglePlayerHistory = async (req, res) => {
   }
 };
 
+
 /**
  * @Description Get aggregate dashboard data (Zones, Daily Drop, and Stats) in one API
  * @Route GET /api/single-player/dashboard
@@ -481,8 +533,6 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     let isNewDrop = false;
     if (!dailyDrop) {
-      // Spawn new drop if they don't have one today
-      // Generate random offset between 50 and 150 meters
       const radiusInDegrees = 150 / 111320;
       const u = Math.random();
       const v = Math.random();
@@ -492,13 +542,44 @@ export const getSinglePlayerDashboard = async (req, res) => {
       const offsetLng = w * Math.sin(t) / Math.cos(userLat * Math.PI / 180);
 
       const isRare = Math.random() < 0.15;
+      
+      let rewardType = "100_COINS";
+      let rewardAvatarId = null;
+      let rewardVoucherId = null;
+
+      if (isRare) {
+        const rareTypes = ["2X_BOOST_24H", "INSTANT_CAPTURE", "AVATAR", "VOUCHER"];
+        rewardType = rareTypes[Math.floor(Math.random() * rareTypes.length)];
+
+        if (rewardType === "AVATAR") {
+          const avatars = await prisma.avatar.findMany({ select: { id: true } });
+          if (avatars.length > 0) {
+            rewardAvatarId = avatars[Math.floor(Math.random() * avatars.length)].id;
+          } else {
+            rewardType = "2X_BOOST_24H"; // Fallback
+          }
+        } else if (rewardType === "VOUCHER") {
+          const vouchers = await prisma.commercialVoucher.findMany({
+            where: { isActive: true, quantity: { gt: 0 } },
+            select: { id: true }
+          });
+          if (vouchers.length > 0) {
+            rewardVoucherId = vouchers[Math.floor(Math.random() * vouchers.length)].id;
+          } else {
+            rewardType = "2X_BOOST_24H"; // Fallback
+          }
+        }
+      }
+
       dailyDrop = await prisma.dailyDrop.create({
         data: {
           userId,
           latitude: userLat + offsetLat,
           longitude: userLng + offsetLng,
           isRare,
-          rewardType: isRare ? "2X_BOOST_24H" : "100_COINS"
+          rewardType,
+          rewardAvatarId,
+          rewardVoucherId
         }
       });
       isNewDrop = true;
@@ -518,9 +599,9 @@ export const getSinglePlayerDashboard = async (req, res) => {
       data: {
         dashboard: {
           ownedZonesCount,
-          maxZonesCount: 5, // Default limit for now
+          maxZonesCount: 5, 
           passiveIncomePerHour: passiveIncome,
-          daysUntilNextRareDrop: 3 // Placeholder until deterministic logic is decided
+          daysUntilNextRareDrop: 3 
         },
         dailyDrop: {
           ...dailyDrop,
@@ -529,6 +610,32 @@ export const getSinglePlayerDashboard = async (req, res) => {
         },
         zones: processedZones
       }
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+/**
+ * @Description Get all commercial vouchers collected by the user
+ * @Route GET /api/single-player/vouchers
+ * @Access Private
+ */
+export const getUserVouchers = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const userVouchers = await prisma.userVoucher.findMany({
+      where: { userId },
+      include: {
+        voucher: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({
+      status: true,
+      data: userVouchers
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
