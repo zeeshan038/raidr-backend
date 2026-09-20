@@ -512,6 +512,7 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
                 rewardDescription:payload.rewardDescription,
                 rewardClaimInstructions:payload.rewardClaimInstructions,
                 rewardValue: parseFloat(payload.rewardValue),
+                winnersCount: payload.winnersCount ? parseInt(payload.winnersCount) : 1,
                 status: "scheduled", 
                 checkpoints: {
                     create: createdCheckpoints
