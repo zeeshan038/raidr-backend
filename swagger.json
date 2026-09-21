@@ -3047,6 +3047,10 @@
                           "spCaptureTimeSec": {
                             "type": "number",
                             "example": 30
+                          },
+                          "spShieldDurationMin": {
+                            "type": "number",
+                            "example": 60
                           }
                         }
                       }
@@ -5795,6 +5799,10 @@
                   "spCaptureTimeSec": {
                     "type": "number",
                     "example": 30
+                  },
+                  "spShieldDurationMin": {
+                    "type": "number",
+                    "example": 60
                   }
                 },
                 "required": [
@@ -6816,6 +6824,9 @@
                     "type": "boolean"
                   },
                   "spCaptureTimeSec": {
+                    "type": "number"
+                  },
+                  "spShieldDurationMin": {
                     "type": "number"
                   }
                 }
