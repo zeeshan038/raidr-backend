@@ -1,5 +1,6 @@
 import { prisma } from "../../config/db.js";
 import { CreateZoneSchema, UpdateZoneSchema } from "../../schema/Admin/SinglePlayer.js";
+import { generateBulkZones } from "../../utils/GeminiAi.js";
 
 /**
  * @Description Create a new Single Player Zone
@@ -48,6 +49,8 @@ export const createZone = async (req, res) => {
         radius: payload.radius ? parseInt(payload.radius) : 50,
         isActive: payload.isActive !== undefined ? payload.isActive : true,
         coinsPerHour: payload.coinsPerHour !== undefined ? parseInt(payload.coinsPerHour) : 60,
+        city: payload.city || null,
+        country: payload.country || null,
         imageUrl: imageUrl,
       },
     });
@@ -72,18 +75,40 @@ export const createZone = async (req, res) => {
  */
 export const getAllZones = async (req, res) => {
   try {
-    const zones = await prisma.singlePlayerZone.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        owner: {
-          select: { id: true, name: true, email: true },
+    const { city, country, page = 1, limit = 10 } = req.query;
+    
+    const where = {};
+    if (city) where.city = { contains: city, mode: 'insensitive' };
+    if (country) where.country = { contains: country, mode: 'insensitive' };
+
+    const pageNumber = parseInt(page, 10) || 1;
+    const limitNumber = parseInt(limit, 10) || 10;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [zones, total] = await Promise.all([
+      prisma.singlePlayerZone.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNumber,
+        include: {
+          owner: {
+            select: { id: true, name: true, email: true },
+          },
         },
-      },
-    });
+      }),
+      prisma.singlePlayerZone.count({ where })
+    ]);
 
     res.status(200).json({
       status: true,
       data: zones,
+      pagination: {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber)
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -129,6 +154,8 @@ export const updateZone = async (req, res) => {
         radius: payload.radius ? parseInt(payload.radius) : zone.radius,
         isActive: payload.isActive !== undefined ? payload.isActive : zone.isActive,
         coinsPerHour: payload.coinsPerHour !== undefined ? parseInt(payload.coinsPerHour) : zone.coinsPerHour,
+        city: payload.city !== undefined ? payload.city : zone.city,
+        country: payload.country !== undefined ? payload.country : zone.country,
       },
     });
 
@@ -172,6 +199,71 @@ export const deleteZone = async (req, res) => {
     res.status(500).json({
       status: false,
       msg: error.message,
+    });
+  }
+};
+
+/**
+ * @Description Generate and insert bulk Single Player Zones via AI
+ * @Route POST /api/admin/single-player/zones/bulk-generate
+ * @Access Private (Admin)
+ */
+export const generateBulkZonesController = async (req, res) => {
+  try {
+    const { prompt, count, radius, coinsPerHour } = req.body;
+
+    if (!prompt || !count || count <= 0) {
+      return res.status(400).json({
+        status: false,
+        msg: "Prompt and a valid count are required",
+      });
+    }
+
+    if (count > 100) {
+      return res.status(400).json({
+        status: false,
+        msg: "Count cannot exceed 100 per request",
+      });
+    }
+
+    const aiZones = await generateBulkZones(prompt, count);
+
+    if (!aiZones || aiZones.length === 0) {
+      return res.status(500).json({
+        status: false,
+        msg: "Failed to generate zones from AI",
+      });
+    }
+
+    // Prepare data for bulk insert
+    const zonesToCreate = aiZones.map(zone => ({
+      name: zone.name,
+      latitude: parseFloat(zone.latitude),
+      longitude: parseFloat(zone.longitude),
+      city: zone.city || null,
+      country: zone.country || null,
+      radius: radius ? parseInt(radius) : 50,
+      coinsPerHour: coinsPerHour !== undefined ? parseInt(coinsPerHour) : 60,
+      isActive: true,
+      imageUrl: null // Skipping Google Places image fetch for bulk inserts to avoid rate limits/latency
+    }));
+
+    const created = await prisma.singlePlayerZone.createMany({
+      data: zonesToCreate,
+      skipDuplicates: true // Just in case
+    });
+
+    res.status(201).json({
+      status: true,
+      msg: `Successfully generated and inserted ${created.count} zones`,
+      data: zonesToCreate
+    });
+
+  } catch (error) {
+    console.error("Error in generateBulkZonesController:", error);
+    res.status(500).json({
+      status: false,
+      msg: error.message || "An error occurred during bulk generation",
     });
   }
 };
