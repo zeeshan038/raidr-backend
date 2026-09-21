@@ -20,6 +20,8 @@ export const CreateZoneSchema = (payload) => {
         isActive: Joi.boolean().optional().messages({
             'boolean.base': 'isActive must be a boolean'
         }),
+        city: Joi.string().optional().allow("").allow(null),
+        country: Joi.string().optional().allow("").allow(null),
         coinsPerHour: Joi.number().optional().messages({
             'number.base': 'coinsPerHour must be a number'
         })
@@ -35,6 +37,8 @@ export const UpdateZoneSchema = (payload) => {
         longitude: Joi.number().optional(),
         radius: Joi.number().optional(),
         isActive: Joi.boolean().optional(),
+        city: Joi.string().optional().allow("").allow(null),
+        country: Joi.string().optional().allow("").allow(null),
         coinsPerHour: Joi.number().optional()
     }).unknown(false);
 

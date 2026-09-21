@@ -525,6 +525,63 @@ try {
         }
     };
 
+    swaggerData.paths['/admin/single-player/zones/bulk-generate'] = {
+        post: {
+            tags: ["Admin Single Player"],
+            summary: "Bulk Generate Single Player Zones",
+            description: "Generate and insert bulk Single Player Zones using AI.",
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                prompt: { type: "string", example: "10 zones in Central London" },
+                                count: { type: "integer", example: 10 },
+                                radius: { type: "integer", example: 50 },
+                                coinsPerHour: { type: "integer", example: 60 }
+                            },
+                            required: ["prompt", "count"]
+                        }
+                    }
+                }
+            },
+            responses: {
+                "201": { 
+                    description: "Zones successfully generated and inserted",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: true },
+                                    msg: { type: "string", example: "Successfully generated and inserted 10 zones" },
+                                    data: {
+                                        type: "array",
+                                        items: {
+                                            type: "object",
+                                            properties: {
+                                                name: { type: "string", example: "Hyde Park Zone" },
+                                                latitude: { type: "number", example: 51.5072 },
+                                                longitude: { type: "number", example: -0.1276 },
+                                                city: { type: "string", example: "London" },
+                                                country: { type: "string", example: "UK" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "400": { description: "Prompt and a valid count are required, or count exceeds 100" },
+                "500": { description: "Server error or AI generation failed" }
+            }
+        }
+    };
+
     swaggerData.paths['/single-player/zones'] = {
         get: {
             tags: ["Single Player"],

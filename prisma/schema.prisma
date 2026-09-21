@@ -535,6 +535,8 @@ model SinglePlayerZone {
   name              String
   latitude          Float
   longitude         Float
+  city              String?
+  country           String?
   radius            Int       @default(50) // Radius in meters
   isActive          Boolean   @default(true)
   coinsPerHour      Int       @default(60)
