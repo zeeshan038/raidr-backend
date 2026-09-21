@@ -119,12 +119,13 @@ model Trip {
 }
 
 model Avatar {
-  id            String   @id @default(uuid())
-  avatarNumber  Int      @unique
-  frontUrl      String
-  backUrl       String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(uuid())
+  avatarNumber     Int      @unique
+  frontUrl         String
+  backUrl          String
+  spCaptureTimeSec Int      @default(60)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 

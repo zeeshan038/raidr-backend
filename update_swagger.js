@@ -149,6 +149,45 @@ try {
         }
     };
 
+    swaggerData.paths['/user/avatars'] = {
+        get: {
+            tags: ["User Profile"],
+            summary: "Get all avatars and their lock status based on user level",
+            security: [{ bearerAuth: [] }],
+            responses: {
+                "200": {
+                    description: "Avatars fetched successfully",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: true },
+                                    msg: { type: "string", example: "Avatars fetched successfully" },
+                                    currentLevel: { type: "integer", example: 5 },
+                                    avatars: {
+                                        type: "object",
+                                        additionalProperties: {
+                                            type: "object",
+                                            properties: {
+                                                front: { type: "string", example: "https://example.com/front.png" },
+                                                back: { type: "string", example: "https://example.com/back.png" },
+                                                locked: { type: "boolean", example: false },
+                                                spCaptureTimeSec: { type: "number", example: 30 }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "401": { description: "Unauthorized" },
+                "500": { description: "Internal server error" }
+            }
+        }
+    };
+
 
 
     
