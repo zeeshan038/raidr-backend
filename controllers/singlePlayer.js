@@ -34,12 +34,14 @@ export const getZones = async (req, res) => {
   }
 };
 
+
+
 /**
- * @Description Start capturing a zone
- * @Route POST /api/single-player/zones/:id/capture/start
+ * @Description Complete capturing a zone
+ * @Route POST /api/single-player/zones/:id/capture/complete
  * @Access Private
  */
-export const startCapture = async (req, res) => {
+export const completeCapture = async (req, res) => {
   const { id: zoneId } = req.params;
   const { latitude, longitude } = req.body;
   const userId = req.user.id;
@@ -62,110 +64,18 @@ export const startCapture = async (req, res) => {
 
     // Check if shielded
     if (zone.shieldExpiresAt && new Date(zone.shieldExpiresAt) > new Date()) {
-      return res.status(400).json({ success: false, message: "Zone is currently shielded" });
+      return res.status(400).json({ status: false, msg: "Zone is currently shielded by another player." });
     }
 
-    // Check distance
-    const distance = haversineDistance(
-      parseFloat(zone.latitude),
-      parseFloat(zone.longitude),
-      parseFloat(latitude),
-      parseFloat(longitude)
-    );
-
-    if (distance > zone.radius) {
-      return res.status(400).json({
-        status: false,
-        msg: `You are too far away. Distance: ${distance.toFixed(2)}m, Radius: ${zone.radius}m`
-      });
-    }
-
-    // Fetch user and equipped avatar times
+    // Fetch user and equipped avatar times for shield duration
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    let captureTimeSec = DEFAULT_CAPTURE_TIME_SEC;
-    
-    if (user && user.selectedAvatarId) {
-      const avatar = await prisma.store.findUnique({ where: { id: user.selectedAvatarId } });
-      if (avatar && avatar.spCaptureTimeSec) {
-        captureTimeSec = avatar.spCaptureTimeSec;
-      }
-    }
-
-    // Store capture start time in Redis with expiry slightly longer than the capture time
-    const redisKey = `sp_capture:${userId}:${zoneId}`;
-    await redis.set(redisKey, Date.now(), "EX", captureTimeSec + 30);
-
-    res.status(200).json({
-      status: true,
-      msg: "Capture started successfully",
-      captureTime: captureTimeSec
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      status: false,
-      msg: error.message
-    });
-  }
-};
-
-/**
- * @Description Complete capturing a zone
- * @Route POST /api/single-player/zones/:id/capture/complete
- * @Access Private
- */
-export const completeCapture = async (req, res) => {
-  const { id: zoneId } = req.params;
-  const { latitude, longitude } = req.body;
-  const userId = req.user.id;
-  try {
-
-    if (!latitude || !longitude) {
-      return res.status(400).json({
-        status: false,
-        msg: "Latitude and longitude are required"
-      });
-    }
-
-    const redisKey = `sp_capture:${userId}:${zoneId}`;
-    const startTimeStr = await redis.get(redisKey);
-
-    if (!startTimeStr) {
-      return res.status(400).json({
-        status: false,
-        msg: "Capture session expired or not started"
-      });
-    }
-
-    // Fetch user and equipped avatar times
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    let captureTimeSec = DEFAULT_CAPTURE_TIME_SEC;
     let shieldDurationMin = DEFAULT_SHIELD_DURATION_MIN;
     
     if (user && user.selectedAvatarId) {
       const avatar = await prisma.store.findUnique({ where: { id: user.selectedAvatarId } });
-      if (avatar) {
-        captureTimeSec = avatar.spCaptureTimeSec || DEFAULT_CAPTURE_TIME_SEC;
-        shieldDurationMin = avatar.spShieldDurationMin || DEFAULT_SHIELD_DURATION_MIN;
+      if (avatar && avatar.spShieldDurationMin) {
+        shieldDurationMin = avatar.spShieldDurationMin;
       }
-    }
-
-    const startTime = parseInt(startTimeStr, 10);
-    const elapsedSeconds = (Date.now() - startTime) / 1000;
-
-    if (elapsedSeconds < captureTimeSec) {
-      return res.status(400).json({
-        status: false,
-        msg: "Capture time has not elapsed yet"
-      });
-    }
-
-    const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
-    if (!zone || !zone.isActive) {
-      return res.status(404).json({
-        status: false,
-        msg: "Zone not found or inactive"
-      });
     }
 
     // Check distance again to ensure they stayed in the radius
@@ -177,11 +87,9 @@ export const completeCapture = async (req, res) => {
     );
 
     if (distance > zone.radius) {
-      // Clean up redis
-      await redis.del(redisKey);
       return res.status(400).json({
         status: false,
-        msg: "Capture failed. You left the zone."
+        msg: `Capture failed. You must be within ${zone.radius}m of the zone.`
       });
     }
 
@@ -197,7 +105,7 @@ export const completeCapture = async (req, res) => {
       }
     });
 
-    await redis.del(redisKey);
+
 
     res.status(200).json({
       status: true,
@@ -556,7 +464,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
           if (avatars.length > 0) {
             rewardAvatarId = avatars[Math.floor(Math.random() * avatars.length)].id;
           } else {
-            rewardType = "2X_BOOST_24H"; // Fallback
+            rewardType = "2X_BOOST_24H"; 
           }
         } else if (rewardType === "VOUCHER") {
           const vouchers = await prisma.commercialVoucher.findMany({
@@ -566,7 +474,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
           if (vouchers.length > 0) {
             rewardVoucherId = vouchers[Math.floor(Math.random() * vouchers.length)].id;
           } else {
-            rewardType = "2X_BOOST_24H"; // Fallback
+            rewardType = "2X_BOOST_24H"; 
           }
         }
       }

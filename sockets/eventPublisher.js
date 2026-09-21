@@ -16,31 +16,19 @@ export const registerUWSApp = (app) => {
     uwsApp = app;
 };
 
-/**
- * Publish any payload to a specific live event's topic.
- * All subscribers of `event:<eventId>` will receive the message.
- * 
- * @param {string} eventId
- * @param {object} payload
- */
+import { redis } from '../services/redis.js';
+
 export const publishToEvent = (eventId, payload) => {
-    if (!uwsApp) {
-        console.warn('[EventPublisher] uWS app not registered yet. Cannot publish.');
-        return;
-    }
+    payload.eventId = eventId;
     const topic = `event:${eventId}`;
-    uwsApp.publish(topic, JSON.stringify(payload));
+    
+    // Broadcast via Redis so all instances receive it
+    redis.publish('ws_broadcast', JSON.stringify({ topic, payload }));
 };
 
-/**
- * Publish any payload to a specific user's private topic.
- * 
- * @param {string} userId
- * @param {object} payload
- */
 export const publishToUser = (userId, payload) => {
-    if (!uwsApp) return;
-    uwsApp.publish(`user:${userId}`, JSON.stringify(payload));
+    const topic = `user:${userId}`;
+    redis.publish('ws_broadcast', JSON.stringify({ topic, payload }));
 };
 
 // ─── Convenience Publishers ──────────────────────────────────────────────────

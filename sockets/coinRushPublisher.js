@@ -15,18 +15,11 @@ export const registerUWSAppForCoinRush = (app) => {
     uwsApp = app;
 };
 
-/**
- * Publish any payload to a specific Coin Rush event's topic.
- * All subscribers of `coinrush:<eventId>` will receive the message.
- * 
- * @param {string} eventId
- * @param {object} payload
- */
+import { redis } from '../services/redis.js';
+
 export const publishToCoinRush = (eventId, payload) => {
-    if (!uwsApp) {
-        console.warn('[CoinRushPublisher] uWS app not registered yet. Cannot publish.');
-        return;
-    }
+    payload.eventId = eventId;
     const topic = `coinrush:${eventId}`;
-    uwsApp.publish(topic, JSON.stringify(payload));
+    
+    redis.publish('ws_broadcast', JSON.stringify({ topic, payload }));
 };

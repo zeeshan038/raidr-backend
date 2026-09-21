@@ -15,7 +15,7 @@ const getCoinRushLeaderboard = async (eventId) => {
         where: { eventId },
         include: {
             user: {
-                select: { id: true, name: true, photoUrl: true }
+                select: { id: true, name: true, photoUrl: true, selectedAvatarId: true }
             }
         }
     });
@@ -32,13 +32,36 @@ const getCoinRushLeaderboard = async (eventId) => {
         orderBy: { claimedAt: 'asc' }
     });
 
+    // Fetch equipped avatars
+    const avatarIds = participants
+        .map(p => p.user?.selectedAvatarId)
+        .filter(id => id && id.trim() !== "");
+        
+    const uniqueAvatarIds = [...new Set(avatarIds)];
+    
+    let avatars = [];
+    if (uniqueAvatarIds.length > 0) {
+        avatars = await prisma.store.findMany({
+            where: { id: { in: uniqueAvatarIds } },
+            select: { id: true, frontUrl: true }
+        });
+    }
+
     const leaderboard = participants.map(p => {
         const stat = progressStats.find(s => s.userId === p.userId);
         const claimIndex = claims.findIndex(c => c.userId === p.userId);
+        
+        let avatarUrl = "";
+        if (p.user?.selectedAvatarId) {
+            const avatar = avatars.find(a => a.id === p.user.selectedAvatarId);
+            if (avatar) avatarUrl = avatar.frontUrl;
+        }
+
         return {
             userId: p.userId,
-            name: p.user.name || "A player",
-            photoUrl: p.user.photoUrl || "",
+            name: p.user?.name || "A player",
+            photoUrl: p.user?.photoUrl || "",
+            avatarUrl: avatarUrl,
             coins: stat ? stat._count.checkpointId : 0,
             lastCompletedAt: stat && stat._max.completedAt ? stat._max.completedAt.getTime() : 0,
             joinedAt: p.joinedAt.getTime(),
@@ -655,6 +678,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     isWinner: true,
                     claimId: newClaim.id,
                     claimCode: uniqueCode,
+                    prizePosition: position,
                     isAchieved: true,
                     xpEarned: xpAmount
                 });

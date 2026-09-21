@@ -7460,7 +7460,7 @@
                   },
                   "radiusMeter": {
                     "type": "number",
-                    "description": "GPS auto-gen: radius in meters (100\u20131000)"
+                    "description": "GPS auto-gen: radius in meters (100–1000)"
                   },
                   "checkpoints": {
                     "type": "array",
@@ -8124,6 +8124,172 @@
           },
           "400": {
             "description": "Invalid image file"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/user/coin-rush/complete-checkpoint/{eventId}": {
+      "post": {
+        "tags": [
+          "Coin Rush"
+        ],
+        "summary": "Complete Coin Rush Checkpoint",
+        "description": "Submit a checkpoint completion via GPS coordinates, QR code, Q&A, or Photo.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Event ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkpointId": {
+                    "type": "string",
+                    "example": "uuid-of-checkpoint"
+                  },
+                  "lat": {
+                    "type": "number",
+                    "example": 40.7128
+                  },
+                  "lng": {
+                    "type": "number",
+                    "example": -74.006
+                  },
+                  "qrCode": {
+                    "type": "string",
+                    "example": "qr-code-string"
+                  },
+                  "answer": {
+                    "type": "string",
+                    "example": "Blue"
+                  },
+                  "secretCode": {
+                    "type": "string",
+                    "example": "12345"
+                  },
+                  "photoUrl": {
+                    "type": "string",
+                    "example": "https://example.com/photo.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkpoint completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Congratulations! You finished in 1st place and won a prize!"
+                    },
+                    "completedAll": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "isWinner": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "claimId": {
+                      "type": "string",
+                      "example": "uuid-of-claim"
+                    },
+                    "claimCode": {
+                      "type": "string",
+                      "example": "CLAIM-XYZ-1234"
+                    },
+                    "prizePosition": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "progress": {
+                      "type": "string",
+                      "example": "5/5"
+                    },
+                    "isAchieved": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "xpEarned": {
+                      "type": "integer",
+                      "example": 50
+                    },
+                    "nextCheckpoint": {
+                      "type": "object",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or out of range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You are not within range."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event or checkpoint not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Event not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Server error"
