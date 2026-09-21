@@ -525,6 +525,70 @@ try {
         }
     };
 
+    swaggerData.paths['/single-player/zones'] = {
+        get: {
+            tags: ["Single Player"],
+            summary: "Get all single player zones",
+            security: [{ bearerAuth: [] }],
+            parameters: [
+                {
+                    name: "page",
+                    in: "query",
+                    required: false,
+                    schema: { type: "integer", default: 1 },
+                    description: "Page number"
+                },
+                {
+                    name: "limit",
+                    in: "query",
+                    required: false,
+                    schema: { type: "integer", default: 10 },
+                    description: "Number of items per page"
+                }
+            ],
+            responses: {
+                "200": {
+                    description: "Success",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: true },
+                                    data: {
+                                        type: "array",
+                                        items: {
+                                            type: "object",
+                                            properties: {
+                                                id: { type: "string", example: "123e4567-e89b-12d3-a456-426614174000" },
+                                                name: { type: "string", example: "Central Park Zone" },
+                                                latitude: { type: "string", example: "40.7812" },
+                                                longitude: { type: "string", example: "-73.9665" },
+                                                radius: { type: "integer", example: 50 },
+                                                color: { type: "string", example: "#FF0000" }
+                                            }
+                                        }
+                                    },
+                                    pagination: {
+                                        type: "object",
+                                        properties: {
+                                            total: { type: "integer", example: 54 },
+                                            page: { type: "integer", example: 1 },
+                                            limit: { type: "integer", example: 10 },
+                                            totalPages: { type: "integer", example: 6 }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "401": { description: "Unauthorized" },
+                "500": { description: "Internal server error" }
+            }
+        }
+    };
+
     fs.writeFileSync(swaggerPath, JSON.stringify(swaggerData, null, 2), 'utf8');
     console.log("Successfully updated Merchant-Dashboard/swagger.json");
 } catch (error) {

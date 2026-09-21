@@ -12,19 +12,36 @@ const DEFAULT_SHIELD_DURATION_MIN = 60;
  * @Access Private
  */
 export const getZones = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
   try {
+    const totalZones = await prisma.singlePlayerZone.count({
+      where: { isActive: true }
+    });
+
     const zones = await prisma.singlePlayerZone.findMany({
       where: { isActive: true },
       include: {
         owner: {
           select: { id: true, name: true, photoUrl: true }
         }
-      }
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' }
     });
 
     res.status(200).json({
       status: true,
-      data: zones
+      data: zones,
+      pagination: {
+        total: totalZones,
+        page,
+        limit,
+        totalPages: Math.ceil(totalZones / limit)
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -33,7 +50,6 @@ export const getZones = async (req, res) => {
     });
   }
 };
-
 
 
 /**
@@ -549,3 +565,6 @@ export const getUserVouchers = async (req, res) => {
     res.status(500).json({ status: false, msg: error.message });
   }
 };
+
+
+
