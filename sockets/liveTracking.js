@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 //Service
-import { redis } from '../services/redis.js';
+import { redis, redisSubscriber } from '../services/redis.js';
 import { prisma } from '../config/db.js';
 
 // Socket Modules
@@ -249,6 +249,27 @@ export const startWebSocketServer = () => {
         // On closure 
         close: (ws, code, message) => {
             console.log(`[uWS] User ${ws.userId} disconnected`);
+        }
+    });
+
+    redisSubscriber.subscribe('ws_broadcast', (err, count) => {
+        if (err) {
+            console.error('[uWS] Failed to subscribe to Redis ws_broadcast channel:', err);
+        } else {
+            console.log(`[uWS] Subscribed to Redis ws_broadcast channel. Listening for events across nodes.`);
+        }
+    });
+
+    redisSubscriber.on('message', (channel, message) => {
+        if (channel === 'ws_broadcast') {
+            try {
+                const { topic, payload } = JSON.parse(message);
+                if (topic && payload) {
+                    app.publish(topic, JSON.stringify(payload));
+                }
+            } catch (err) {
+                console.error('[uWS] Error parsing ws_broadcast message:', err);
+            }
         }
     });
 
