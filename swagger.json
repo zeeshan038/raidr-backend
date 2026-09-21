@@ -3016,18 +3016,39 @@
                   "type": "object",
                   "properties": {
                     "status": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Avatars fetched successfully"
                     },
                     "currentLevel": {
-                      "type": "integer"
+                      "type": "integer",
+                      "example": 5
                     },
                     "avatars": {
                       "type": "object",
                       "additionalProperties": {
-                        "$ref": "#/components/schemas/AvatarItemDto"
+                        "type": "object",
+                        "properties": {
+                          "front": {
+                            "type": "string",
+                            "example": "https://example.com/front.png"
+                          },
+                          "back": {
+                            "type": "string",
+                            "example": "https://example.com/back.png"
+                          },
+                          "locked": {
+                            "type": "boolean",
+                            "example": false
+                          },
+                          "spCaptureTimeSec": {
+                            "type": "number",
+                            "example": 30
+                          }
+                        }
                       }
                     }
                   }
@@ -3036,24 +3057,10 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Unauthorized"
           },
           "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Internal server error"
           }
         }
       }
