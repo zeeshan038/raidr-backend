@@ -24,6 +24,7 @@ export const CreateAvatarSchema = (payload) => {
         }),
         isFeatured: Joi.boolean().optional().default(false),
         isNew: Joi.boolean().optional().default(true),
+        spCaptureTimeSec: Joi.number().optional().default(30),
     }).unknown(true);
 
     return schema.validate(payload);
@@ -37,7 +38,8 @@ export const UpdateAvatarSchema = (payload) => {
         backUrl: Joi.string().optional(),
         price: Joi.number().optional(),
         isFeatured: Joi.boolean().optional(),
-        isNew: Joi.boolean().optional()
+        isNew: Joi.boolean().optional(),
+        spCaptureTimeSec: Joi.number().optional(),
     }).unknown(true);
 
     return schema.validate(payload);

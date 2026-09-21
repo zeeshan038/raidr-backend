@@ -5784,6 +5784,10 @@
                   "isNew": {
                     "type": "boolean",
                     "example": true
+                  },
+                  "spCaptureTimeSec": {
+                    "type": "number",
+                    "example": 30
                   }
                 },
                 "required": [
@@ -6803,6 +6807,9 @@
                   },
                   "isNew": {
                     "type": "boolean"
+                  },
+                  "spCaptureTimeSec": {
+                    "type": "number"
                   }
                 }
               }

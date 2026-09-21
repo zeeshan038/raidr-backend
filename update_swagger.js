@@ -29,7 +29,8 @@ try {
                                 backUrl: { type: "string", example: "https://example.com/back.png" },
                                 price: { type: "number", example: 15 },
                                 isFeatured: { type: "boolean", example: false },
-                                isNew: { type: "boolean", example: true }
+                                isNew: { type: "boolean", example: true },
+                                spCaptureTimeSec: { type: "number", example: 30 }
                             },
                             required: ["name", "frontUrl", "backUrl", "price"]
                         }
@@ -83,7 +84,8 @@ try {
                                 backUrl: { type: "string" },
                                 price: { type: "number" },
                                 isFeatured: { type: "boolean" },
-                                isNew: { type: "boolean" }
+                                isNew: { type: "boolean" },
+                                spCaptureTimeSec: { type: "number" }
                             }
                         }
                     }
