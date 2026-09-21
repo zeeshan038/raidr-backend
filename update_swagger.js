@@ -30,7 +30,8 @@ try {
                                 price: { type: "number", example: 15 },
                                 isFeatured: { type: "boolean", example: false },
                                 isNew: { type: "boolean", example: true },
-                                spCaptureTimeSec: { type: "number", example: 30 }
+                                spCaptureTimeSec: { type: "number", example: 30 },
+                                spShieldDurationMin: { type: "number", example: 60 }
                             },
                             required: ["name", "frontUrl", "backUrl", "price"]
                         }
@@ -85,7 +86,8 @@ try {
                                 price: { type: "number" },
                                 isFeatured: { type: "boolean" },
                                 isNew: { type: "boolean" },
-                                spCaptureTimeSec: { type: "number" }
+                                spCaptureTimeSec: { type: "number" },
+                                spShieldDurationMin: { type: "number" }
                             }
                         }
                     }
@@ -173,7 +175,8 @@ try {
                                                 front: { type: "string", example: "https://example.com/front.png" },
                                                 back: { type: "string", example: "https://example.com/back.png" },
                                                 locked: { type: "boolean", example: false },
-                                                spCaptureTimeSec: { type: "number", example: 30 }
+                                                spCaptureTimeSec: { type: "number", example: 30 },
+                                                spShieldDurationMin: { type: "number", example: 60 }
                                             }
                                         }
                                     }
