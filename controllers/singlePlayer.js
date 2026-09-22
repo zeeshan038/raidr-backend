@@ -563,11 +563,21 @@ export const getSinglePlayerDashboard = async (req, res) => {
     // Calculate distance to drop
     const dropDistance = haversineDistance(dailyDrop.latitude, dailyDrop.longitude, userLat, userLng);
 
-    // Add isConquered to zones for the frontend
-    const processedZones = zones.map(zone => ({
-      ...zone,
-      isConquered: zone.currentOwnerId === userId
-    }));
+    // Add status to zones for the frontend
+    const processedZones = zones.map(zone => {
+      let status = "available";
+      if (zone.currentOwnerId === userId) {
+        status = "conquered_by_me";
+      } else if (zone.currentOwnerId) {
+        status = "conquered_by_others";
+      }
+
+      return {
+        ...zone,
+        isConquered: zone.currentOwnerId === userId,
+        status
+      };
+    });
 
     res.status(200).json({
       status: true,
