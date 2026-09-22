@@ -52,16 +52,21 @@ export const getZones = async (req, res) => {
 
     const processedZones = zones.map(zone => {
       let zoneStatus = 'available';
-      if (userId) {
+      const now = new Date();
+      const isShieldExpired = zone.shieldExpiresAt && new Date(zone.shieldExpiresAt) <= now;
+
+      if (userId && zone.currentOwnerId && !isShieldExpired) {
         if (zone.currentOwnerId === userId) {
           zoneStatus = 'conquered_by_me';
-        } else if (zone.currentOwnerId !== null && zone.currentOwnerId !== userId) {
+        } else {
           zoneStatus = 'conquered_by_others';
         }
       }
 
       return {
         ...zone,
+        currentOwnerId: isShieldExpired ? null : zone.currentOwnerId,
+        shieldExpiresAt: isShieldExpired ? null : zone.shieldExpiresAt,
         status: zoneStatus
       };
     });
@@ -566,15 +571,22 @@ export const getSinglePlayerDashboard = async (req, res) => {
     // Add status to zones for the frontend
     const processedZones = zones.map(zone => {
       let status = "available";
-      if (zone.currentOwnerId === userId) {
-        status = "conquered_by_me";
-      } else if (zone.currentOwnerId) {
-        status = "conquered_by_others";
+      const now = new Date();
+      const isShieldExpired = zone.shieldExpiresAt && new Date(zone.shieldExpiresAt) <= now;
+
+      if (zone.currentOwnerId && !isShieldExpired) {
+        if (zone.currentOwnerId === userId) {
+          status = "conquered_by_me";
+        } else {
+          status = "conquered_by_others";
+        }
       }
 
       return {
         ...zone,
-        isConquered: zone.currentOwnerId === userId,
+        currentOwnerId: isShieldExpired ? null : zone.currentOwnerId,
+        shieldExpiresAt: isShieldExpired ? null : zone.shieldExpiresAt,
+        isConquered: zone.currentOwnerId === userId && !isShieldExpired,
         status
       };
     });
