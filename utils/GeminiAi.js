@@ -1,4 +1,23 @@
 import { GoogleGenAI } from "@google/genai";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const getReferenceImage = (filename) => {
+  const filePath = path.join(__dirname, filename);
+  if (fs.existsSync(filePath)) {
+    return {
+      inlineData: {
+        data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
+        mimeType: "image/jpeg"
+      }
+    };
+  }
+  return null;
+};
 
 /**
  * Generates the three required images for a SponsoredTheme using Gemini (Imagen 3).
@@ -108,24 +127,36 @@ FINAL RESULT:
 One isolated sponsored 3D location pin on a transparent background, ready for direct use as a map marker.
 `;
 
-    // Google recently updated the image generation model name to "gemini-3.1-flash-image"
-    // and requires usage of the generateContent method.
     const modelName = "gemini-3.1-flash-image"; 
+
+    const dropImageRef = getReferenceImage("Drop.jpeg");
+    const zoneImageRef = getReferenceImage("zone.jpeg");
+    const mapLogoRef = getReferenceImage("map icon.jpeg");
+
+    const buildContents = (prompt, refImage) => {
+      const parts = [{ text: prompt }];
+      if (refImage) {
+        // Add text instruction to use the reference image
+        parts.unshift({ text: "Use the provided image as a strong style and composition reference for generating the final asset." });
+        parts.unshift(refImage);
+      }
+      return parts;
+    };
 
     const [dropImgRes, zoneImgRes, mapLogoRes] = await Promise.all([
       ai.models.generateContent({
         model: modelName,
-        contents: dropImagePrompt,
+        contents: buildContents(dropImagePrompt, dropImageRef),
         config: { outputMimeType: "image/png" }
       }),
       ai.models.generateContent({
         model: modelName,
-        contents: zoneImagePrompt,
+        contents: buildContents(zoneImagePrompt, zoneImageRef),
         config: { outputMimeType: "image/png" }
       }),
       ai.models.generateContent({
         model: modelName,
-        contents: mapLogoPrompt,
+        contents: buildContents(mapLogoPrompt, mapLogoRef),
         config: { outputMimeType: "image/png" }
       })
     ]);
