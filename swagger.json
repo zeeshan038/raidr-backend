@@ -1653,6 +1653,16 @@
                     "msg": {
                       "type": "string",
                       "example": "You found 100 Coins!"
+                    },
+                    "rewardData": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Details about the reward. Shape varies by reward type (e.g. COINS, BOOST, INSTANT_CAPTURE, AVATAR, VOUCHER).",
+                      "example": {
+                        "type": "BOOST",
+                        "multiplier": 2,
+                        "expiresAt": "2026-09-23T16:59:00.000Z"
+                      }
                     }
                   }
                 }
