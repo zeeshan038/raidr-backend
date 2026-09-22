@@ -288,6 +288,10 @@ export const collectDailyDrop = async (req, res) => {
         data: { raidrCoins: { increment: drop.rewardAmount || 100 } }
       });
       rewardMsg = `You found ${drop.rewardAmount || 100} Coins!`;
+      rewardData = {
+        type: "COINS",
+        amount: drop.rewardAmount || 100
+      };
     } else if (drop.rewardType === "2X_BOOST_24H") {
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await prisma.user.update({
@@ -298,8 +302,17 @@ export const collectDailyDrop = async (req, res) => {
         }
       });
       rewardMsg = "You found a Rare Drop! 2x Passive Coins for 24 hours.";
+      rewardData = {
+        type: "BOOST",
+        multiplier: 2.0,
+        expiresAt: expiresAt
+      };
     } else if (drop.rewardType === "INSTANT_CAPTURE") {
       rewardMsg = "You found a Rare Drop! 1x Instant Capture added.";
+      rewardData = {
+        type: "INSTANT_CAPTURE",
+        amount: 1
+      };
     } else if (drop.rewardType === "AVATAR") {
       if (drop.rewardAvatarId) {
         try {
@@ -310,6 +323,10 @@ export const collectDailyDrop = async (req, res) => {
           // Already owned or invalid avatar
         }
         rewardMsg = "You found a Rare Drop! New Avatar unlocked.";
+        rewardData = {
+          type: "AVATAR",
+          avatarId: drop.rewardAvatarId
+        };
       }
     } else if (drop.rewardType === "VOUCHER") {
       if (drop.rewardVoucherId) {
@@ -319,6 +336,7 @@ export const collectDailyDrop = async (req, res) => {
         });
         rewardMsg = `You won a ${userVoucher.voucher.title}!`;
         rewardData = {
+          type: "VOUCHER",
           redemptionCode: userVoucher.voucher.redemptionCode,
           title: userVoucher.voucher.title,
           sponsor: userVoucher.voucher.sponsorName,
