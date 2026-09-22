@@ -601,6 +601,13 @@ try {
                     required: false,
                     schema: { type: "integer", default: 10 },
                     description: "Number of items per page"
+                },
+                {
+                    name: "status",
+                    in: "query",
+                    required: false,
+                    schema: { type: "string", enum: ["conquered_by_me", "conquered_by_others", "available"] },
+                    description: "Filter zones by status"
                 }
             ],
             responses: {
@@ -622,7 +629,9 @@ try {
                                                 latitude: { type: "string", example: "40.7812" },
                                                 longitude: { type: "string", example: "-73.9665" },
                                                 radius: { type: "integer", example: 50 },
-                                                color: { type: "string", example: "#FF0000" }
+                                                color: { type: "string", example: "#FF0000" },
+                                                status: { type: "string", example: "conquered_by_me", enum: ["conquered_by_me", "conquered_by_others", "available"] },
+                                                createdAt: { type: "string", format: "date-time" }
                                             }
                                         }
                                     },
