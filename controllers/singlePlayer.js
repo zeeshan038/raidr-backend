@@ -15,14 +15,31 @@ export const getZones = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const status = req.query.status;
+  const userId = req.user?.id;
 
   try {
+    const whereClause = { isActive: true };
+
+    if (userId) {
+      if (status === 'conquered_by_me') {
+        whereClause.currentOwnerId = userId;
+      } else if (status === 'conquered_by_others') {
+        whereClause.AND = [
+          { currentOwnerId: { not: null } },
+          { currentOwnerId: { not: userId } }
+        ];
+      } else if (status === 'available') {
+        whereClause.currentOwnerId = null;
+      }
+    }
+
     const totalZones = await prisma.singlePlayerZone.count({
-      where: { isActive: true }
+      where: whereClause
     });
 
     const zones = await prisma.singlePlayerZone.findMany({
-      where: { isActive: true },
+      where: whereClause,
       include: {
         owner: {
           select: { id: true, name: true, photoUrl: true }
@@ -33,9 +50,25 @@ export const getZones = async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
+    const processedZones = zones.map(zone => {
+      let zoneStatus = 'available';
+      if (userId) {
+        if (zone.currentOwnerId === userId) {
+          zoneStatus = 'conquered_by_me';
+        } else if (zone.currentOwnerId !== null && zone.currentOwnerId !== userId) {
+          zoneStatus = 'conquered_by_others';
+        }
+      }
+
+      return {
+        ...zone,
+        status: zoneStatus
+      };
+    });
+
     res.status(200).json({
       status: true,
-      data: zones,
+      data: processedZones,
       pagination: {
         total: totalZones,
         page,
