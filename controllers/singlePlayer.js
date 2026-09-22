@@ -132,7 +132,7 @@ export const completeCapture = async (req, res) => {
       }
     }
 
-    // Check distance again to ensure they stayed in the radius
+  
     const distance = haversineDistance(
       parseFloat(zone.latitude),
       parseFloat(zone.longitude),
