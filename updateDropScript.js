@@ -6,9 +6,9 @@ async function main() {
     const updatedDrop = await prisma.dailyDrop.update({
       where: { id: dropId },
       data: {
-        isRare: true,
+        isRare: false,
         isCollected: false,
-        rewardType: "2X_COINS_BOOST" // Standard enum value for 2x boost based on the code
+        rewardType: "1000 COINS" // Standard enum value for 2x boost based on the code
       }
     });
     console.log("Successfully updated drop:", updatedDrop);
