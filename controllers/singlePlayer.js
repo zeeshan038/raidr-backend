@@ -319,18 +319,12 @@ export const collectDailyDrop = async (req, res) => {
         amount: 1
       };
     } else if (drop.rewardType === "AVATAR") {
-      if (drop.rewardAvatarId) {
-        try {
-          await prisma.userOwnedAvatar.create({
-            data: { userId, avatarId: drop.rewardAvatarId }
-          });
-        } catch (e) {
-          // Already owned or invalid avatar
-        }
+      if (drop.rewardAvatarFrontUrl && drop.rewardAvatarBackUrl) {
         rewardMsg = "You found a Rare Drop! New Avatar unlocked.";
         rewardData = {
           type: "AVATAR",
-          avatarId: drop.rewardAvatarId
+          frontUrl: drop.rewardAvatarFrontUrl,
+          backUrl: drop.rewardAvatarBackUrl
         };
       }
     } else if (drop.rewardType === "VOUCHER") {
@@ -524,7 +518,8 @@ export const getSinglePlayerDashboard = async (req, res) => {
       const isRare = Math.random() < 0.15;
       
       let rewardType = "100_COINS";
-      let rewardAvatarId = null;
+      let rewardAvatarFrontUrl = null;
+      let rewardAvatarBackUrl = null;
       let rewardVoucherId = null;
 
       if (isRare) {
@@ -532,9 +527,11 @@ export const getSinglePlayerDashboard = async (req, res) => {
         rewardType = rareTypes[Math.floor(Math.random() * rareTypes.length)];
 
         if (rewardType === "AVATAR") {
-          const avatars = await prisma.avatar.findMany({ select: { id: true } });
+          const avatars = await prisma.avatar.findMany({ select: { frontUrl: true, backUrl: true } });
           if (avatars.length > 0) {
-            rewardAvatarId = avatars[Math.floor(Math.random() * avatars.length)].id;
+            const selectedAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+            rewardAvatarFrontUrl = selectedAvatar.frontUrl;
+            rewardAvatarBackUrl = selectedAvatar.backUrl;
           } else {
             rewardType = "2X_BOOST_24H"; 
           }
@@ -558,7 +555,8 @@ export const getSinglePlayerDashboard = async (req, res) => {
           longitude: userLng + offsetLng,
           isRare,
           rewardType,
-          rewardAvatarId,
+          rewardAvatarFrontUrl,
+          rewardAvatarBackUrl,
           rewardVoucherId
         }
       });

@@ -36,6 +36,7 @@ export const createTheme = async (req, res) => {
   }
 };
 
+
 /**
  * @Description Get All Themes
  * @Route GET /api/admin/sponsored-theme
