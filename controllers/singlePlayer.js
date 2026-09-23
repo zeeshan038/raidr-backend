@@ -597,7 +597,14 @@ export const getSinglePlayerDashboard = async (req, res) => {
     let processedDailyDrop = null;
     if (dailyDrop) {
       processedDailyDrop = {
-        ...dailyDrop,
+        id: dailyDrop.id,
+        userId: dailyDrop.userId,
+        latitude: dailyDrop.latitude,
+        longitude: dailyDrop.longitude,
+        isCollected: dailyDrop.isCollected,
+        isRare: dailyDrop.isRare,
+        createdAt: dailyDrop.createdAt,
+        updatedAt: dailyDrop.updatedAt,
         distanceMeters: Math.round(dropDistance),
         isNewlySpawned: isNewDrop
       };
