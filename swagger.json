@@ -2029,6 +2029,9 @@
                             "id": {
                               "type": "string"
                             },
+                            "userId": {
+                              "type": "string"
+                            },
                             "latitude": {
                               "type": "number"
                             },
@@ -2041,8 +2044,13 @@
                             "isRare": {
                               "type": "boolean"
                             },
-                            "rewardType": {
-                              "type": "string"
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
                             },
                             "distanceMeters": {
                               "type": "number"
