@@ -124,7 +124,7 @@ export const completeCapture = async (req, res) => {
     // Fetch user and equipped avatar times for shield duration
     const user = await prisma.user.findUnique({ where: { id: userId } });
     let shieldDurationMin = DEFAULT_SHIELD_DURATION_MIN;
-    
+
     if (user && user.selectedAvatarId) {
       const avatar = await prisma.store.findUnique({ where: { id: user.selectedAvatarId } });
       if (avatar && avatar.spShieldDurationMin) {
@@ -132,7 +132,7 @@ export const completeCapture = async (req, res) => {
       }
     }
 
-  
+
     const distance = haversineDistance(
       parseFloat(zone.latitude),
       parseFloat(zone.longitude),
@@ -180,7 +180,7 @@ export const completeCapture = async (req, res) => {
  */
 const generateNearbyCoordinates = (lat, lng, minMeters, maxMeters) => {
   const metersToDegrees = 1 / 111000;
-  
+
   const distance = Math.random() * (maxMeters - minMeters) + minMeters;
   const radiusInDegrees = distance * metersToDegrees;
   const angle = Math.random() * 2 * Math.PI;
@@ -278,15 +278,15 @@ export const collectDailyDrop = async (req, res) => {
     );
 
     if (distance > 50) {
-      return res.status(400).json({ 
-        status: false, 
-        msg: `Too far away to collect. Distance: ${distance.toFixed(2)}m` 
+      return res.status(400).json({
+        status: false,
+        msg: `Too far away to collect. Distance: ${distance.toFixed(2)}m`
       });
     }
 
     let rewardMsg = "You found 100 Coins!";
     let rewardData = null;
-    
+
     if (drop.rewardType === "100_COINS") {
       await prisma.user.update({
         where: { id: userId },
@@ -301,9 +301,9 @@ export const collectDailyDrop = async (req, res) => {
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await prisma.user.update({
         where: { id: userId },
-        data: { 
+        data: {
           coinBoostMultiplier: 2.0,
-          coinBoostExpiresAt: expiresAt 
+          coinBoostExpiresAt: expiresAt
         }
       });
       rewardMsg = "You found a Rare Drop! 2x Passive Coins for 24 hours.";
@@ -328,18 +328,14 @@ export const collectDailyDrop = async (req, res) => {
         };
       }
     } else if (drop.rewardType === "VOUCHER") {
-      if (drop.rewardVoucherId) {
-        const userVoucher = await prisma.userVoucher.create({
-          data: { userId, voucherId: drop.rewardVoucherId },
-          include: { voucher: true }
-        });
-        rewardMsg = `You won a ${userVoucher.voucher.title}!`;
+      if (drop.rewardVoucherCode) {
+        rewardMsg = `You won a ${drop.rewardVoucherTitle}!`;
         rewardData = {
           type: "VOUCHER",
-          redemptionCode: userVoucher.voucher.redemptionCode,
-          title: userVoucher.voucher.title,
-          sponsor: userVoucher.voucher.sponsorName,
-          imageUrl: userVoucher.voucher.imageUrl
+          redemptionCode: drop.rewardVoucherCode,
+          title: drop.rewardVoucherTitle,
+          sponsor: drop.rewardVoucherSponsor,
+          imageUrl: drop.rewardVoucherImageUrl
         };
       }
     }
@@ -364,7 +360,7 @@ export const getActiveTheme = async (req, res) => {
   try {
     const { lat, lng } = req.query;
     const now = new Date();
-    
+
     // Find the current active theme
     const activeTheme = await prisma.sponsoredTheme.findFirst({
       where: {
@@ -383,18 +379,18 @@ export const getActiveTheme = async (req, res) => {
         if (!lat || !lng) {
           return res.status(200).json({ status: true, data: null, msg: "Theme requires location. Please provide lat and lng." });
         }
-        
+
         const userLat = parseFloat(lat);
         const userLng = parseFloat(lng);
         const radius = activeTheme.radius || 5000;
-        
+
         const distance = haversineDistance(userLat, userLng, activeTheme.latitude, activeTheme.longitude);
-        
+
         if (distance > radius) {
           return res.status(200).json({ status: true, data: null, msg: `You are too far away from the active theme. Distance: ${Math.round(distance)}m, Radius: ${radius}m` });
         }
       }
-      
+
       // If no location restrictions or user is within radius
       return res.status(200).json({ status: true, data: activeTheme });
     } else {
@@ -516,11 +512,14 @@ export const getSinglePlayerDashboard = async (req, res) => {
       const offsetLng = w * Math.sin(t) / Math.cos(userLat * Math.PI / 180);
 
       const isRare = Math.random() < 0.15;
-      
+
       let rewardType = "100_COINS";
       let rewardAvatarFrontUrl = null;
       let rewardAvatarBackUrl = null;
-      let rewardVoucherId = null;
+      let rewardVoucherTitle = null;
+      let rewardVoucherSponsor = null;
+      let rewardVoucherCode = null;
+      let rewardVoucherImageUrl = null;
 
       if (isRare) {
         const rareTypes = ["2X_BOOST_24H", "INSTANT_CAPTURE", "AVATAR", "VOUCHER"];
@@ -533,17 +532,20 @@ export const getSinglePlayerDashboard = async (req, res) => {
             rewardAvatarFrontUrl = selectedAvatar.frontUrl;
             rewardAvatarBackUrl = selectedAvatar.backUrl;
           } else {
-            rewardType = "2X_BOOST_24H"; 
+            rewardType = "2X_BOOST_24H";
           }
         } else if (rewardType === "VOUCHER") {
           const vouchers = await prisma.commercialVoucher.findMany({
-            where: { isActive: true, quantity: { gt: 0 } },
-            select: { id: true }
+            where: { isActive: true, quantity: { gt: 0 } }
           });
           if (vouchers.length > 0) {
-            rewardVoucherId = vouchers[Math.floor(Math.random() * vouchers.length)].id;
+            const selectedVoucher = vouchers[Math.floor(Math.random() * vouchers.length)];
+            rewardVoucherTitle = selectedVoucher.title;
+            rewardVoucherSponsor = selectedVoucher.sponsorName;
+            rewardVoucherCode = selectedVoucher.redemptionCode;
+            rewardVoucherImageUrl = selectedVoucher.imageUrl;
           } else {
-            rewardType = "2X_BOOST_24H"; 
+            rewardType = "2X_BOOST_24H";
           }
         }
       }
@@ -557,7 +559,10 @@ export const getSinglePlayerDashboard = async (req, res) => {
           rewardType,
           rewardAvatarFrontUrl,
           rewardAvatarBackUrl,
-          rewardVoucherId
+          rewardVoucherTitle,
+          rewardVoucherSponsor,
+          rewardVoucherCode,
+          rewardVoucherImageUrl
         }
       });
       isNewDrop = true;
@@ -589,20 +594,27 @@ export const getSinglePlayerDashboard = async (req, res) => {
       };
     });
 
+    let processedDailyDrop = null;
+    if (dailyDrop) {
+      processedDailyDrop = {
+        ...dailyDrop,
+        distanceMeters: Math.round(dropDistance),
+        isNewlySpawned: isNewDrop
+      };
+
+
+    }
+
     res.status(200).json({
       status: true,
       data: {
         dashboard: {
           ownedZonesCount,
-          maxZonesCount: 5, 
+          maxZonesCount: 5,
           passiveIncomePerHour: passiveIncome,
-          daysUntilNextRareDrop: 3 
+          daysUntilNextRareDrop: 3
         },
-        dailyDrop: {
-          ...dailyDrop,
-          distanceMeters: Math.round(dropDistance),
-          isNewlySpawned: isNewDrop
-        },
+        dailyDrop: processedDailyDrop,
         zones: processedZones
       }
     });

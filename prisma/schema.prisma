@@ -564,7 +564,10 @@ model DailyDrop {
   rewardAmount      Int?     // For coins
   rewardAvatarFrontUrl String?
   rewardAvatarBackUrl  String?
-  rewardVoucherId   String?  // If it's a commercial voucher
+  rewardVoucherTitle    String?
+  rewardVoucherSponsor  String?
+  rewardVoucherCode     String?
+  rewardVoucherImageUrl String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
