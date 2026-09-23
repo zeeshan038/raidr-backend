@@ -2095,7 +2095,11 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": ["available", "conquered_by_me", "conquered_by_others"],
+                                "enum": [
+                                  "available",
+                                  "conquered_by_me",
+                                  "conquered_by_others"
+                                ],
                                 "example": "available"
                               }
                             }
