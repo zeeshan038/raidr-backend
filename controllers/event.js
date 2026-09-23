@@ -192,7 +192,7 @@ export const eventDetails = async (req, res) => {
             msg: "Event ID is required"
         });
     }
-
+    //
     try {
         const [liveEvent, coinRushEvent, liveClaim, coinRushClaim] = await Promise.all([
             prisma.liveEvent.findUnique({
