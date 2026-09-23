@@ -562,7 +562,8 @@ model DailyDrop {
   isRare      Boolean  @default(false)
   rewardType  String   @default("100_COINS") // e.g., "100_COINS", "2X_BOOST_24H", "INSTANT_CAPTURE", "AVATAR", "VOUCHER"
   rewardAmount      Int?     // For coins
-  rewardAvatarId    String?  // If it's an avatar reward
+  rewardAvatarFrontUrl String?
+  rewardAvatarBackUrl  String?
   rewardVoucherId   String?  // If it's a commercial voucher
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

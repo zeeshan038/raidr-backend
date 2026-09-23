@@ -1657,7 +1657,7 @@
                     "rewardData": {
                       "type": "object",
                       "nullable": true,
-                      "description": "Details about the reward. Shape varies by reward type (e.g. COINS, BOOST, INSTANT_CAPTURE, AVATAR, VOUCHER).",
+                      "description": "Details about the reward. Shape varies by reward type (e.g. COINS, BOOST, INSTANT_CAPTURE, AVATAR, VOUCHER). For AVATAR, it includes frontUrl and backUrl (no avatarId).",
                       "example": {
                         "type": "BOOST",
                         "multiplier": 2,
