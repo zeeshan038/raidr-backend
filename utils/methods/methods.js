@@ -167,12 +167,142 @@ export const generateRandomCoordinates = async (centerLat, centerLng, radiusMete
     return checkpoints;
 };
 
-export const isSameCountryOrClose = (lat1, lon1, lat2, lon2) => {
-    if (lat1 === null || lat1 === undefined || lon1 === null || lon1 === undefined ||
-        lat2 === null || lat2 === undefined || lon2 === null || lon2 === undefined) {
+/** Prefer live map GPS from query; fall back to stored user profile location. */
+export const resolveRequestCoordinates = (req) => {
+    const qLat = req.query?.lat ?? req.query?.latitude;
+    const qLng = req.query?.long ?? req.query?.lng ?? req.query?.longitude;
+
+    if (qLat != null && qLng != null && qLat !== "" && qLng !== "") {
+        const lat = parseFloat(qLat);
+        const lng = parseFloat(qLng);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            return { lat, lng };
+        }
+    }
+
+    if (req.user?.lat != null && req.user?.long != null) {
+        const lat = parseFloat(req.user.lat);
+        const lng = parseFloat(req.user.long);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            return { lat, lng };
+        }
+    }
+
+    return null;
+};
+
+/** Default ~city-scale discovery; override with query radiusKm or DISCOVERY_RADIUS_KM env. */
+export const getDiscoveryRadiusMeters = (req) => {
+    const fromQuery = parseFloat(req.query?.radiusKm);
+    if (!isNaN(fromQuery) && fromQuery > 0) {
+        return fromQuery * 1000;
+    }
+    const fromEnv = parseFloat(process.env.DISCOVERY_RADIUS_KM);
+    if (!isNaN(fromEnv) && fromEnv > 0) {
+        return fromEnv * 1000;
+    }
+    return 50 * 1000;
+};
+
+/**
+ * Show map/discovery item when within radius, optional city match on address,
+ * or when alwaysShow (e.g. user joined / controls the zone).
+ */
+export const shouldShowInDiscovery = ({
+    userLat,
+    userLng,
+    eventLat,
+    eventLng,
+    radiusMeters,
+    city,
+    address,
+    alwaysShow = false
+}) => {
+    if (alwaysShow) {
+        return true;
+    }
+
+    if (userLat == null || userLng == null) {
         return false;
     }
-    const dist = haversineDistance(parseFloat(lat1), parseFloat(lon1), parseFloat(lat2), parseFloat(lon2));
-    // 500 km limit dynamically restricts discovery to the user's region/country without hardcoded lists
-    return dist <= 500000; 
+
+    if (
+        eventLat == null || eventLng == null ||
+        eventLat === undefined || eventLng === undefined ||
+        isNaN(parseFloat(eventLat)) || isNaN(parseFloat(eventLng))
+    ) {
+        return false;
+    }
+
+    const dist = haversineDistance(userLat, userLng, parseFloat(eventLat), parseFloat(eventLng));
+    if (dist <= radiusMeters) {
+        return true;
+    }
+
+    if (city && address && String(address).toLowerCase().includes(String(city).trim().toLowerCase())) {
+        return true;
+    }
+
+    return false;
+};
+
+/** @deprecated Use shouldShowInDiscovery with getDiscoveryRadiusMeters instead */
+export const isSameCountryOrClose = (lat1, lon1, lat2, lon2) => {
+    const radiusMeters = (parseFloat(process.env.DISCOVERY_RADIUS_KM) || 50) * 1000;
+    return shouldShowInDiscovery({
+        userLat: lat1,
+        userLng: lon1,
+        eventLat: lat2,
+        eventLng: lon2,
+        radiusMeters,
+        alwaysShow: false
+    });
+};
+
+export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlwaysShow, getAddress = () => "" }) => {
+    const coords = resolveRequestCoordinates(req);
+    const radiusMeters = getDiscoveryRadiusMeters(req);
+    const city = req.query?.city ? String(req.query.city).trim() : null;
+
+    let filtered = events;
+    if (!coords) {
+        filtered = events.filter((event) => getAlwaysShow(event));
+    } else {
+        filtered = events.filter((event) => {
+            const { lat: eventLat, lng: eventLng } = getLatLng(event);
+            return shouldShowInDiscovery({
+                userLat: coords.lat,
+                userLng: coords.lng,
+                eventLat,
+                eventLng,
+                radiusMeters,
+                city,
+                address: getAddress(event),
+                alwaysShow: getAlwaysShow(event)
+            });
+        });
+    }
+
+    return filtered.map((event) => {
+        const { lat: eventLat, lng: eventLng } = getLatLng(event);
+        const distance =
+            coords &&
+            eventLat != null && eventLng != null &&
+            eventLat !== undefined && eventLng !== undefined
+                ? haversineDistance(coords.lat, coords.lng, parseFloat(eventLat), parseFloat(eventLng))
+                : null;
+        return {
+            ...event,
+            distance: distance != null ? distance : undefined
+        };
+    }).sort((a, b) => {
+        const distA = a.distance != null ? a.distance : Infinity;
+        const distB = b.distance != null ? b.distance : Infinity;
+        if (distA !== distB) {
+            return distA - distB;
+        }
+        const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
+        const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
+        return timeA - timeB;
+    });
 };

@@ -42,8 +42,6 @@ export const registerUser = async (req, res) => {
         const existingUser = await prisma.user.findUnique({ where: { email: payload.email } });
 
         const hashedPassword = await bcrypt.hash(payload.password, 10);
-        const otp = await generateOTP();
-        const otpExpireTime = new Date(Date.now() + 10 * 60 * 1000);
 
         let user;
 
@@ -54,17 +52,14 @@ export const registerUser = async (req, res) => {
                     msg: "User already exists"
                 });
             } else {
-                // User exists but is not verified yet, so we update their OTP and password instead of crashing
+                // User exists but is not verified yet, so we update their password and mark them as verified instead of crashing
                 user = await prisma.user.update({
                     where: { email: payload.email },
                     data: {
                         password: hashedPassword,
                         signupMethod: "manual",
                         agreedToTerms: payload.agreedToTerms,
-                        otpCode: otp,
-                        otpCreatedAt: new Date(),
-                        otpUpdatedAt: new Date(),
-                        otpCodeExpireTime: otpExpireTime
+                        isVerified: true
                     }
                 });
             }
@@ -75,28 +70,18 @@ export const registerUser = async (req, res) => {
                     name: payload.name,
                     email: payload.email,
                     password: hashedPassword,
-                    isVerified: false,
+                    isVerified: true,
                     signupMethod: "manual",
-                    agreedToTerms: payload.agreedToTerms,
-                    otpCode: otp,
-                    otpCreatedAt: new Date(),
-                    otpUpdatedAt: new Date(),
-                    otpCodeExpireTime: otpExpireTime
+                    agreedToTerms: payload.agreedToTerms
                 }
             });
         }
-
-        await sendEmail({
-            to: payload.email,
-            subject: "Your Registration OTP for Raidr",
-            text: `Your OTP for Raidr registration is ${otp}. It will expire in 10 minutes.`
-        });
 
         const token = generateToken(user);
 
         res.status(201).json({
             status: true,
-            msg: "User registered successfully. Please verify your OTP to complete registration.",
+            msg: "User registered successfully.",
             user: {
                 _id: user.id,
                 name: user.name,
