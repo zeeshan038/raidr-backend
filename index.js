@@ -4,6 +4,8 @@ import cors from "cors";
 import Routes from "./routes/index.js";
 import { startCleanupCron } from "./cron/cleanupTrips.js";
 import { startEventStatusCron } from "./cron/Events.js";
+import { startPassiveCoinsCron } from "./cron/passiveCoins.js";
+import { startResetZonesCron } from "./cron/resetZones.js";
 import "./config/firebase.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
@@ -61,6 +63,8 @@ app.use(express.json({
 ConnectDB();
 startCleanupCron();
 startEventStatusCron();
+startPassiveCoinsCron();
+startResetZonesCron();
 
 // Start Live Tracking architecture (Wrapped in try/catch in case dependencies aren't installed yet)
 const initializeLiveTracking = async () => {

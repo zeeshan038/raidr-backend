@@ -57,6 +57,12 @@ model User {
   coinRushProgress       CoinRushProgress[]
   coinRushAttempts       CoinRushAttempt[]
   reviews                Review[]
+  ownedSinglePlayerZones SinglePlayerZone[] @relation("OwnedSinglePlayerZones")
+  dailyDrops             DailyDrop[]
+  userVouchers           UserVoucher[]
+  
+  coinBoostMultiplier    Float?             @default(1.0)
+  coinBoostExpiresAt     DateTime?
 }
 
 model BoxCollectionLog {
@@ -113,12 +119,14 @@ model Trip {
 }
 
 model Avatar {
-  id            String   @id @default(uuid())
-  avatarNumber  Int      @unique
-  frontUrl      String
-  backUrl       String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  avatarNumber        Int      @unique
+  frontUrl            String
+  backUrl             String
+  spCaptureTimeSec    Int      @default(60)
+  spShieldDurationMin Int      @default(60)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 
@@ -369,16 +377,18 @@ model Admin {
 }
 
 model Store {
-    id          String   @id @default(uuid())
-    name        String
-    frontUrl    String   
-    backUrl     String    
-    price       Int      @default(0)
-    isNew       Boolean  @default(false)
-    isFeatured  Boolean  @default(false)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-    owners      UserOwnedAvatar[]
+    id                  String            @id @default(uuid())
+    name                String
+    frontUrl            String   
+    backUrl             String    
+    price               Int               @default(0)
+    isNew               Boolean           @default(false)
+    isFeatured          Boolean           @default(false)
+    spCaptureTimeSec    Int               @default(30)
+    spShieldDurationMin Int               @default(60)
+    createdAt           DateTime          @default(now())
+    updatedAt           DateTime          @updatedAt
+    owners              UserOwnedAvatar[]
 }
 
 model CoinRushEvent {
@@ -406,7 +416,7 @@ model CoinRushEvent {
   rewardClaimInstructions String                 @default("")
   rewardValue             Float                  @default(0.0)
 
-  winnerId                String?
+  winnersCount            Int                    @default(1)
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
 
@@ -518,4 +528,93 @@ model Review {
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId])
+}
+
+model SinglePlayerZone {
+  id                String    @id @default(uuid())
+  name              String
+  latitude          Float
+  longitude         Float
+  city              String?
+  country           String?
+  radius            Int       @default(50) // Radius in meters
+  isActive          Boolean   @default(true)
+  coinsPerHour      Int       @default(60)
+  imageUrl          String?
+  
+  currentOwnerId    String?
+  shieldExpiresAt   DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  owner             User?     @relation("OwnedSinglePlayerZones", fields: [currentOwnerId], references: [id])
+  
+  @@index([isActive])
+}
+
+model DailyDrop {
+  id          String   @id @default(uuid())
+  userId      String
+  latitude    Float
+  longitude   Float
+  isCollected Boolean  @default(false)
+  isRare      Boolean  @default(false)
+  rewardType  String   @default("100_COINS") // e.g., "100_COINS", "2X_BOOST_24H", "INSTANT_CAPTURE", "AVATAR", "VOUCHER"
+  rewardAmount      Int?     // For coins
+  rewardAvatarFrontUrl String?
+  rewardAvatarBackUrl  String?
+  rewardVoucherTitle    String?
+  rewardVoucherSponsor  String?
+  rewardVoucherCode     String?
+  rewardVoucherImageUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+}
+
+model SponsoredTheme {
+  id               String   @id @default(uuid())
+  name             String   // e.g., "McDonalds Week"
+  startDate        DateTime
+  endDate          DateTime
+  dropImageUrl     String?  // Optional custom graphics
+  zoneImageUrl     String?
+  mapLogoUrl       String?
+  isActive         Boolean  @default(true)
+  latitude         Float?   // Optional location bounding
+  longitude        Float?
+  radius           Float?   @default(5000) // Default radius in meters
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CommercialVoucher {
+  id              String      @id @default(uuid())
+  title           String      // e.g., "Free Coffee & Pastry"
+  description     String?
+  sponsorName     String      // e.g., "Local Cafe"
+  imageUrl        String?     // Logo of the business
+  redemptionCode  String?     // The actual coupon code
+  quantity        Int         // How many of these can be dropped in total?
+  isActive        Boolean     @default(true)
+  
+  userVouchers    UserVoucher[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model UserVoucher {
+  id              String      @id @default(uuid())
+  userId          String
+  voucherId       String
+  isRedeemed      Boolean     @default(false)
+  redeemedAt      DateTime?
+  createdAt       DateTime    @default(now())
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voucher         CommercialVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 }

@@ -1,8 +1,13 @@
-import { prisma } from "../../config/db.js";
+import { 
+    prisma 
+} from "../../config/db.js";
 import crypto from "crypto";
 
 //Schema
-import { MerchantAdsCreateSchema, MerchantAdsUpdateSchema } from "../../schema/Merchant/Ads.js";
+import {
+    MerchantAdsCreateSchema,
+    MerchantAdsUpdateSchema
+} from "../../schema/Merchant/Ads.js";
 
 
 /**
@@ -83,7 +88,6 @@ export const createCampaign = async (req, res) => {
     }
 };
 
-
 /**
  * @Description Get Compaigns 
  * @Route GET /api/merchant/ads/get-all-campaigns?search=&page=&limit=&adCategory=
@@ -139,7 +143,6 @@ export const getCampaigns = async (req, res) => {
         });
     }
 };
-
 
 /**
  * @Description Get Compaign by Id 
@@ -265,7 +268,6 @@ export const updateCampaign = async (req, res) => {
     }
 };
 
-
 /**
  * @Description Delete Compaign 
  * @Route DELETE /api/merchant/ads/:id
@@ -303,7 +305,6 @@ export const deleteCampaign = async (req, res) => {
         });
     }
 };
-
 
 /**
  * @Description Toggle Campaign Active Status
@@ -360,26 +361,37 @@ export const redeemCoupon = async (req, res) => {
     }
 
     try {
-        // Find the coupon code and ensure it belongs to an ad owned by this merchant
         const adCode = await prisma.merchantAdCode.findUnique({
             where: { code: couponCode },
             include: { ad: true }
         });
 
         if (!adCode) {
-            return res.status(404).json({ status: false, msg: "Invalid coupon code" });
+            return res.status(404).json({ 
+                status: false, 
+                msg: "Invalid coupon code" 
+            });
         }
 
         if (adCode.ad.merchantId !== merchantId) {
-            return res.status(403).json({ status: false, msg: "Unauthorized to redeem this coupon" });
+            return res.status(403).json({ 
+                status: false, 
+                msg: "Unauthorized to redeem this coupon" 
+            });
         }
 
         if (!adCode.isClaimed) {
-            return res.status(400).json({ status: false, msg: "This coupon has not been claimed by a user yet" });
+            return res.status(400).json({
+                 status: false, 
+                 msg: "This coupon has not been claimed by a user yet" 
+            });
         }
 
         if (adCode.isRedeemed) {
-            return res.status(400).json({ status: false, msg: "This coupon has already been redeemed" });
+            return res.status(400).json({
+                 status: false, 
+                 msg: "This coupon has already been redeemed" 
+            });
         }
 
         // Mark as redeemed
@@ -398,6 +410,9 @@ export const redeemCoupon = async (req, res) => {
         });
 
     } catch (err) {
-        return res.status(500).json({ status: false, msg: err.message });
+        return res.status(500).json({
+             status: false, 
+             msg: err.message 
+        });
     }
 };

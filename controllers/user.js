@@ -786,7 +786,9 @@ export const getAvatars = async (req, res) => {
             groupedAvatars[avatarKey] = {
                 front: avatar.frontUrl,
                 back: avatar.backUrl,
-                locked: avatar.avatarNumber === 1 ? false : true
+                locked: avatar.avatarNumber === 1 ? false : true,
+                spCaptureTimeSec: avatar.spCaptureTimeSec || 30,
+                spShieldDurationMin: avatar.spShieldDurationMin || 60
             };
         });
 

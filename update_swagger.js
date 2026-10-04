@@ -29,7 +29,9 @@ try {
                                 backUrl: { type: "string", example: "https://example.com/back.png" },
                                 price: { type: "number", example: 15 },
                                 isFeatured: { type: "boolean", example: false },
-                                isNew: { type: "boolean", example: true }
+                                isNew: { type: "boolean", example: true },
+                                spCaptureTimeSec: { type: "number", example: 30 },
+                                spShieldDurationMin: { type: "number", example: 60 }
                             },
                             required: ["name", "frontUrl", "backUrl", "price"]
                         }
@@ -83,7 +85,9 @@ try {
                                 backUrl: { type: "string" },
                                 price: { type: "number" },
                                 isFeatured: { type: "boolean" },
-                                isNew: { type: "boolean" }
+                                isNew: { type: "boolean" },
+                                spCaptureTimeSec: { type: "number" },
+                                spShieldDurationMin: { type: "number" }
                             }
                         }
                     }
@@ -143,6 +147,46 @@ try {
                 "400": { description: "Validation error" },
                 "404": { description: "Trip or Event not found" },
                 "500": { description: "Server error" }
+            }
+        }
+    };
+
+    swaggerData.paths['/user/avatars'] = {
+        get: {
+            tags: ["User Profile"],
+            summary: "Get all avatars and their lock status based on user level",
+            security: [{ bearerAuth: [] }],
+            responses: {
+                "200": {
+                    description: "Avatars fetched successfully",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: true },
+                                    msg: { type: "string", example: "Avatars fetched successfully" },
+                                    currentLevel: { type: "integer", example: 5 },
+                                    avatars: {
+                                        type: "object",
+                                        additionalProperties: {
+                                            type: "object",
+                                            properties: {
+                                                front: { type: "string", example: "https://example.com/front.png" },
+                                                back: { type: "string", example: "https://example.com/back.png" },
+                                                locked: { type: "boolean", example: false },
+                                                spCaptureTimeSec: { type: "number", example: 30 },
+                                                spShieldDurationMin: { type: "number", example: 60 }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "401": { description: "Unauthorized" },
+                "500": { description: "Internal server error" }
             }
         }
     };
@@ -391,6 +435,221 @@ try {
             responses: {
                 "200": { description: "Review submitted successfully" },
                 "400": { description: "Rating is required" },
+                "500": { description: "Internal server error" }
+            }
+        }
+    };
+
+    swaggerData.paths['/user/coin-rush/complete-checkpoint/{eventId}'] = {
+        post: {
+            tags: ["Coin Rush"],
+            summary: "Complete Coin Rush Checkpoint",
+            description: "Submit a checkpoint completion via GPS coordinates, QR code, Q&A, or Photo.",
+            security: [{ bearerAuth: [] }],
+            parameters: [
+                { in: "path", name: "eventId", required: true, schema: { type: "string" }, description: "Event ID" }
+            ],
+            requestBody: {
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                checkpointId: { type: "string", example: "uuid-of-checkpoint" },
+                                lat: { type: "number", example: 40.7128 },
+                                lng: { type: "number", example: -74.0060 },
+                                qrCode: { type: "string", example: "qr-code-string" },
+                                answer: { type: "string", example: "Blue" },
+                                secretCode: { type: "string", example: "12345" },
+                                photoUrl: { type: "string", example: "https://example.com/photo.jpg" }
+                            }
+                        }
+                    }
+                }
+            },
+            responses: {
+                "200": { 
+                    description: "Checkpoint completed successfully",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: true },
+                                    msg: { type: "string", example: "Congratulations! You finished in 1st place and won a prize!" },
+                                    completedAll: { type: "boolean", example: true },
+                                    isWinner: { type: "boolean", example: true },
+                                    claimId: { type: "string", example: "uuid-of-claim" },
+                                    claimCode: { type: "string", example: "CLAIM-XYZ-1234" },
+                                    prizePosition: { type: "integer", example: 1 },
+                                    progress: { type: "string", example: "5/5" },
+                                    isAchieved: { type: "boolean", example: true },
+                                    xpEarned: { type: "integer", example: 50 },
+                                    nextCheckpoint: { type: "object", nullable: true }
+                                }
+                            }
+                        }
+                    }
+                },
+                "400": { 
+                    description: "Validation error or out of range",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: false },
+                                    msg: { type: "string", example: "You are not within range." }
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": { 
+                    description: "Event or checkpoint not found",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: false },
+                                    msg: { type: "string", example: "Event not found" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "500": { description: "Server error" }
+            }
+        }
+    };
+
+    swaggerData.paths['/admin/single-player/zones/bulk-generate'] = {
+        post: {
+            tags: ["Admin Single Player"],
+            summary: "Bulk Generate Single Player Zones",
+            description: "Generate and insert bulk Single Player Zones using AI.",
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                prompt: { type: "string", example: "10 zones in Central London" },
+                                count: { type: "integer", example: 10 },
+                                radius: { type: "integer", example: 50 },
+                                coinsPerHour: { type: "integer", example: 60 }
+                            },
+                            required: ["prompt", "count"]
+                        }
+                    }
+                }
+            },
+            responses: {
+                "201": { 
+                    description: "Zones successfully generated and inserted",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: true },
+                                    msg: { type: "string", example: "Successfully generated and inserted 10 zones" },
+                                    data: {
+                                        type: "array",
+                                        items: {
+                                            type: "object",
+                                            properties: {
+                                                name: { type: "string", example: "Hyde Park Zone" },
+                                                latitude: { type: "number", example: 51.5072 },
+                                                longitude: { type: "number", example: -0.1276 },
+                                                city: { type: "string", example: "London" },
+                                                country: { type: "string", example: "UK" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "400": { description: "Prompt and a valid count are required, or count exceeds 100" },
+                "500": { description: "Server error or AI generation failed" }
+            }
+        }
+    };
+
+    swaggerData.paths['/single-player/zones'] = {
+        get: {
+            tags: ["Single Player"],
+            summary: "Get all single player zones",
+            security: [{ bearerAuth: [] }],
+            parameters: [
+                {
+                    name: "page",
+                    in: "query",
+                    required: false,
+                    schema: { type: "integer", default: 1 },
+                    description: "Page number"
+                },
+                {
+                    name: "limit",
+                    in: "query",
+                    required: false,
+                    schema: { type: "integer", default: 10 },
+                    description: "Number of items per page"
+                },
+                {
+                    name: "status",
+                    in: "query",
+                    required: false,
+                    schema: { type: "string", enum: ["conquered_by_me", "conquered_by_others", "available"] },
+                    description: "Filter zones by status"
+                }
+            ],
+            responses: {
+                "200": {
+                    description: "Success",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    status: { type: "boolean", example: true },
+                                    data: {
+                                        type: "array",
+                                        items: {
+                                            type: "object",
+                                            properties: {
+                                                id: { type: "string", example: "123e4567-e89b-12d3-a456-426614174000" },
+                                                name: { type: "string", example: "Central Park Zone" },
+                                                latitude: { type: "string", example: "40.7812" },
+                                                longitude: { type: "string", example: "-73.9665" },
+                                                radius: { type: "integer", example: 50 },
+                                                color: { type: "string", example: "#FF0000" },
+                                                status: { type: "string", example: "conquered_by_me", enum: ["conquered_by_me", "conquered_by_others", "available"] },
+                                                createdAt: { type: "string", format: "date-time" }
+                                            }
+                                        }
+                                    },
+                                    pagination: {
+                                        type: "object",
+                                        properties: {
+                                            total: { type: "integer", example: 54 },
+                                            page: { type: "integer", example: 1 },
+                                            limit: { type: "integer", example: 10 },
+                                            totalPages: { type: "integer", example: 6 }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "401": { description: "Unauthorized" },
                 "500": { description: "Internal server error" }
             }
         }

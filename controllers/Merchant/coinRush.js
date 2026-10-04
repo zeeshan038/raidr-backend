@@ -47,7 +47,8 @@ export const CreateCoinRushEvent = async (req, res) => {
         rewardImageUrl,
         rewardDescription,
         rewardClaimInstructions,
-        rewardValue
+        rewardValue,
+        winnersCount
     } = result.value;
 
     const parsedStart = startTime ? new Date(startTime) : new Date();
@@ -140,6 +141,7 @@ export const CreateCoinRushEvent = async (req, res) => {
                 rewardDescription,
                 rewardClaimInstructions,
                 rewardValue: parseFloat(rewardValue),
+                winnersCount: parseInt(winnersCount) || 1,
                 status: "scheduled", // default active status
                 checkpoints: {
                     create: createdCheckpoints
@@ -325,6 +327,13 @@ export const UpdateCoinRushEvent = async (req, res) => {
             });
         }
 
+        if (event.status === 'live') {
+            return res.status(400).json({
+                status: false,
+                msg: "Cannot update event configuration while the raid is currently live."
+            });
+        }
+
         const updatedEvent = await prisma.coinRushEvent.update({
             where: { id: eventId },
             data: updateData
@@ -503,6 +512,7 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
                 rewardDescription:payload.rewardDescription,
                 rewardClaimInstructions:payload.rewardClaimInstructions,
                 rewardValue: parseFloat(payload.rewardValue),
+                winnersCount: payload.winnersCount ? parseInt(payload.winnersCount) : 1,
                 status: "scheduled", 
                 checkpoints: {
                     create: createdCheckpoints

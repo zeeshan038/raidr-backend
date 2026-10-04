@@ -25,7 +25,9 @@ export const CreateAvatar = async (req, res) => {
                backUrl: paylaod.backUrl,
                price: paylaod.price,
                isFeatured: paylaod.isFeatured,
-               isNew: paylaod.isNew
+               isNew: paylaod.isNew,
+               spCaptureTimeSec: paylaod.spCaptureTimeSec,
+               spShieldDurationMin: paylaod.spShieldDurationMin
            }
        })
 
@@ -122,7 +124,9 @@ export const updateStoreItem = async (req, res) => {
                 backUrl: payload.backUrl !== undefined ? payload.backUrl : existing.backUrl,
                 price: payload.price !== undefined ? payload.price : existing.price,
                 isFeatured: payload.isFeatured !== undefined ? payload.isFeatured : existing.isFeatured,
-                isNew: payload.isNew !== undefined ? payload.isNew : existing.isNew
+                isNew: payload.isNew !== undefined ? payload.isNew : existing.isNew,
+                spCaptureTimeSec: payload.spCaptureTimeSec !== undefined ? payload.spCaptureTimeSec : existing.spCaptureTimeSec,
+                spShieldDurationMin: payload.spShieldDurationMin !== undefined ? payload.spShieldDurationMin : existing.spShieldDurationMin,
             }
         });
 

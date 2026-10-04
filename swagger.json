@@ -1075,6 +1075,1187 @@
     }
   },
   "paths": {
+    "/single-player/zones": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Get all single player zones",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of items per page"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "conquered_by_me",
+                "conquered_by_others",
+                "available"
+              ]
+            },
+            "description": "Filter zones by status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "123e4567-e89b-12d3-a456-426614174000"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "Central Park Zone"
+                          },
+                          "latitude": {
+                            "type": "string",
+                            "example": "40.7812"
+                          },
+                          "longitude": {
+                            "type": "string",
+                            "example": "-73.9665"
+                          },
+                          "radius": {
+                            "type": "integer",
+                            "example": 50
+                          },
+                          "color": {
+                            "type": "string",
+                            "example": "#FF0000"
+                          },
+                          "status": {
+                            "type": "string",
+                            "example": "conquered_by_me",
+                            "enum": [
+                              "conquered_by_me",
+                              "conquered_by_others",
+                              "available"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "example": 54
+                        },
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 6
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/start": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Start capturing a zone",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "example": 40.7829
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "example": -73.9654
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Capture started"
+                    },
+                    "captureTimeSec": {
+                      "type": "number",
+                      "example": 30
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g. Too far away)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Zone not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/complete": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Complete capturing a zone",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "example": 40.7829
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "example": -73.9654
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Zone captured successfully"
+                    },
+                    "shieldExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g. Capture time not met)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/daily-drop": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Spawn or get today's daily drop",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returned existing drop",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "latitude": {
+                          "type": "number"
+                        },
+                        "longitude": {
+                          "type": "number"
+                        },
+                        "isCollected": {
+                          "type": "boolean"
+                        },
+                        "isRare": {
+                          "type": "boolean"
+                        },
+                        "rewardType": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created new drop",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "New daily drop spawned"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "latitude": {
+                          "type": "number"
+                        },
+                        "longitude": {
+                          "type": "number"
+                        },
+                        "isCollected": {
+                          "type": "boolean"
+                        },
+                        "isRare": {
+                          "type": "boolean"
+                        },
+                        "rewardType": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/daily-drop/collect": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Collect daily drop",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dropId": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You found 100 Coins!"
+                    },
+                    "rewardData": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Details about the reward. Shape varies by reward type (e.g. COINS, BOOST, INSTANT_CAPTURE, AVATAR, VOUCHER). For AVATAR, it includes frontUrl and backUrl (no avatarId).",
+                      "example": {
+                        "type": "BOOST",
+                        "multiplier": 2,
+                        "expiresAt": "2026-09-23T16:59:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g. Too far away or Already collected)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (Not your drop)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Drop not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/theme": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Get active sponsored theme",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "startDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "endDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "dropImageUrl": {
+                          "type": "string"
+                        },
+                        "zoneImageUrl": {
+                          "type": "string"
+                        },
+                        "mapLogoUrl": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "description": "Latitude of the user",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "description": "Longitude of the user",
+            "required": false,
+            "type": "number"
+          }
+        ]
+      }
+    },
+    "/single-player/history": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Get player history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Type of history (dailyDrops, rareDrops, raidZones)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "dailyDrops": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "rewardType": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "rareDrops": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "rewardType": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "raidZones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/dashboard": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Get aggregate dashboard data",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "User's current latitude"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "User's current longitude"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "dashboard": {
+                          "type": "object",
+                          "properties": {
+                            "ownedZonesCount": {
+                              "type": "integer"
+                            },
+                            "maxZonesCount": {
+                              "type": "integer"
+                            },
+                            "passiveIncomePerHour": {
+                              "type": "number"
+                            },
+                            "daysUntilNextRareDrop": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "dailyDrop": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "userId": {
+                              "type": "string"
+                            },
+                            "latitude": {
+                              "type": "number"
+                            },
+                            "longitude": {
+                              "type": "number"
+                            },
+                            "isCollected": {
+                              "type": "boolean"
+                            },
+                            "isRare": {
+                              "type": "boolean"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "distanceMeters": {
+                              "type": "number"
+                            },
+                            "isNewlySpawned": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "zones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "latitude": {
+                                "type": "number"
+                              },
+                              "longitude": {
+                                "type": "number"
+                              },
+                              "radius": {
+                                "type": "number"
+                              },
+                              "isActive": {
+                                "type": "boolean"
+                              },
+                              "coinsPerHour": {
+                                "type": "number"
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "currentOwnerId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "shieldExpiresAt": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "isConquered": {
+                                "type": "boolean"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "conquered_by_me",
+                                  "conquered_by_others"
+                                ],
+                                "example": "available"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (Missing lat/lng)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/vouchers": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Get user's collected commercial vouchers",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "isRedeemed": {
+                            "type": "boolean"
+                          },
+                          "redeemedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "voucher": {
+                            "type": "object",
+                            "properties": {
+                              "title": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "sponsorName": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "redemptionCode": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/review/add": {
       "post": {
         "tags": [
@@ -1902,18 +3083,43 @@
                   "type": "object",
                   "properties": {
                     "status": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Avatars fetched successfully"
                     },
                     "currentLevel": {
-                      "type": "integer"
+                      "type": "integer",
+                      "example": 5
                     },
                     "avatars": {
                       "type": "object",
                       "additionalProperties": {
-                        "$ref": "#/components/schemas/AvatarItemDto"
+                        "type": "object",
+                        "properties": {
+                          "front": {
+                            "type": "string",
+                            "example": "https://example.com/front.png"
+                          },
+                          "back": {
+                            "type": "string",
+                            "example": "https://example.com/back.png"
+                          },
+                          "locked": {
+                            "type": "boolean",
+                            "example": false
+                          },
+                          "spCaptureTimeSec": {
+                            "type": "number",
+                            "example": 30
+                          },
+                          "spShieldDurationMin": {
+                            "type": "number",
+                            "example": 60
+                          }
+                        }
                       }
                     }
                   }
@@ -1922,24 +3128,10 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Unauthorized"
           },
           "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Internal server error"
           }
         }
       }
@@ -4670,6 +5862,14 @@
                   "isNew": {
                     "type": "boolean",
                     "example": true
+                  },
+                  "spCaptureTimeSec": {
+                    "type": "number",
+                    "example": 30
+                  },
+                  "spShieldDurationMin": {
+                    "type": "number",
+                    "example": 60
                   }
                 },
                 "required": [
@@ -5689,6 +6889,12 @@
                   },
                   "isNew": {
                     "type": "boolean"
+                  },
+                  "spCaptureTimeSec": {
+                    "type": "number"
+                  },
+                  "spShieldDurationMin": {
+                    "type": "number"
                   }
                 }
               }
@@ -5770,7 +6976,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Event details including the live leaderboard",
+            "description": "Event details including the live leaderboard. Note: Future checkpoints are hidden, and sensitive answers (qrCode, answer, secretCode) are omitted from the payload for security.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5800,15 +7006,34 @@
                           "items": {
                             "type": "object",
                             "properties": {
-                              "id": { "type": "string" },
-                              "type": { "type": "string", "example": "CODE" },
-                              "sequence": { "type": "integer" },
-                              "hint": { "type": "string" },
-                              "latitude": { "type": "number" },
-                              "longitude": { "type": "number" },
-                              "referencePhotoUrl": { "type": "string" },
-                              "photoRequirements": { "type": "string" },
-                              "isAchieved": { "type": "boolean" }
+                              "id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "example": "CODE"
+                              },
+                              "sequence": {
+                                "type": "integer"
+                              },
+                              "hint": {
+                                "type": "string"
+                              },
+                              "latitude": {
+                                "type": "number"
+                              },
+                              "longitude": {
+                                "type": "number"
+                              },
+                              "referencePhotoUrl": {
+                                "type": "string"
+                              },
+                              "photoRequirements": {
+                                "type": "string"
+                              },
+                              "isAchieved": {
+                                "type": "boolean"
+                              }
                             }
                           }
                         },
@@ -6048,6 +7273,32 @@
                       "type": "integer",
                       "description": "The amount of XP earned from completing this checkpoint",
                       "example": 125
+                    },
+                    "nextCheckpoint": {
+                      "type": "object",
+                      "description": "The sanitized details of the immediate next checkpoint, if any remain.",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "example": "QR"
+                        },
+                        "sequence": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "latitude": {
+                          "type": "number"
+                        },
+                        "longitude": {
+                          "type": "number"
+                        }
+                      }
                     }
                   }
                 }
@@ -6055,7 +7306,7 @@
             }
           },
           "400": {
-            "description": "Not in range / Invalid QR / Already completed",
+            "description": "Not in range / Invalid QR / Already completed / Sequence skipped",
             "content": {
               "application/json": {
                 "schema": {
@@ -6345,6 +7596,13 @@
                   "rewardValue": {
                     "type": "number",
                     "example": 500
+                  },
+                  "winnersCount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 3,
+                    "description": "Number of players who can win a prize (1-5)"
                   }
                 }
               }
@@ -6962,6 +8220,614 @@
           "500": {
             "description": "Server error"
           }
+        }
+      }
+    },
+    "/user/coin-rush/complete-checkpoint/{eventId}": {
+      "post": {
+        "tags": [
+          "Coin Rush"
+        ],
+        "summary": "Complete Coin Rush Checkpoint",
+        "description": "Submit a checkpoint completion via GPS coordinates, QR code, Q&A, or Photo.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Event ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkpointId": {
+                    "type": "string",
+                    "example": "uuid-of-checkpoint"
+                  },
+                  "lat": {
+                    "type": "number",
+                    "example": 40.7128
+                  },
+                  "lng": {
+                    "type": "number",
+                    "example": -74.006
+                  },
+                  "qrCode": {
+                    "type": "string",
+                    "example": "qr-code-string"
+                  },
+                  "answer": {
+                    "type": "string",
+                    "example": "Blue"
+                  },
+                  "secretCode": {
+                    "type": "string",
+                    "example": "12345"
+                  },
+                  "photoUrl": {
+                    "type": "string",
+                    "example": "https://example.com/photo.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkpoint completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Congratulations! You finished in 1st place and won a prize!"
+                    },
+                    "completedAll": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "isWinner": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "claimId": {
+                      "type": "string",
+                      "example": "uuid-of-claim"
+                    },
+                    "claimCode": {
+                      "type": "string",
+                      "example": "CLAIM-XYZ-1234"
+                    },
+                    "prizePosition": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "progress": {
+                      "type": "string",
+                      "example": "5/5"
+                    },
+                    "isAchieved": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "xpEarned": {
+                      "type": "integer",
+                      "example": 50
+                    },
+                    "nextCheckpoint": {
+                      "type": "object",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or out of range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You are not within range."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event or checkpoint not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Event not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/single-player/zones/bulk-generate": {
+      "post": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Bulk Generate Single Player Zones",
+        "description": "Generate and insert bulk Single Player Zones using AI.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "example": "10 zones in Central London"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "example": 10
+                  },
+                  "radius": {
+                    "type": "integer",
+                    "example": 50
+                  },
+                  "coinsPerHour": {
+                    "type": "integer",
+                    "example": 60
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "count"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Zones successfully generated and inserted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Successfully generated and inserted 10 zones"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "Hyde Park Zone"
+                          },
+                          "latitude": {
+                            "type": "number",
+                            "example": 51.5072
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "example": -0.1276
+                          },
+                          "city": {
+                            "type": "string",
+                            "example": "London"
+                          },
+                          "country": {
+                            "type": "string",
+                            "example": "UK"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Prompt and a valid count are required, or count exceeds 100"
+          },
+          "500": {
+            "description": "Server error or AI generation failed"
+          }
+        }
+      }
+    }
+  },
+  "/admin/sponsored-theme": {
+    "post": {
+      "tags": [
+        "Admin - Sponsored Themes"
+      ],
+      "summary": "Create a new sponsored theme",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "McDonalds Week"
+                },
+                "startDate": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endDate": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "dropImageUrl": {
+                  "type": "string"
+                },
+                "zoneImageUrl": {
+                  "type": "string"
+                },
+                "mapLogoUrl": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Theme created successfully"
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      }
+    },
+    "get": {
+      "tags": [
+        "Admin - Sponsored Themes"
+      ],
+      "summary": "Get all sponsored themes",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      }
+    }
+  },
+  "/admin/sponsored-theme/{id}": {
+    "put": {
+      "tags": [
+        "Admin - Sponsored Themes"
+      ],
+      "summary": "Update an existing sponsored theme",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "startDate": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endDate": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "dropImageUrl": {
+                  "type": "string"
+                },
+                "zoneImageUrl": {
+                  "type": "string"
+                },
+                "mapLogoUrl": {
+                  "type": "string"
+                },
+                "isActive": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Theme updated successfully"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "Admin - Sponsored Themes"
+      ],
+      "summary": "Delete a sponsored theme",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Theme deleted successfully"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      }
+    }
+  },
+  "/admin/vouchers": {
+    "post": {
+      "tags": [
+        "Admin - Vouchers"
+      ],
+      "summary": "Create a new commercial voucher",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "example": "Free Coffee"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "sponsorName": {
+                  "type": "string",
+                  "example": "Starbucks"
+                },
+                "imageUrl": {
+                  "type": "string"
+                },
+                "redemptionCode": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number",
+                  "example": 100
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Voucher created successfully"
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      }
+    },
+    "get": {
+      "tags": [
+        "Admin - Vouchers"
+      ],
+      "summary": "Get all commercial vouchers",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      }
+    }
+  },
+  "/admin/vouchers/{id}": {
+    "put": {
+      "tags": [
+        "Admin - Vouchers"
+      ],
+      "summary": "Update an existing commercial voucher",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "sponsorName": {
+                  "type": "string"
+                },
+                "imageUrl": {
+                  "type": "string"
+                },
+                "redemptionCode": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "isActive": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Voucher updated successfully"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "Admin - Vouchers"
+      ],
+      "summary": "Delete a commercial voucher",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Voucher deleted successfully"
+        },
+        "500": {
+          "description": "Server error"
         }
       }
     }
