@@ -66,18 +66,25 @@ startEventStatusCron();
 startPassiveCoinsCron();
 startResetZonesCron();
 
-// Start Live Tracking architecture (Wrapped in try/catch in case dependencies aren't installed yet)
+// Live tracking / WebSockets — isolated so a uWS failure cannot take down HTTP API
 const initializeLiveTracking = async () => {
   try {
     const { startWebSocketServer } = await import("./sockets/liveTracking.js");
-    const { startGpsWorker } = await import("./workers/gpsWorker.js");
     startWebSocketServer();
+  } catch (err) {
+    console.error("[App] WebSocket server failed to start:", err?.message || err);
+  }
+
+  try {
+    const { startGpsWorker } = await import("./workers/gpsWorker.js");
     startGpsWorker();
   } catch (err) {
-    console.log('[App] Scalable live tracking architecture failed to start. Error:', err);
+    console.error("[App] GPS worker failed to start:", err?.message || err);
   }
 };
-initializeLiveTracking();
+void initializeLiveTracking().catch((err) => {
+  console.error("[App] Live tracking init error:", err?.message || err);
+});
 
 // Read the swagger.json file
 const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf8'));

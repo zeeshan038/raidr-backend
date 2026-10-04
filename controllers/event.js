@@ -10,7 +10,12 @@ import {
 import {
     generateDynamicXP,
     haversineDistance,
-    applyDiscoveryLocationFilter
+    applyDiscoveryLocationFilter,
+    buildDiscoveryProximityWhere,
+    getDiscoveryRadiusMeters,
+    resolveMapCoordinates,
+    syncUserLocationFromRequest,
+    userControlsDiscoveryZone,
 } from "../utils/methods/methods.js";
 
 /**
@@ -42,11 +47,36 @@ export const GetEvents = async (req, res) => {
     }
 
     try {
+        syncUserLocationFromRequest(req);
+
+        const applyMapProximity = status !== "joined" && status !== "ended";
+        const mapCoords = applyMapProximity ? resolveMapCoordinates(req) : null;
+        const radiusMeters = getDiscoveryRadiusMeters(req);
+        const liveProximityWhere = applyMapProximity
+            ? buildDiscoveryProximityWhere({
+                userId,
+                coords: mapCoords,
+                radiusMeters,
+                latField: "latitude",
+                lngField: "longitude",
+            })
+            : {};
+        const coinProximityWhere = applyMapProximity
+            ? buildDiscoveryProximityWhere({
+                userId,
+                coords: mapCoords,
+                radiusMeters,
+                latField: "centerLat",
+                lngField: "centerLng",
+            })
+            : {};
+
         const [liveEvents, coinRushEvents] = await Promise.all([
             prisma.liveEvent.findMany({
                 where: {
                     status: statusFilter,
-                    ...(participantFilter && { participants: participantFilter })
+                    ...(participantFilter && { participants: participantFilter }),
+                    ...liveProximityWhere,
                 },
                 include: {
                     participants: {
@@ -60,13 +90,17 @@ export const GetEvents = async (req, res) => {
             prisma.coinRushEvent.findMany({
                 where: {
                     status: statusFilter,
-                    ...(participantFilter && { participants: participantFilter })
+                    ...(participantFilter && { participants: participantFilter }),
+                    ...coinProximityWhere,
                 },
                 include: {
                     participants: {
                         where: { userId: userId }
                     },
                     claims: {
+                        where: { userId: userId }
+                    },
+                    progress: {
                         where: { userId: userId }
                     }
                 }
@@ -88,10 +122,12 @@ export const GetEvents = async (req, res) => {
         const formattedCoinRushEvents = coinRushEvents.map(event => {
             const isJoined = event.participants.length > 0;
             const hasCompleted = event.claims && event.claims.length > 0;
-            const { participants, claims, ...eventData } = event;
+            const inProgress = event.progress && event.progress.length > 0;
+            const { participants, claims, progress, ...eventData } = event;
             return {
                 ...eventData,
                 isJoined,
+                inProgress,
                 hasCompleted,
                 isCoinRush: true
             };
@@ -127,8 +163,7 @@ export const GetEvents = async (req, res) => {
                     lat: event.isCoinRush ? event.centerLat : event.latitude,
                     lng: event.isCoinRush ? event.centerLng : event.longitude
                 }),
-                getAlwaysShow: (event) => event.isJoined,
-                getAddress: (event) => event.address || event.description || ""
+                getAlwaysShow: (event) => userControlsDiscoveryZone(event),
             });
         }
 

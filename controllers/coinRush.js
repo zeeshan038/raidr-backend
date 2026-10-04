@@ -1,6 +1,14 @@
 import crypto from 'crypto';
 import { prisma } from '../config/db.js';
-import { haversineDistance, applyDiscoveryLocationFilter } from '../utils/methods/methods.js';
+import {
+    haversineDistance,
+    applyDiscoveryLocationFilter,
+    buildDiscoveryProximityWhere,
+    getDiscoveryRadiusMeters,
+    resolveMapCoordinates,
+    syncUserLocationFromRequest,
+    userControlsDiscoveryZone,
+} from '../utils/methods/methods.js';
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
 import { publishToUser } from '../sockets/eventPublisher.js';
 import { compareImagesWithAI } from '../utils/Openai.js';
@@ -123,28 +131,47 @@ export const GetCoinRushEvents = async (req, res) => {
     }
 
     try {
+        syncUserLocationFromRequest(req);
+
+        const mapCoords = resolveMapCoordinates(req);
+        const radiusMeters = getDiscoveryRadiusMeters(req);
+        const proximityWhere = buildDiscoveryProximityWhere({
+            userId: req.user.id,
+            coords: mapCoords,
+            radiusMeters,
+            latField: 'centerLat',
+            lngField: 'centerLng',
+        });
+
         const events = await prisma.coinRushEvent.findMany({
-            where: { status: statusFilter },
+            where: {
+                status: statusFilter,
+                ...proximityWhere,
+            },
             include: {
                 participants: {
                     where: { userId: req.user.id }
-                }
+                },
+                progress: {
+                    where: { userId: req.user.id }
+                },
             }
         });
 
         const formattedEvents = events.map(event => {
             const isJoined = event.participants.length > 0;
-            const { participants, ...eventData } = event;
+            const inProgress = event.progress && event.progress.length > 0;
+            const { participants, progress, ...eventData } = event;
             return {
                 ...eventData,
-                isJoined
+                isJoined,
+                inProgress,
             };
         });
 
         const filteredEvents = applyDiscoveryLocationFilter(formattedEvents, req, {
             getLatLng: (event) => ({ lat: event.centerLat, lng: event.centerLng }),
-            getAlwaysShow: (event) => event.isJoined,
-            getAddress: (event) => event.description || ""
+            getAlwaysShow: (event) => userControlsDiscoveryZone(event),
         });
 
         const totalEvents = filteredEvents.length;

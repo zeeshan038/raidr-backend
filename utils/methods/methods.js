@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { prisma } from "../../config/db.js";
 
 export const generateToken = (user) => {
     return jwt.sign({ user }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -167,17 +168,38 @@ export const generateRandomCoordinates = async (centerLat, centerLng, radiusMete
     return checkpoints;
 };
 
+function parseCoordinatePair(latRaw, lngRaw) {
+    if (latRaw == null || lngRaw == null || latRaw === "" || lngRaw === "") {
+        return null;
+    }
+    const lat = parseFloat(latRaw);
+    const lng = parseFloat(lngRaw);
+    if (isNaN(lat) || isNaN(lng)) {
+        return null;
+    }
+    return { lat, lng };
+}
+
+/** GPS from request query (supports common param names used by mobile / map). */
+export const resolveRequestCoordinatesFromQuery = (req) => {
+    const qLat =
+        req.query?.lat ??
+        req.query?.latitude ??
+        req.query?.userLat;
+    const qLng =
+        req.query?.long ??
+        req.query?.lng ??
+        req.query?.longitude ??
+        req.query?.userLng;
+
+    return parseCoordinatePair(qLat, qLng);
+};
+
 /** Prefer live map GPS from query; fall back to stored user profile location. */
 export const resolveRequestCoordinates = (req) => {
-    const qLat = req.query?.lat ?? req.query?.latitude;
-    const qLng = req.query?.long ?? req.query?.lng ?? req.query?.longitude;
-
-    if (qLat != null && qLng != null && qLat !== "" && qLng !== "") {
-        const lat = parseFloat(qLat);
-        const lng = parseFloat(qLng);
-        if (!isNaN(lat) && !isNaN(lng)) {
-            return { lat, lng };
-        }
+    const fromQuery = resolveRequestCoordinatesFromQuery(req);
+    if (fromQuery) {
+        return fromQuery;
     }
 
     if (req.user?.lat != null && req.user?.long != null) {
@@ -191,12 +213,93 @@ export const resolveRequestCoordinates = (req) => {
     return null;
 };
 
+/**
+ * Map / zone discovery: use ONLY live GPS from the request (never stale profile),
+ * so users do not see "nearby" zones from another city they visited before.
+ */
+export const resolveMapCoordinates = (req) => resolveRequestCoordinatesFromQuery(req);
+
+/**
+ * Prisma WHERE fragment: events near coords OR events the user participates in (controlled zones).
+ */
+export const buildDiscoveryProximityWhere = ({
+    userId,
+    coords,
+    radiusMeters,
+    latField = "latitude",
+    lngField = "longitude",
+}) => {
+    const controlled = { participants: { some: { userId } } };
+
+    if (!coords || !userId) {
+        return controlled;
+    }
+
+    const { lat, lng } = coords;
+    const latDelta = radiusMeters / 111320;
+    const lngDelta = radiusMeters / (111320 * Math.cos((lat * Math.PI) / 180) || 1);
+
+    return {
+        OR: [
+            controlled,
+            {
+                AND: [
+                    { [latField]: { gte: lat - latDelta, lte: lat + latDelta } },
+                    { [lngField]: { gte: lng - lngDelta, lte: lng + lngDelta } },
+                ],
+            },
+        ],
+    };
+};
+
+/** User actively joined or has in-progress capture (coin rush checkpoints). */
+export const userControlsDiscoveryZone = (event) => {
+    if (event.isJoined) {
+        return true;
+    }
+    if (event.inProgress) {
+        return true;
+    }
+    if (Array.isArray(event.progress) && event.progress.length > 0) {
+        return true;
+    }
+    return false;
+};
+
+/** Keep profile location in sync when the client sends live GPS on map calls. */
+export const syncUserLocationFromRequest = (req) => {
+    const coords = resolveRequestCoordinatesFromQuery(req);
+    const userId = req.user?.id;
+    if (!coords || !userId) {
+        return;
+    }
+    prisma.user
+        .update({
+            where: { id: userId },
+            data: {
+                lat: String(coords.lat),
+                long: String(coords.lng),
+            },
+        })
+        .catch(() => {});
+};
+
 /** Default ~city-scale discovery; override with query radiusKm or DISCOVERY_RADIUS_KM env. */
 export const getDiscoveryRadiusMeters = (req) => {
     const fromQuery = parseFloat(req.query?.radiusKm);
     if (!isNaN(fromQuery) && fromQuery > 0) {
         return fromQuery * 1000;
     }
+
+    const hasCityContext = Boolean(req.query?.city && String(req.query.city).trim());
+    if (hasCityContext) {
+        const cityRadius = parseFloat(process.env.DISCOVERY_CITY_RADIUS_KM);
+        if (!isNaN(cityRadius) && cityRadius > 0) {
+            return cityRadius * 1000;
+        }
+        return 80 * 1000;
+    }
+
     const fromEnv = parseFloat(process.env.DISCOVERY_RADIUS_KM);
     if (!isNaN(fromEnv) && fromEnv > 0) {
         return fromEnv * 1000;
@@ -205,8 +308,8 @@ export const getDiscoveryRadiusMeters = (req) => {
 };
 
 /**
- * Show map/discovery item when within radius, optional city match on address,
- * or when alwaysShow (e.g. user joined / controls the zone).
+ * Show map zone when within radius of live GPS, or when alwaysShow (user controls the zone).
+ * Distance-only — no address/city text matching (that incorrectly showed other cities).
  */
 export const shouldShowInDiscovery = ({
     userLat,
@@ -214,8 +317,6 @@ export const shouldShowInDiscovery = ({
     eventLat,
     eventLng,
     radiusMeters,
-    city,
-    address,
     alwaysShow = false
 }) => {
     if (alwaysShow) {
@@ -235,15 +336,7 @@ export const shouldShowInDiscovery = ({
     }
 
     const dist = haversineDistance(userLat, userLng, parseFloat(eventLat), parseFloat(eventLng));
-    if (dist <= radiusMeters) {
-        return true;
-    }
-
-    if (city && address && String(address).toLowerCase().includes(String(city).trim().toLowerCase())) {
-        return true;
-    }
-
-    return false;
+    return dist <= radiusMeters;
 };
 
 /** @deprecated Use shouldShowInDiscovery with getDiscoveryRadiusMeters instead */
@@ -259,10 +352,92 @@ export const isSameCountryOrClose = (lat1, lon1, lat2, lon2) => {
     });
 };
 
-export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlwaysShow, getAddress = () => "" }) => {
-    const coords = resolveRequestCoordinates(req);
+/** Single-player raid zone: user holds it with an active shield. */
+export const userControlsSinglePlayerZone = (zone, userId, now = new Date()) => {
+    if (!userId || !zone?.currentOwnerId || zone.currentOwnerId !== userId) {
+        return false;
+    }
+    if (!zone.shieldExpiresAt) {
+        return true;
+    }
+    return new Date(zone.shieldExpiresAt) > now;
+};
+
+/**
+ * Map visibility for SinglePlayerZone: within radius of live GPS, same city (field + distance cap), or user controls.
+ */
+export const shouldShowSinglePlayerZoneOnMap = (
+    zone,
+    { coords, radiusMeters, city, userId, now = new Date() }
+) => {
+    if (userControlsSinglePlayerZone(zone, userId, now)) {
+        return true;
+    }
+
+    if (!coords) {
+        return false;
+    }
+
+    const dist = haversineDistance(
+        coords.lat,
+        coords.lng,
+        parseFloat(zone.latitude),
+        parseFloat(zone.longitude)
+    );
+
+    if (dist <= radiusMeters) {
+        return true;
+    }
+
+    if (
+        city &&
+        zone.city &&
+        String(zone.city).trim().toLowerCase() === String(city).trim().toLowerCase()
+    ) {
+        const cityCapKm = parseFloat(process.env.DISCOVERY_CITY_RADIUS_KM) || 80;
+        return dist <= cityCapKm * 1000;
+    }
+
+    return false;
+};
+
+/** Bounding box + owned zones for Prisma singlePlayerZone queries. */
+export const buildSinglePlayerZoneMapWhere = ({ userId, coords, radiusMeters, now = new Date() }) => {
+    const controlledByUser =
+        userId ?
+            {
+                currentOwnerId: userId,
+                shieldExpiresAt: { gt: now },
+            }
+            : null;
+
+    if (!coords) {
+        return controlledByUser ? { isActive: true, ...controlledByUser } : { isActive: true, id: { in: [] } };
+    }
+
+    const { lat, lng } = coords;
+    const latDelta = radiusMeters / 111320;
+    const lngDelta = radiusMeters / (111320 * Math.cos((lat * Math.PI) / 180) || 1);
+
+    const inBoundingBox = {
+        AND: [
+            { latitude: { gte: lat - latDelta, lte: lat + latDelta } },
+            { longitude: { gte: lng - lngDelta, lte: lng + lngDelta } },
+        ],
+    };
+
+    return {
+        isActive: true,
+        OR: [
+            ...(controlledByUser ? [controlledByUser] : []),
+            inBoundingBox,
+        ],
+    };
+};
+
+export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlwaysShow }) => {
+    const coords = resolveMapCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
-    const city = req.query?.city ? String(req.query.city).trim() : null;
 
     let filtered = events;
     if (!coords) {
@@ -276,8 +451,6 @@ export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlways
                 eventLat,
                 eventLng,
                 radiusMeters,
-                city,
-                address: getAddress(event),
                 alwaysShow: getAlwaysShow(event)
             });
         });
