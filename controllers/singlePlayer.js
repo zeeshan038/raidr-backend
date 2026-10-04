@@ -1,6 +1,14 @@
 import { prisma } from "../config/db.js";
 import { redis } from "../config/redis.js";
-import { haversineDistance } from "../utils/methods/methods.js";
+import {
+  haversineDistance,
+  resolveMapCoordinates,
+  getDiscoveryRadiusMeters,
+  syncUserLocationFromRequest,
+  shouldShowSinglePlayerZoneOnMap,
+  userControlsSinglePlayerZone,
+  buildSinglePlayerZoneMapWhere,
+} from "../utils/methods/methods.js";
 
 // Constants
 const DEFAULT_CAPTURE_TIME_SEC = 30;
@@ -17,42 +25,78 @@ export const getZones = async (req, res) => {
   const skip = (page - 1) * limit;
   const status = req.query.status;
   const userId = req.user?.id;
+  const now = new Date();
 
   try {
-    const whereClause = { isActive: true };
+    syncUserLocationFromRequest(req);
+    const coords = resolveMapCoordinates(req);
+    const radiusMeters = getDiscoveryRadiusMeters(req);
+    const city = req.query.city ? String(req.query.city).trim() : null;
 
-    if (userId) {
-      if (status === 'conquered_by_me') {
-        whereClause.currentOwnerId = userId;
-      } else if (status === 'conquered_by_others') {
-        whereClause.AND = [
-          { currentOwnerId: { not: null } },
-          { currentOwnerId: { not: userId } }
-        ];
-      } else if (status === 'available') {
-        whereClause.currentOwnerId = null;
+    let whereClause;
+
+    if (userId && status === "conquered_by_me") {
+      // All zones you control — anywhere on the map
+      whereClause = {
+        isActive: true,
+        currentOwnerId: userId,
+        shieldExpiresAt: { gt: now },
+      };
+    } else {
+      whereClause = buildSinglePlayerZoneMapWhere({
+        userId,
+        coords,
+        radiusMeters,
+        now,
+      });
+
+      if (userId && status === "conquered_by_others") {
+        whereClause = {
+          AND: [
+            whereClause,
+            { currentOwnerId: { not: null } },
+            { currentOwnerId: { not: userId } },
+            { shieldExpiresAt: { gt: now } },
+          ],
+        };
+      } else if (status === "available") {
+        whereClause = {
+          AND: [
+            whereClause,
+            {
+              OR: [
+                { currentOwnerId: null },
+                { shieldExpiresAt: { lte: now } },
+              ],
+            },
+          ],
+        };
       }
     }
 
-    const totalZones = await prisma.singlePlayerZone.count({
-      where: whereClause
-    });
-
-    const zones = await prisma.singlePlayerZone.findMany({
+    const candidateZones = await prisma.singlePlayerZone.findMany({
       where: whereClause,
       include: {
         owner: {
-          select: { id: true, name: true, photoUrl: true }
-        }
+          select: { id: true, name: true, photoUrl: true },
+        },
       },
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
+
+    const visibilityOpts = { coords, radiusMeters, city, userId, now };
+    const visibleZones =
+      userId && status === "conquered_by_me"
+        ? candidateZones
+        : candidateZones.filter((zone) =>
+            shouldShowSinglePlayerZoneOnMap(zone, visibilityOpts)
+          );
+
+    const totalZones = visibleZones.length;
+    const zones = visibleZones.slice(skip, skip + limit);
 
     const processedZones = zones.map(zone => {
       let zoneStatus = 'available';
-      const now = new Date();
       const isShieldExpired = zone.shieldExpiresAt && new Date(zone.shieldExpiresAt) <= now;
 
       if (userId && zone.currentOwnerId && !isShieldExpired) {
@@ -471,17 +515,30 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     const userLat = parseFloat(latitude);
     const userLng = parseFloat(longitude);
+    const coords = { lat: userLat, lng: userLng };
+    const radiusMeters = getDiscoveryRadiusMeters(req);
+    const city = req.query.city ? String(req.query.city).trim() : null;
+    const now = new Date();
+
+    syncUserLocationFromRequest(req);
 
     // 1. Fetch User Data (for multiplier)
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    // 2. Fetch Zones
-    const zones = await prisma.singlePlayerZone.findMany({
-      where: { isActive: true }
+    // 2. Fetch zones (all for passive income; map shows nearby + your controlled only)
+    const allActiveZones = await prisma.singlePlayerZone.findMany({
+      where: { isActive: true },
     });
 
-    // 3. Calculate Dashboard Stats
-    const ownedZones = zones.filter(z => z.currentOwnerId === userId);
+    const visibilityOpts = { coords, radiusMeters, city, userId, now };
+    const zones = allActiveZones.filter((zone) =>
+      shouldShowSinglePlayerZoneOnMap(zone, visibilityOpts)
+    );
+
+    // 3. Calculate Dashboard Stats (worldwide owned zones)
+    const ownedZones = allActiveZones.filter((z) =>
+      userControlsSinglePlayerZone(z, userId, now)
+    );
     const ownedZonesCount = ownedZones.length;
     let passiveIncome = ownedZones.reduce((sum, zone) => sum + zone.coinsPerHour, 0);
 

@@ -1,6 +1,14 @@
 import crypto from 'crypto';
 import { prisma } from '../config/db.js';
-import { haversineDistance, isSameCountryOrClose } from '../utils/methods/methods.js';
+import {
+    haversineDistance,
+    applyDiscoveryLocationFilter,
+    buildDiscoveryProximityWhere,
+    getDiscoveryRadiusMeters,
+    resolveMapCoordinates,
+    syncUserLocationFromRequest,
+    userControlsDiscoveryZone,
+} from '../utils/methods/methods.js';
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
 import { publishToUser } from '../sockets/eventPublisher.js';
 import { compareImagesWithAI } from '../utils/Openai.js';
@@ -123,58 +131,48 @@ export const GetCoinRushEvents = async (req, res) => {
     }
 
     try {
+        syncUserLocationFromRequest(req);
+
+        const mapCoords = resolveMapCoordinates(req);
+        const radiusMeters = getDiscoveryRadiusMeters(req);
+        const proximityWhere = buildDiscoveryProximityWhere({
+            userId: req.user.id,
+            coords: mapCoords,
+            radiusMeters,
+            latField: 'centerLat',
+            lngField: 'centerLng',
+        });
+
         const events = await prisma.coinRushEvent.findMany({
-            where: { status: statusFilter },
+            where: {
+                status: statusFilter,
+                ...proximityWhere,
+            },
             include: {
                 participants: {
                     where: { userId: req.user.id }
-                }
+                },
+                progress: {
+                    where: { userId: req.user.id }
+                },
             }
         });
 
         const formattedEvents = events.map(event => {
             const isJoined = event.participants.length > 0;
-            const { participants, ...eventData } = event;
+            const inProgress = event.progress && event.progress.length > 0;
+            const { participants, progress, ...eventData } = event;
             return {
                 ...eventData,
-                isJoined
+                isJoined,
+                inProgress,
             };
         });
 
-        const userLat = req.user.lat ? parseFloat(req.user.lat) : null;
-        const userLng = req.user.long ? parseFloat(req.user.long) : null;
-
-        let filteredEvents = formattedEvents;
-
-        if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
-            // Filter by same country or proximity
-            filteredEvents = formattedEvents.filter(event => {
-                if (event.centerLat === null || event.centerLng === null || event.centerLat === undefined || event.centerLng === undefined) {
-                    return true;
-                }
-                return isSameCountryOrClose(userLat, userLng, event.centerLat, event.centerLng);
-            });
-
-            // Calculate distance and sort nearest to farthest
-            filteredEvents = filteredEvents.map(event => {
-                const distance = (event.centerLat !== null && event.centerLng !== null && event.centerLat !== undefined && event.centerLng !== undefined)
-                    ? haversineDistance(userLat, userLng, event.centerLat, event.centerLng)
-                    : Infinity;
-                return {
-                    ...event,
-                    distance // in meters
-                };
-            });
-
-            filteredEvents.sort((a, b) => a.distance - b.distance);
-        } else {
-            // Fallback: sort by startTime
-            filteredEvents.sort((a, b) => {
-                const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
-                const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
-                return timeA - timeB;
-            });
-        }
+        const filteredEvents = applyDiscoveryLocationFilter(formattedEvents, req, {
+            getLatLng: (event) => ({ lat: event.centerLat, lng: event.centerLng }),
+            getAlwaysShow: (event) => userControlsDiscoveryZone(event),
+        });
 
         const totalEvents = filteredEvents.length;
         const paginatedEvents = filteredEvents.slice(skip, skip + limit);

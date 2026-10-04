@@ -6,28 +6,105 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const getReferenceImage = (filename) => {
-  const filePath = path.join(__dirname, filename);
-  if (fs.existsSync(filePath)) {
-    return {
-      inlineData: {
-        data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
-        mimeType: "image/jpeg"
-      }
-    };
-  }
-  return null;
+const MIME_BY_EXT = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
 };
 
+const getReferenceImageFromFile = (filename) => {
+  const filePath = path.join(__dirname, filename);
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  const ext = path.extname(filename).toLowerCase();
+  return {
+    inlineData: {
+      data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
+      mimeType: MIME_BY_EXT[ext] || "image/jpeg",
+    },
+  };
+};
+
+const getReferenceImageFromBase64 = (base64, mimeType = "image/png") => {
+  if (!base64 || typeof base64 !== "string") {
+    return null;
+  }
+  const data = base64.replace(/^data:image\/\w+;base64,/, "");
+  return {
+    inlineData: { data, mimeType },
+  };
+};
+
+const loadReferenceImages = (filenames, uploadBase64) => {
+  if (uploadBase64) {
+    const uploaded = getReferenceImageFromBase64(uploadBase64);
+    if (uploaded) {
+      return [uploaded];
+    }
+  }
+  return filenames
+    .map((name) => getReferenceImageFromFile(name))
+    .filter(Boolean);
+};
+
+const REFERENCE_ASSET_FILES = {
+  drop: ["Drop.jpeg"],
+  zone: ["zone.jpeg", "conquered zone.jpeg"],
+  map: ["map icon.jpeg"],
+};
+
+const REFERENCE_STYLE_BLOCK = (assetLabel) => `
+REFERENCE IMAGES (required quality bar):
+The attached image(s) are official RAIDR ${assetLabel} samples from our art team.
+Treat them as the gold standard for style — NOT for copying any specific brand.
+
+You MUST match this production look:
+- Real 3D game asset render (Cinema 4D / Blender / mobile AAA UI quality) — never flat 2D vector art
+- Strong depth: beveled edges, thickness, PBR gloss/metal/glass, crisp specular highlights
+- Lighting: key + fill + rim light, ambient occlusion, controlled neon accents inside the mesh
+- Background: PNG with TRUE transparent alpha outside the object
+- Allowed for depth: a soft, semi-transparent CONTACT SHADOW directly under the object only (no floor texture, no room, no map)
+- Forbidden: solid white/gray backdrop, checkerboard baked in, photo environments, busy scenes, outer glow halos, text labels
+
+Apply sponsor colors and logo from the written brief while keeping the same 3D craft as the references.
+`.trim();
+
+const buildContents = (prompt, refImages, assetLabel) => {
+  const parts = [];
+  if (refImages.length > 0) {
+    parts.push({ text: REFERENCE_STYLE_BLOCK(assetLabel) });
+    for (const ref of refImages) {
+      parts.push(ref);
+    }
+  }
+  parts.push({ text: prompt });
+  return parts;
+};
+
+const SHARED_3D_OUTPUT_RULES = `
+OUTPUT (all assets):
+- Exactly 512x512 pixels, PNG, production-ready for a dark mobile map UI
+- Object centered with safe transparent padding; readable at 48px map pin size
+- Must read as dimensional 3D at a glance — avoid sticker-like flat shading
+`.trim();
+
 /**
- * Generates the three required images for a SponsoredTheme using Gemini (Imagen 3).
- * @param {string} themeName - The name of the theme (e.g., "McDonalds")
- * @param {string} brandLogo - Description or text of the brand logo
- * @param {string} primaryColor - The primary color
- * @param {string} secondaryColor - The secondary color
- * @returns {Promise<{dropImageBase64: string, zoneImageBase64: string, mapLogoBase64: string}>}
+ * Generates the three required images for a SponsoredTheme using Gemini.
+ * @param {string} themeName
+ * @param {string} brandLogo
+ * @param {string} primaryColor
+ * @param {string} secondaryColor
+ * @param {{ referenceImages?: { drop?: string, zone?: string, map?: string } }} [options] - optional base64 samples from admin
  */
-export const generateThemeImages = async (themeName, brandLogo, primaryColor, secondaryColor) => {
+export const generateThemeImages = async (
+  themeName,
+  brandLogo,
+  primaryColor,
+  secondaryColor,
+  options = {}
+) => {
   if (!themeName) {
     throw new Error("Theme name is required");
   }
@@ -37,132 +114,109 @@ export const generateThemeImages = async (themeName, brandLogo, primaryColor, se
     throw new Error("GEMINI_API_KEY or GEMINI_KEY is missing in .env");
   }
 
-  // Initialize the SDK with the explicitly provided key
   const ai = new GoogleGenAI({ apiKey });
+  const uploadedRefs = options.referenceImages || {};
 
   try {
     console.log(`Generating images for theme: ${themeName}...`);
 
+    const primary = primaryColor || "associated with the brand";
+    const secondary = secondaryColor || "associated with the brand";
+    const logoHint = brandLogo || "the brand's official logo mark";
+
     const dropImagePrompt = `
-Create ONE premium sponsored Daily Drop game asset for the brand "${themeName}".
+Create ONE premium sponsored Daily Drop game asset for "${themeName}".
 
-STRICT OUTPUT REQUIREMENTS:
-- Exactly 512x512 pixels.
-- PNG with TRUE transparent alpha background.
-- Absolutely no background, scene, floor, platform, shadow backdrop, border, frame, or surrounding objects.
-- Asset must be centered and fully visible with comfortable transparent padding.
-- Extremely sharp, high-detail, production-quality mobile game asset. No blur or pixelation.
+${SHARED_3D_OUTPUT_RULES}
 
-DESIGN:
-- A premium 3D gift box with a ribbon and bow.
-- Polished, glossy, dimensional game-asset appearance with realistic depth, bevels, reflections and controlled neon highlights.
-- Use ONLY the primary color (${primaryColor || "associated with the brand"}) and secondary color (${secondaryColor || "associated with the brand"}) as the dominant visual theme.
-- Integrate the brand logo ("${brandLogo || "associated with the brand"}") of "${themeName}" clearly on the front face of the gift box.
-- Branding must feel naturally integrated into the object, not pasted on.
-- Keep the logo clean, readable and recognizable at small mobile UI sizes.
-- Do not invent additional brand names, slogans or text.
-- Maintain a futuristic premium RAIDR-style game aesthetic while preserving the sponsor's brand identity.
+SUBJECT:
+- A premium 3D gift box with ribbon and bow — chunky, tactile, toy-like volume
+- Polished materials with realistic depth, bevels, reflections, inner glow on edges
+- Dominant colors: primary ${primary}, secondary ${secondary}
+- Place ${logoHint} on the front face; integrated into the surface (embossed/engraved/illuminated), not a flat sticker
+- No extra text or invented slogans
 
-FINAL RESULT:
-One isolated 3D sponsored gift-box icon, transparent background, suitable for direct use on a dark mobile game map.
-`;
+BACKGROUND:
+- Transparent alpha everywhere except an optional soft contact shadow beneath the box to reinforce 3D grounding
+`.trim();
 
     const zoneImagePrompt = `
-Create ONE premium sponsored Raid Zone icon for the brand "${themeName}".
+Create ONE premium sponsored Raid Zone icon for "${themeName}".
 
-STRICT OUTPUT REQUIREMENTS:
-- Exactly 512x512 pixels.
-- PNG with TRUE transparent alpha background.
-- Absolutely no background, checkerboard baked into the image, outer scene, rays, circles, particles, arrows, decorative lines, or surrounding objects.
-- Entire icon must remain inside the 512x512 canvas with transparent padding.
-- Extremely sharp, high-detail, production-quality mobile game asset.
+${SHARED_3D_OUTPUT_RULES}
 
-FIXED DESIGN LANGUAGE:
-- Use a symmetrical 3D SHIELD as the outer shape.
-- Place a simple 3D CASTLE / FORT / ROOK symbol prominently in the center.
-- Preserve this shield + fort composition for EVERY sponsored theme.
-- Shield should have layered beveled edges, glossy/glass-like depth and premium game-quality materials.
-- Use controlled internal neon illumination and highlights; do NOT create large glow effects outside the shield.
+FIXED COMPOSITION (match RAIDR zone references):
+- Symmetrical 3D SHIELD outer shape with layered beveled edges and glass/metal premium materials
+- Simple 3D CASTLE / FORT / ROOK symbol centered inside the shield
+- Keep shield + fort silhouette identical in structure to the reference samples; only recolor and add sponsor branding
+- Controlled internal neon on edges; no large external bloom
 
-SPONSOR BRANDING:
-- Adapt the shield, fort highlights and neon lighting to the primary color (${primaryColor || "associated with the brand"}) and secondary color (${secondaryColor || "associated with the brand"}) of "${themeName}".
-- Incorporate the brand logo ("${brandLogo || "associated with the brand"}") of "${themeName}" subtly but clearly within the shield design.
-- The sponsor identity must be recognizable without destroying the shield/fort silhouette.
-- Do not add slogans or unnecessary text.
-- Do not replace the fort with a random object.
+SPONSOR:
+- Colors: primary ${primary}, secondary ${secondary}
+- Integrate ${logoHint} subtly inside the shield; readable at small map sizes
+- Do not replace the fort with food/products/random objects
 
-STYLE:
-Premium futuristic RAIDR game UI, 3D, glossy, dimensional, sharp, sophisticated and readable even when displayed as a small map icon.
-
-FINAL RESULT:
-One isolated 3D branded Raid Zone shield icon with castle/fort symbol, transparent background, ready for direct mobile-app use.
-`;
+BACKGROUND:
+- Transparent alpha; optional soft contact shadow under the shield only
+`.trim();
 
     const mapLogoPrompt = `
-Create ONE premium sponsored map location marker for the brand "${themeName}".
+Create ONE premium sponsored map location marker for "${themeName}".
 
-STRICT OUTPUT REQUIREMENTS:
-- Exactly 512x512 pixels.
-- PNG with TRUE transparent alpha background.
-- No background, map, ground circle, platform, external rings, rays, particles, scenery, text labels or additional objects.
-- Center the marker with transparent padding around it.
-- Extremely sharp and clean at high resolution.
+${SHARED_3D_OUTPUT_RULES}
 
-FIXED SHAPE:
-- Use a classic simple LOCATION PIN silhouette.
-- Premium polished 3D construction with beveled edges, glossy/glass-like materials, reflections and subtle internal neon lighting.
-- Keep the silhouette simple and highly readable when scaled down on a mobile map.
+FIXED SHAPE (match RAIDR map pin references):
+- Classic location PIN silhouette — thick, beveled, glossy 3D pin
+- Circular head with depth; premium glass/metal materials and subtle internal neon
+- Colors: primary ${primary}, secondary ${secondary}
+- ${logoHint} centered in the pin head; crisp and recognizable when small
 
-SPONSOR BRANDING:
-- Use the primary color (${primaryColor || "associated with the brand"}) and secondary color (${secondaryColor || "associated with the brand"}) of "${themeName}" throughout the pin.
-- Clearly place the brand logo ("${brandLogo || "associated with the brand"}") of "${themeName}" inside the circular center of the marker.
-- The logo must remain recognizable at small sizes.
-- Do not write the full company name unless it is itself the brand's short official logo.
-- Do not invent or modify the sponsor logo.
+BACKGROUND:
+- Transparent alpha; optional soft contact shadow under the pin tip only
+- No map tiles, circles, rings, or labels
+`.trim();
 
-STYLE:
-Premium futuristic RAIDR game UI, polished 3D, clean neon accents, strong contrast and professional mobile-game quality.
+    const modelName = "gemini-3.1-flash-image";
 
-FINAL RESULT:
-One isolated sponsored 3D location pin on a transparent background, ready for direct use as a map marker.
-`;
+    const dropRefs = loadReferenceImages(
+      REFERENCE_ASSET_FILES.drop,
+      uploadedRefs.drop
+    );
+    const zoneRefs = loadReferenceImages(
+      REFERENCE_ASSET_FILES.zone,
+      uploadedRefs.zone
+    );
+    const mapRefs = loadReferenceImages(
+      REFERENCE_ASSET_FILES.map,
+      uploadedRefs.map
+    );
 
-    const modelName = "gemini-3.1-flash-image"; 
-
-    const dropImageRef = getReferenceImage("Drop.jpeg");
-    const zoneImageRef = getReferenceImage("zone.jpeg");
-    const mapLogoRef = getReferenceImage("map icon.jpeg");
-
-    const buildContents = (prompt, refImage) => {
-      const parts = [{ text: prompt }];
-      if (refImage) {
-        // Add text instruction to use the reference image
-        parts.unshift({ text: "Use the provided image as a strong style and composition reference for generating the final asset." });
-        parts.unshift(refImage);
-      }
-      return parts;
-    };
+    if (dropRefs.length === 0 || zoneRefs.length === 0 || mapRefs.length === 0) {
+      console.warn(
+        "[GeminiAi] Missing one or more local reference JPEGs in utils/ — output quality may drop. Ask design to add Drop.jpeg, zone.jpeg, map icon.jpeg."
+      );
+    }
 
     const [dropImgRes, zoneImgRes, mapLogoRes] = await Promise.all([
       ai.models.generateContent({
         model: modelName,
-        contents: buildContents(dropImagePrompt, dropImageRef),
-        config: { outputMimeType: "image/png" }
+        contents: buildContents(dropImagePrompt, dropRefs, "Daily Drop"),
+        config: { outputMimeType: "image/png" },
       }),
       ai.models.generateContent({
         model: modelName,
-        contents: buildContents(zoneImagePrompt, zoneImageRef),
-        config: { outputMimeType: "image/png" }
+        contents: buildContents(zoneImagePrompt, zoneRefs, "Raid Zone"),
+        config: { outputMimeType: "image/png" },
       }),
       ai.models.generateContent({
         model: modelName,
-        contents: buildContents(mapLogoPrompt, mapLogoRef),
-        config: { outputMimeType: "image/png" }
-      })
+        contents: buildContents(mapLogoPrompt, mapRefs, "Map Pin"),
+        config: { outputMimeType: "image/png" },
+      }),
     ]);
 
     const extractBase64 = (res) => {
-      const part = res.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
       return part ? part.inlineData.data : null;
     };
 
@@ -177,9 +231,8 @@ One isolated sponsored 3D location pin on a transparent background, ready for di
     return {
       dropImageBase64,
       zoneImageBase64,
-      mapLogoBase64
+      mapLogoBase64,
     };
-
   } catch (error) {
     console.error("Error generating theme images:", error);
     throw new Error(error.message || "Failed to generate theme images using Gemini API.");
@@ -188,9 +241,6 @@ One isolated sponsored 3D location pin on a transparent background, ready for di
 
 /**
  * Generates bulk Single Player Zones based on a prompt.
- * @param {string} prompt - The natural language request (e.g., "10 zones in Times Square, New York")
- * @param {number} count - The exact number of zones to generate
- * @returns {Promise<Array<{name: string, latitude: number, longitude: number, city: string, country: string}>>}
  */
 export const generateBulkZones = async (prompt, count) => {
   if (!prompt || !count) {
@@ -202,8 +252,7 @@ export const generateBulkZones = async (prompt, count) => {
     throw new Error("OPENAI_API_KEY is missing in .env");
   }
 
-  // Import OpenAI dynamically so it doesn't break if not available
-  const OpenAI = (await import('openai')).default;
+  const OpenAI = (await import("openai")).default;
   const openai = new OpenAI({ apiKey });
 
   try {
@@ -223,17 +272,17 @@ export const generateBulkZones = async (prompt, count) => {
                 latitude: { type: "number" },
                 longitude: { type: "number" },
                 city: { type: "string" },
-                country: { type: "string" }
+                country: { type: "string" },
               },
               required: ["name", "latitude", "longitude", "city", "country"],
-              additionalProperties: false
-            }
-          }
+              additionalProperties: false,
+            },
+          },
         },
         required: ["zones"],
-        additionalProperties: false
+        additionalProperties: false,
       },
-      strict: true
+      strict: true,
     };
 
     const systemInstruction = `You are a geographical data assistant for a real-world mobile game. The user will ask for a certain number of gaming zones in a specific area. You must return exactly the requested number of zones. Generate realistic, precise, and distinct latitude and longitude coordinates within the requested area. Provide a plausible gaming zone name for each location (e.g., "Central Park Plaza Zone").`;
@@ -242,9 +291,9 @@ export const generateBulkZones = async (prompt, count) => {
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemInstruction },
-        { role: "user", content: `Generate exactly ${count} zones based on this request: "${prompt}"` }
+        { role: "user", content: `Generate exactly ${count} zones based on this request: "${prompt}"` },
       ],
-      response_format: { type: "json_schema", json_schema: schema }
+      response_format: { type: "json_schema", json_schema: schema },
     });
 
     const text = response.choices[0].message.content;

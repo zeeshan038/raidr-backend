@@ -7,7 +7,16 @@ import {
     publishCommanderMessage,
     publishToUser
 } from "../sockets/eventPublisher.js";
-import { generateDynamicXP, haversineDistance, isSameCountryOrClose } from "../utils/methods/methods.js";
+import {
+    generateDynamicXP,
+    haversineDistance,
+    applyDiscoveryLocationFilter,
+    buildDiscoveryProximityWhere,
+    getDiscoveryRadiusMeters,
+    resolveMapCoordinates,
+    syncUserLocationFromRequest,
+    userControlsDiscoveryZone,
+} from "../utils/methods/methods.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
@@ -38,11 +47,36 @@ export const GetEvents = async (req, res) => {
     }
 
     try {
+        syncUserLocationFromRequest(req);
+
+        const applyMapProximity = status !== "joined" && status !== "ended";
+        const mapCoords = applyMapProximity ? resolveMapCoordinates(req) : null;
+        const radiusMeters = getDiscoveryRadiusMeters(req);
+        const liveProximityWhere = applyMapProximity
+            ? buildDiscoveryProximityWhere({
+                userId,
+                coords: mapCoords,
+                radiusMeters,
+                latField: "latitude",
+                lngField: "longitude",
+            })
+            : {};
+        const coinProximityWhere = applyMapProximity
+            ? buildDiscoveryProximityWhere({
+                userId,
+                coords: mapCoords,
+                radiusMeters,
+                latField: "centerLat",
+                lngField: "centerLng",
+            })
+            : {};
+
         const [liveEvents, coinRushEvents] = await Promise.all([
             prisma.liveEvent.findMany({
                 where: {
                     status: statusFilter,
-                    ...(participantFilter && { participants: participantFilter })
+                    ...(participantFilter && { participants: participantFilter }),
+                    ...liveProximityWhere,
                 },
                 include: {
                     participants: {
@@ -56,13 +90,17 @@ export const GetEvents = async (req, res) => {
             prisma.coinRushEvent.findMany({
                 where: {
                     status: statusFilter,
-                    ...(participantFilter && { participants: participantFilter })
+                    ...(participantFilter && { participants: participantFilter }),
+                    ...coinProximityWhere,
                 },
                 include: {
                     participants: {
                         where: { userId: userId }
                     },
                     claims: {
+                        where: { userId: userId }
+                    },
+                    progress: {
                         where: { userId: userId }
                     }
                 }
@@ -84,10 +122,12 @@ export const GetEvents = async (req, res) => {
         const formattedCoinRushEvents = coinRushEvents.map(event => {
             const isJoined = event.participants.length > 0;
             const hasCompleted = event.claims && event.claims.length > 0;
-            const { participants, claims, ...eventData } = event;
+            const inProgress = event.progress && event.progress.length > 0;
+            const { participants, claims, progress, ...eventData } = event;
             return {
                 ...eventData,
                 isJoined,
+                inProgress,
                 hasCompleted,
                 isCoinRush: true
             };
@@ -108,9 +148,6 @@ export const GetEvents = async (req, res) => {
             return true;
         });
 
-        const userLat = req.user.lat ? parseFloat(req.user.lat) : null;
-        const userLng = req.user.long ? parseFloat(req.user.long) : null;
-
         let filteredEvents = mergedEvents;
 
         if (status === "joined") {
@@ -120,37 +157,13 @@ export const GetEvents = async (req, res) => {
                 const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
                 return timeA - timeB;
             });
-        } else if (userLat !== null && !isNaN(userLat) && userLng !== null && !isNaN(userLng)) {
-            // Filter by same country or proximity
-            filteredEvents = mergedEvents.filter(event => {
-                const eventLat = event.isCoinRush ? event.centerLat : event.latitude;
-                const eventLng = event.isCoinRush ? event.centerLng : event.longitude;
-                if (eventLat === null || eventLng === null || eventLat === undefined || eventLng === undefined) {
-                    return true;
-                }
-                return isSameCountryOrClose(userLat, userLng, eventLat, eventLng);
-            });
-
-            // Calculate distance and sort nearest to farthest
-            filteredEvents = filteredEvents.map(event => {
-                const eventLat = event.isCoinRush ? event.centerLat : event.latitude;
-                const eventLng = event.isCoinRush ? event.centerLng : event.longitude;
-                const distance = (eventLat !== null && eventLng !== null && eventLat !== undefined && eventLng !== undefined)
-                    ? haversineDistance(userLat, userLng, eventLat, eventLng)
-                    : Infinity;
-                return {
-                    ...event,
-                    distance // in meters
-                };
-            });
-
-            filteredEvents.sort((a, b) => a.distance - b.distance);
         } else {
-            // Fallback: sort by startTime
-            filteredEvents.sort((a, b) => {
-                const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
-                const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
-                return timeA - timeB;
+            filteredEvents = applyDiscoveryLocationFilter(mergedEvents, req, {
+                getLatLng: (event) => ({
+                    lat: event.isCoinRush ? event.centerLat : event.latitude,
+                    lng: event.isCoinRush ? event.centerLng : event.longitude
+                }),
+                getAlwaysShow: (event) => userControlsDiscoveryZone(event),
             });
         }
 

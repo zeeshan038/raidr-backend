@@ -108,11 +108,13 @@ export const deleteTheme = async (req, res) => {
  */
 export const generateThemeImagesController = async (req, res) => {
   try {
-    const { name, brandLogo, primaryColor, secondaryColor } = req.body;
+    const { name, brandLogo, primaryColor, secondaryColor, referenceImages } = req.body;
     if (!name) {
       return res.status(400).json({ status: false, msg: "Theme name is required" });
     }
-    const images = await generateThemeImages(name, brandLogo, primaryColor, secondaryColor);
+    const images = await generateThemeImages(name, brandLogo, primaryColor, secondaryColor, {
+      referenceImages: referenceImages || undefined,
+    });
     res.status(200).json({ status: true, msg: "Images generated successfully", data: images });
   } catch (error) {
     res.status(500).json({
