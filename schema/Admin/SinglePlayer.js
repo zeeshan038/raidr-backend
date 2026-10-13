@@ -44,3 +44,23 @@ export const UpdateZoneSchema = (payload) => {
 
     return schema.validate(payload);
 };
+
+export const UpdateGameConfigSchema = (payload) => {
+    const schema = Joi.object({
+        baseCaptureTimeSec: Joi.number().integer().min(5).optional(),
+        shieldDurationMin: Joi.number().integer().min(1).optional(),
+        ownershipDefenseSecPerDay: Joi.number().integer().min(0).optional(),
+        secondsPerGuard: Joi.number().integer().min(0).optional(),
+        maxGuardsPerZone: Joi.number().integer().min(0).optional(),
+        guardPurchaseCoinPrice: Joi.number().integer().min(0).optional(),
+        guardEliminationCoinPrice: Joi.number().integer().min(0).optional(),
+        empireVipMinOwnedZones: Joi.number().integer().min(0).optional(),
+        vipRewardMultiplier: Joi.number().min(1).optional(),
+        rivalryMilestoneHours: Joi.array().items(Joi.number().integer().min(1)).optional(),
+        allowedHoldDurationHours: Joi.array().items(Joi.number().integer().valid(24, 48, 72)).optional(),
+        shieldWarningMinutesBefore: Joi.number().integer().min(1).optional(),
+        maxOwnedZonesPerPlayer: Joi.number().integer().min(1).allow(null).optional(),
+    }).unknown(false);
+
+    return schema.validate(payload);
+};

@@ -29,7 +29,22 @@ export const CreateAvatarSchema = (payload) => {
     }).unknown(true);
 
     return schema.validate(payload);
-}
+};
+
+export const CreateGuardProductSchema = (payload) => {
+    const schema = Joi.object({
+        name: Joi.string().required(),
+        frontUrl: Joi.string().uri().required(),
+        backUrl: Joi.string().uri().optional(),
+        price: Joi.number().integer().min(0).required(),
+        guardsPerPurchase: Joi.number().integer().min(1).optional().default(1),
+        isFeatured: Joi.boolean().optional().default(false),
+        isNew: Joi.boolean().optional().default(true),
+        isStoreActive: Joi.boolean().optional().default(true),
+    }).unknown(false);
+
+    return schema.validate(payload);
+};
 
 // Update Avatar
 export const UpdateAvatarSchema = (payload) => {
@@ -42,7 +57,9 @@ export const UpdateAvatarSchema = (payload) => {
         isNew: Joi.boolean().optional(),
         spCaptureTimeSec: Joi.number().optional(),
         spShieldDurationMin: Joi.number().optional(),
+        guardsPerPurchase: Joi.number().integer().min(1).optional(),
+        isStoreActive: Joi.boolean().optional(),
     }).unknown(true);
 
     return schema.validate(payload);
-}
+};

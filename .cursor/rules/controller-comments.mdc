@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+# Controller & route comment format
+
+When creating or modifying controller functions (and route handlers when documented at the route layer), add a JSDoc block **directly above** the exported handler using this exact format:
+
+```typescript
+/**
+ * @Description [Brief description of what the handler does]
+ * @Route [HTTP_METHOD] [Full route path including /api prefix if mounted]
+ * @Access [Public | Private]
+ */
+```
+
+Match existing controllers (e.g. `controllers/trip.js`, `controllers/singlePlayer.js`): use the real mounted path such as `POST /api/single-player/zones/:id/capture/start`, not only the router-relative segment.

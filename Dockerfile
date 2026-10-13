@@ -1,4 +1,5 @@
-FROM node:22
+# uWebSockets native addon needs glibc >= 2.38 (Debian Bookworm node:22 image is too old)
+FROM node:22-noble
 
 # Set working directory
 WORKDIR /app

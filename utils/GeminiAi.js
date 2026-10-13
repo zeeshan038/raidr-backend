@@ -310,3 +310,68 @@ export const generateBulkZones = async (prompt, count) => {
     throw new Error(error.message || "Failed to generate bulk zones using OpenAI API.");
   }
 };
+
+/**
+ * AI draft for a merchant/admin B2B raid campaign (not published until submitted & approved).
+ */
+export const generateB2bCampaignDraft = async (prompt) => {
+  if (!prompt || typeof prompt !== "string") {
+    throw new Error("Prompt is required");
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is missing in .env");
+  }
+
+  const OpenAI = (await import("openai")).default;
+  const openai = new OpenAI({ apiKey });
+
+  const schema = {
+    name: "b2b_campaign_draft",
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        latitude: { type: "number" },
+        longitude: { type: "number" },
+        city: { type: "string" },
+        country: { type: "string" },
+        radius: { type: "integer" },
+        holdDurationHours: { type: "integer" },
+        b2bRewardType: { type: "string" },
+        b2bRewardTitle: { type: "string" },
+        b2bRewardDescription: { type: "string" },
+        eligibilityNote: { type: "string" },
+        minOwnedZonesRequired: { type: "integer" },
+        coinsPerHour: { type: "integer" },
+      },
+      required: [
+        "name",
+        "latitude",
+        "longitude",
+        "holdDurationHours",
+        "b2bRewardType",
+        "b2bRewardTitle",
+      ],
+      additionalProperties: false,
+    },
+    strict: false,
+  };
+
+  const systemInstruction = `You create draft B2B location-based raid campaigns for RAIDR mobile game.
+Return realistic coordinates when the user mentions a place. holdDurationHours must be 24, 48, or 72.
+b2bRewardType must be DIGITAL_COUPON, PHYSICAL, or CASH. This is a draft only — never imply it is live.`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: systemInstruction },
+      { role: "user", content: prompt },
+    ],
+    response_format: { type: "json_schema", json_schema: schema },
+  });
+
+  const text = response.choices[0].message.content;
+  return JSON.parse(text);
+};

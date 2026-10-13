@@ -21,7 +21,11 @@ import {
     UpdateFCM,
     agreeSafetyWarning
 } from '../controllers/user.js';
-
+import {
+    getNotificationPreferences,
+    updateNotificationPreferences,
+} from '../controllers/userNotificationPreferences.js';
+ 
 //middlewares
 import { verifyUser } from '../middlewares/verifyUser.js';
 
@@ -44,5 +48,7 @@ router.patch('/update-photo-url' , updateAvatarUrl);
 router.patch("/update-location",UpdateLocation);
 router.patch('/update-fcm' , UpdateFCM);
 router.post('/agree-safety', agreeSafetyWarning);
+router.get('/notification-preferences', getNotificationPreferences);
+router.patch('/notification-preferences', updateNotificationPreferences);
 
 export default router;

@@ -17,6 +17,7 @@ import DashboardRoutes from "./Merchant/dashboard.js"
 import PaymentRoutes from "./Merchant/payment.js"
 import MerchantEventRoutes from "./Merchant/event.js"
 import MerchantCoinRushRoutes from "./Merchant/coinRush.js"
+import MerchantSinglePlayerRoutes from "./Merchant/singlePlayer.js"
 
 //Admin
 import AdminStoreRoutes from "./Admin/store.js"
@@ -35,6 +36,7 @@ router.use("/merchant/dashboard",DashboardRoutes);
 router.use('/merchant/payments', PaymentRoutes);
 router.use('/merchant/events', MerchantEventRoutes);
 router.use('/merchant/coin-rush', MerchantCoinRushRoutes);
+router.use('/merchant/single-player', MerchantSinglePlayerRoutes);
 router.use('/merchant',MerchantRoutes);
 
 

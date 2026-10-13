@@ -2,6 +2,10 @@ import { prisma } from '../config/db.js';
 import { publishEventStatusChanged, publishCommanderMessage } from '../sockets/eventPublisher.js';
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
 import { sendNotification } from '../utils/Notification.js';
+import {
+    notifyUserIfAllowed,
+    SP_NOTIFICATION_CATEGORIES,
+} from '../utils/singlePlayerNotify.js';
 import { calculateRadiusForUserLiveEvent } from '../utils/methods/methods.js';
 
 export const startEventStatusCron = () => {
@@ -149,10 +153,13 @@ export const startEventStatusCron = () => {
 
             for (const event of coinRush20Mins) {
                 for (const part of event.participants) {
-                    if (part.user.fcmToken) {
-                        sendNotification(part.user.fcmToken, "⏳ Coin Rush Starts Soon!", `"${event.title}" begins in 20 minutes. Warm up and get ready to collect coins!`)
-                            .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${part.user.id}:`, err));
-                    }
+                    await notifyUserIfAllowed(
+                        prisma,
+                        part.userId,
+                        SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
+                        "⏳ Coin Rush Starts Soon!",
+                        `"${event.title}" begins in 20 minutes. Warm up and get ready to collect coins!`
+                    );
                 }
             }
 
@@ -177,8 +184,13 @@ export const startEventStatusCron = () => {
                     const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.centerLat, event.centerLng, 600);
                     for (const user of nearbyUsers) {
                         if (!participantIds.includes(user.id)) {
-                            sendNotification(user.fcmToken, "🪙 Coin Rush in 10 Minutes!", `"${event.title}" is starting soon. Join now and race to collect coins!`)
-                                .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${user.id}:`, err));
+                            await notifyUserIfAllowed(
+                                prisma,
+                                user.id,
+                                SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
+                                "🪙 Coin Rush in 10 Minutes!",
+                                `"${event.title}" is starting soon. Join now and race to collect coins!`
+                            );
                         }
                     }
                 }
@@ -214,8 +226,13 @@ export const startEventStatusCron = () => {
                     if (event.centerLat && event.centerLng) {
                         const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.centerLat, event.centerLng, 600);
                         for (const user of nearbyUsers) {
-                            sendNotification(user.fcmToken, "🪙 Coin Rush Is Live!", `"${event.title}" has started! Race to hit checkpoints and grab the reward before anyone else!`)
-                                .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${user.id}:`, err));
+                            await notifyUserIfAllowed(
+                                prisma,
+                                user.id,
+                                SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
+                                "🪙 Coin Rush Is Live!",
+                                `"${event.title}" has started! Race to hit checkpoints and grab the reward before anyone else!`
+                            );
                         }
                     }
                 }

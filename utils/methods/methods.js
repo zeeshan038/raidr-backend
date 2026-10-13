@@ -352,15 +352,12 @@ export const isSameCountryOrClose = (lat1, lon1, lat2, lon2) => {
     });
 };
 
-/** Single-player raid zone: user holds it with an active shield. */
-export const userControlsSinglePlayerZone = (zone, userId, now = new Date()) => {
+/** Single-player raid zone: user is the current owner (Phase 2 — ownership persists after shield). */
+export const userControlsSinglePlayerZone = (zone, userId) => {
     if (!userId || !zone?.currentOwnerId || zone.currentOwnerId !== userId) {
         return false;
     }
-    if (!zone.shieldExpiresAt) {
-        return true;
-    }
-    return new Date(zone.shieldExpiresAt) > now;
+    return true;
 };
 
 /**
@@ -407,7 +404,6 @@ export const buildSinglePlayerZoneMapWhere = ({ userId, coords, radiusMeters, no
         userId ?
             {
                 currentOwnerId: userId,
-                shieldExpiresAt: { gt: now },
             }
             : null;
 

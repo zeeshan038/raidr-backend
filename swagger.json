@@ -1071,6 +1071,721 @@
             }
           }
         ]
+      },
+      "CaptureTimeBreakdown": {
+        "type": "object",
+        "properties": {
+          "baseSec": {
+            "type": "integer",
+            "example": 30
+          },
+          "ownershipDefenseSec": {
+            "type": "integer",
+            "example": 20
+          },
+          "guardPenaltySec": {
+            "type": "integer",
+            "example": 90
+          },
+          "guardCount": {
+            "type": "integer",
+            "example": 3
+          }
+        }
+      },
+      "B2bHoldProgress": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "holdDurationHours": {
+            "type": "number",
+            "example": 72
+          },
+          "holdElapsedHours": {
+            "type": "number",
+            "example": 32
+          },
+          "holdComplete": {
+            "type": "boolean",
+            "example": false
+          },
+          "holdStartedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "progressPercent": {
+            "type": "integer",
+            "example": 44
+          },
+          "holdRemainingSeconds": {
+            "type": "integer",
+            "example": 144000
+          }
+        }
+      },
+      "SinglePlayerB2bBlock": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "rewardType": {
+            "type": "string",
+            "enum": [
+              "DIGITAL_COUPON",
+              "PHYSICAL",
+              "CASH"
+            ]
+          },
+          "rewardTitle": {
+            "type": "string"
+          },
+          "rewardDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "hold": {
+            "$ref": "#/components/schemas/B2bHoldProgress"
+          },
+          "canClaim": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ZoneOwnerSummary": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SinglePlayerZoneFormatted": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "string"
+          },
+          "radius": {
+            "type": "integer"
+          },
+          "coinsPerHour": {
+            "type": "integer"
+          },
+          "zoneType": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "B2B"
+            ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandLogoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentOwnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "shieldExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "ownedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "guardCount": {
+            "type": "integer"
+          },
+          "maxGuardsPerZone": {
+            "type": "integer",
+            "example": 5
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "conquered_by_me",
+              "conquered_by_others"
+            ]
+          },
+          "mapPinType": {
+            "type": "string",
+            "enum": [
+              "YOUR_ZONE",
+              "NEUTRAL",
+              "B2B",
+              "VULNERABLE",
+              "ENEMY_SHIELDED"
+            ]
+          },
+          "isShieldActive": {
+            "type": "boolean"
+          },
+          "isAttackable": {
+            "type": "boolean"
+          },
+          "captureTimeSec": {
+            "type": "integer"
+          },
+          "defenseBonusSec": {
+            "type": "integer"
+          },
+          "captureTimeBreakdown": {
+            "$ref": "#/components/schemas/CaptureTimeBreakdown"
+          },
+          "minOwnedZonesRequired": {
+            "type": "integer",
+            "nullable": true
+          },
+          "eligibilityNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "meetsEligibility": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "b2b": {
+            "$ref": "#/components/schemas/SinglePlayerB2bBlock"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/ZoneOwnerSummary"
+          }
+        }
+      },
+      "SinglePlayerGameConfigUser": {
+        "type": "object",
+        "properties": {
+          "baseCaptureTimeSec": {
+            "type": "integer",
+            "example": 30
+          },
+          "shieldDurationMin": {
+            "type": "integer",
+            "example": 60
+          },
+          "ownershipDefenseSecPerDay": {
+            "type": "integer",
+            "example": 10
+          },
+          "secondsPerGuard": {
+            "type": "integer",
+            "example": 30
+          },
+          "maxGuardsPerZone": {
+            "type": "integer",
+            "example": 5
+          },
+          "guardPurchaseCoinPrice": {
+            "type": "integer",
+            "example": 100
+          },
+          "guardEliminationCoinPrice": {
+            "type": "integer",
+            "example": 50
+          },
+          "empireVipMinOwnedZones": {
+            "type": "integer",
+            "example": 5
+          },
+          "vipRewardMultiplier": {
+            "type": "number",
+            "example": 1
+          },
+          "maxOwnedZonesPerPlayer": {
+            "type": "integer",
+            "nullable": true,
+            "example": 5
+          },
+          "shieldWarningMinutesBefore": {
+            "type": "integer",
+            "example": 15
+          },
+          "rivalryMilestoneHours": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              24,
+              48
+            ]
+          },
+          "allowedHoldDurationHours": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              24,
+              48,
+              72
+            ]
+          }
+        }
+      },
+      "SinglePlayerDashboardBlock": {
+        "type": "object",
+        "properties": {
+          "ownedZonesCount": {
+            "type": "integer"
+          },
+          "maxOwnedZonesPerPlayer": {
+            "type": "integer",
+            "nullable": true
+          },
+          "empireVipMinOwnedZones": {
+            "type": "integer"
+          },
+          "isVip": {
+            "type": "boolean"
+          },
+          "vipRewardMultiplier": {
+            "type": "number"
+          },
+          "passiveIncomePerHour": {
+            "type": "number"
+          },
+          "daysUntilNextRareDrop": {
+            "type": "integer"
+          }
+        }
+      },
+      "GuardQuantityRequest": {
+        "type": "object",
+        "required": [
+          "quantity"
+        ],
+        "properties": {
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          }
+        }
+      },
+      "CaptureLocationRequest": {
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "example": 40.7829
+          },
+          "longitude": {
+            "type": "number",
+            "example": -73.9654
+          }
+        }
+      },
+      "StoreItemUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "itemType": {
+            "type": "string",
+            "enum": [
+              "AVATAR",
+              "GUARD"
+            ]
+          },
+          "frontUrl": {
+            "type": "string"
+          },
+          "backUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "integer"
+          },
+          "guardsPerPurchase": {
+            "type": "integer"
+          },
+          "isNew": {
+            "type": "boolean"
+          },
+          "isFeatured": {
+            "type": "boolean"
+          },
+          "isOwned": {
+            "type": "boolean"
+          }
+        }
+      },
+      "StorePurchaseRequest": {
+        "type": "object",
+        "properties": {
+          "storeItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "avatarId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Legacy alias for storeItemId"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          }
+        }
+      },
+      "UserNotificationPreference": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "masterEnabled": {
+            "type": "boolean"
+          },
+          "dailyDropReminders": {
+            "type": "boolean"
+          },
+          "rareDropAlerts": {
+            "type": "boolean"
+          },
+          "raidZoneShield": {
+            "type": "boolean"
+          },
+          "zoneAttackSnatch": {
+            "type": "boolean"
+          },
+          "b2bRivalryNearby": {
+            "type": "boolean"
+          },
+          "rewardsVoucher": {
+            "type": "boolean"
+          },
+          "eventsCoinRush": {
+            "type": "boolean"
+          },
+          "promotionalSponsored": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SinglePlayerB2bClaim": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "zoneId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "holdStartedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rewardType": {
+            "type": "string",
+            "enum": [
+              "DIGITAL_COUPON",
+              "PHYSICAL",
+              "CASH"
+            ]
+          },
+          "rewardTitle": {
+            "type": "string"
+          },
+          "rewardDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "isRedeemed": {
+            "type": "boolean"
+          },
+          "redeemedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "zone": {
+            "$ref": "#/components/schemas/B2bClaimZoneSummary"
+          }
+        }
+      },
+      "CommercialVoucherDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "sponsorName": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "redemptionCode": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UserVoucherDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "voucherId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isRedeemed": {
+            "type": "boolean"
+          },
+          "redeemedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "voucher": {
+            "$ref": "#/components/schemas/CommercialVoucherDto"
+          }
+        }
+      },
+      "DailyDropDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "isCollected": {
+            "type": "boolean"
+          },
+          "isRare": {
+            "type": "boolean"
+          },
+          "rewardType": {
+            "type": "string",
+            "example": "100_COINS"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "distanceMeters": {
+            "type": "integer",
+            "description": "Present on dashboard dailyDrop only"
+          },
+          "isNewlySpawned": {
+            "type": "boolean",
+            "description": "Present on dashboard dailyDrop only"
+          }
+        }
+      },
+      "B2bClaimZoneSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "McDonald's Raid"
+          },
+          "b2bRewardImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandLogoUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DailyDropCollectReward": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "COINS",
+              "BOOST",
+              "INSTANT_CAPTURE",
+              "AVATAR",
+              "VOUCHER"
+            ]
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "multiplier": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "frontUrl": {
+            "type": "string"
+          },
+          "backUrl": {
+            "type": "string"
+          },
+          "redemptionCode": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sponsor": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "SponsoredThemeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "latitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "radius": {
+            "type": "integer",
+            "nullable": true
+          },
+          "mapOverlayUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SinglePlayerHistoryBundle": {
+        "type": "object",
+        "properties": {
+          "dailyDrops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyDropDto"
+            }
+          },
+          "rareDrops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyDropDto"
+            }
+          },
+          "raidZones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SinglePlayerZoneFormatted"
+            }
+          }
+        }
       }
     }
   },
@@ -1080,7 +1795,7 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Get all single player zones",
+        "summary": "List single player zones (map / My Raid Zones)",
         "security": [
           {
             "bearerAuth": []
@@ -1090,41 +1805,64 @@
           {
             "name": "page",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "integer",
               "default": 1
-            },
-            "description": "Page number"
+            }
           },
           {
             "name": "limit",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "integer",
               "default": 10
-            },
-            "description": "Number of items per page"
+            }
           },
           {
             "name": "status",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "string",
               "enum": [
+                "available",
                 "conquered_by_me",
-                "conquered_by_others",
-                "available"
+                "conquered_by_others"
               ]
+            }
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
             },
-            "description": "Filter zones by status"
+            "description": "User GPS"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Zones fetched successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -1137,89 +1875,131 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "example": "123e4567-e89b-12d3-a456-426614174000"
-                          },
-                          "name": {
-                            "type": "string",
-                            "example": "Central Park Zone"
-                          },
-                          "latitude": {
-                            "type": "string",
-                            "example": "40.7812"
-                          },
-                          "longitude": {
-                            "type": "string",
-                            "example": "-73.9665"
-                          },
-                          "radius": {
-                            "type": "integer",
-                            "example": 50
-                          },
-                          "color": {
-                            "type": "string",
-                            "example": "#FF0000"
-                          },
-                          "status": {
-                            "type": "string",
-                            "example": "conquered_by_me",
-                            "enum": [
-                              "conquered_by_me",
-                              "conquered_by_others",
-                              "available"
-                            ]
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
+                        "$ref": "#/components/schemas/SinglePlayerZoneFormatted"
                       }
                     },
                     "pagination": {
                       "type": "object",
                       "properties": {
                         "total": {
-                          "type": "integer",
-                          "example": 54
+                          "type": "integer"
                         },
                         "page": {
-                          "type": "integer",
-                          "example": 1
+                          "type": "integer"
                         },
                         "limit": {
-                          "type": "integer",
-                          "example": 10
+                          "type": "integer"
                         },
                         "totalPages": {
-                          "type": "integer",
-                          "example": 6
+                          "type": "integer"
                         }
                       }
                     }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                      "name": "Postman Test Zone",
+                      "latitude": "40.7829",
+                      "longitude": "-73.9654",
+                      "radius": 80,
+                      "coinsPerHour": 30,
+                      "zoneType": "NORMAL",
+                      "guardCount": 2,
+                      "maxGuardsPerZone": 5,
+                      "status": "conquered_by_me",
+                      "mapPinType": "YOUR_ZONE",
+                      "isShieldActive": true,
+                      "isAttackable": false,
+                      "captureTimeSec": 110,
+                      "defenseBonusSec": 80,
+                      "captureTimeBreakdown": {
+                        "baseSec": 30,
+                        "ownershipDefenseSec": 20,
+                        "guardPenaltySec": 60,
+                        "guardCount": 2
+                      },
+                      "b2b": null
+                    }
+                  ],
+                  "pagination": {
+                    "total": 1,
+                    "page": 1,
+                    "limit": 10,
+                    "totalPages": 1
                   }
                 }
               }
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal server error"
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/single-player/zones/{id}/capture/start": {
-      "post": {
+    "/single-player/zones/{id}": {
+      "get": {
         "tags": [
           "Single Player"
         ],
-        "summary": "Start capturing a zone",
+        "summary": "Get one zone (detail refresh)",
         "security": [
           {
             "bearerAuth": []
@@ -1231,7 +2011,178 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zone detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SinglePlayerZoneFormatted"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                    "name": "Postman Test Zone",
+                    "latitude": "40.7829",
+                    "longitude": "-73.9654",
+                    "radius": 80,
+                    "coinsPerHour": 30,
+                    "zoneType": "NORMAL",
+                    "guardCount": 2,
+                    "maxGuardsPerZone": 5,
+                    "status": "conquered_by_others",
+                    "mapPinType": "VULNERABLE",
+                    "isShieldActive": true,
+                    "isAttackable": true,
+                    "captureTimeSec": 110,
+                    "defenseBonusSec": 80,
+                    "captureTimeBreakdown": {
+                      "baseSec": 30,
+                      "ownershipDefenseSec": 20,
+                      "guardPenaltySec": 60,
+                      "guardCount": 2
+                    },
+                    "b2b": null
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Zone not found or not visible on map",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Zone not found"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Zone not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/start": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Start hold-to-capture / snatch",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1240,24 +2191,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "latitude": {
-                    "type": "number",
-                    "example": 40.7829
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "example": -73.9654
-                  }
-                }
+                "$ref": "#/components/schemas/CaptureLocationRequest"
+              },
+              "example": {
+                "latitude": 40.7829,
+                "longitude": -73.9654
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Capture started",
             "content": {
               "application/json": {
                 "schema": {
@@ -1272,54 +2217,219 @@
                       "example": "Capture started"
                     },
                     "captureTimeSec": {
-                      "type": "number",
-                      "example": 30
+                      "type": "integer"
+                    },
+                    "captureTimeBreakdown": {
+                      "$ref": "#/components/schemas/CaptureTimeBreakdown"
+                    },
+                    "distanceMeters": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completesAfter": {
+                      "type": "string",
+                      "format": "date-time"
                     }
                   }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Capture started",
+                  "captureTimeSec": 200,
+                  "captureTimeBreakdown": {
+                    "baseSec": 30,
+                    "ownershipDefenseSec": 20,
+                    "guardPenaltySec": 150,
+                    "guardCount": 5
+                  },
+                  "distanceMeters": 18,
+                  "startedAt": "2026-10-12T12:00:00.000Z",
+                  "completesAfter": "2026-10-12T12:03:20.000Z"
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request (e.g. Too far away)",
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "You must be within 50m of the zone."
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "You must be within 50m of the zone."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You can own at most 5 zones."
+                    },
+                    "ownedZonesCount": {
+                      "type": "integer",
+                      "example": 5
+                    },
+                    "maxOwnedZonesPerPlayer": {
+                      "type": "integer",
+                      "example": 5
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "You can own at most 5 zones.",
+                  "ownedZonesCount": 5,
+                  "maxOwnedZonesPerPlayer": 5
                 }
               }
             }
           },
           "404": {
-            "description": "Zone not found",
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Zone not found or inactive"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Zone not found or inactive"
                 }
               }
             }
           },
           "500": {
-            "description": "Server error",
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/cancel": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Cancel capture attempt",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled",
             "content": {
               "application/json": {
                 "schema": {
@@ -1327,12 +2437,73 @@
                   "properties": {
                     "status": {
                       "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Capture cancelled"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Capture cancelled"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Not authorized, token failed"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -1345,7 +2516,7 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Complete capturing a zone",
+        "summary": "Complete capture after timer",
         "security": [
           {
             "bearerAuth": []
@@ -1357,7 +2528,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1366,24 +2538,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "latitude": {
-                    "type": "number",
-                    "example": 40.7829
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "example": -73.9654
-                  }
-                }
+                "$ref": "#/components/schemas/CaptureLocationRequest"
+              },
+              "example": {
+                "latitude": 40.7829,
+                "longitude": -73.9654
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Capture complete",
             "content": {
               "application/json": {
                 "schema": {
@@ -1394,52 +2560,150 @@
                       "example": true
                     },
                     "msg": {
-                      "type": "string",
-                      "example": "Zone captured successfully"
+                      "type": "string"
                     },
                     "shieldExpiresAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "ownedAt": {
+                      "type": "string",
+                      "format": "date-time"
                     }
                   }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Zone captured successfully",
+                  "shieldExpiresAt": "2026-10-12T13:00:00.000Z",
+                  "ownedAt": "2026-10-12T12:00:00.000Z"
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request (e.g. Capture time not met)",
+            "description": "Timer not met",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Capture time not met. Hold position until the timer completes."
+                    },
+                    "remainingSec": {
+                      "type": "integer",
+                      "example": 12
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Capture time not met. Hold position until the timer completes.",
+                  "remainingSec": 12
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Zone cap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You can own at most 5 zones."
+                    },
+                    "ownedZonesCount": {
+                      "type": "integer",
+                      "example": 5
+                    },
+                    "maxOwnedZonesPerPlayer": {
+                      "type": "integer",
+                      "example": 5
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "You can own at most 5 zones.",
+                  "ownedZonesCount": 5,
+                  "maxOwnedZonesPerPlayer": 5
                 }
               }
             }
           },
           "500": {
-            "description": "Server error",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Something went wrong"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -1452,7 +2716,7 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Spawn or get today's daily drop",
+        "summary": "Get or spawn today's daily drop",
         "security": [
           {
             "bearerAuth": []
@@ -1463,22 +2727,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "latitude": {
-                    "type": "number"
-                  },
-                  "longitude": {
-                    "type": "number"
-                  }
-                }
+                "$ref": "#/components/schemas/CaptureLocationRequest"
+              },
+              "example": {
+                "latitude": 40.7829,
+                "longitude": -73.9654
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Returned existing drop",
+            "description": "Existing drop for today",
             "content": {
               "application/json": {
                 "schema": {
@@ -1489,38 +2749,26 @@
                       "example": true
                     },
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "userId": {
-                          "type": "string"
-                        },
-                        "latitude": {
-                          "type": "number"
-                        },
-                        "longitude": {
-                          "type": "number"
-                        },
-                        "isCollected": {
-                          "type": "boolean"
-                        },
-                        "isRare": {
-                          "type": "boolean"
-                        },
-                        "rewardType": {
-                          "type": "string"
-                        }
-                      }
+                      "$ref": "#/components/schemas/DailyDropDto"
                     }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "id": "uuid",
+                    "latitude": 40.783,
+                    "longitude": -73.966,
+                    "isCollected": false,
+                    "isRare": false,
+                    "rewardType": "100_COINS"
                   }
                 }
               }
             }
           },
           "201": {
-            "description": "Created new drop",
+            "description": "New drop spawned",
             "content": {
               "application/json": {
                 "schema": {
@@ -1531,74 +2779,106 @@
                       "example": true
                     },
                     "msg": {
-                      "type": "string",
-                      "example": "New daily drop spawned"
+                      "type": "string"
                     },
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "userId": {
-                          "type": "string"
-                        },
-                        "latitude": {
-                          "type": "number"
-                        },
-                        "longitude": {
-                          "type": "number"
-                        },
-                        "isCollected": {
-                          "type": "boolean"
-                        },
-                        "isRare": {
-                          "type": "boolean"
-                        },
-                        "rewardType": {
-                          "type": "string"
-                        }
-                      }
+                      "$ref": "#/components/schemas/DailyDropDto"
                     }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "New daily drop spawned",
+                  "data": {
+                    "id": "uuid",
+                    "isRare": true,
+                    "rewardType": "2X_BOOST_24H",
+                    "isCollected": false
                   }
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Latitude and longitude are required"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Latitude and longitude are required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
                 }
               }
             }
           },
           "500": {
-            "description": "Server error",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Something went wrong"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -1611,7 +2891,7 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Collect daily drop",
+        "summary": "Collect daily drop within range",
         "security": [
           {
             "bearerAuth": []
@@ -1623,9 +2903,15 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "dropId",
+                  "latitude",
+                  "longitude"
+                ],
                 "properties": {
                   "dropId": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "uuid"
                   },
                   "latitude": {
                     "type": "number"
@@ -1634,13 +2920,18 @@
                     "type": "number"
                   }
                 }
+              },
+              "example": {
+                "dropId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                "latitude": 40.7829,
+                "longitude": -73.9654
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Collected",
             "content": {
               "application/json": {
                 "schema": {
@@ -1651,96 +2942,160 @@
                       "example": true
                     },
                     "msg": {
-                      "type": "string",
-                      "example": "You found 100 Coins!"
+                      "type": "string"
                     },
                     "rewardData": {
-                      "type": "object",
-                      "nullable": true,
-                      "description": "Details about the reward. Shape varies by reward type (e.g. COINS, BOOST, INSTANT_CAPTURE, AVATAR, VOUCHER). For AVATAR, it includes frontUrl and backUrl (no avatarId).",
-                      "example": {
-                        "type": "BOOST",
-                        "multiplier": 2,
-                        "expiresAt": "2026-09-23T16:59:00.000Z"
-                      }
+                      "$ref": "#/components/schemas/DailyDropCollectReward"
                     }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "You found 100 Coins!",
+                  "rewardData": {
+                    "type": "COINS",
+                    "amount": 100
                   }
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request (e.g. Too far away or Already collected)",
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Too far away to collect. Distance: 120.00m"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Too far away to collect. Distance: 120.00m"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
                 }
               }
             }
           },
           "403": {
-            "description": "Forbidden (Not your drop)",
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Not your drop"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not your drop"
                 }
               }
             }
           },
           "404": {
-            "description": "Drop not found",
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Drop not found"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Drop not found"
                 }
               }
             }
           },
           "500": {
-            "description": "Server error",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Something went wrong"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -1753,15 +3108,32 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Get active sponsored theme",
+        "summary": "Active sponsored theme",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "User latitude if theme is geo-fenced"
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Theme (data null if none or out of range)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1771,79 +3143,85 @@
                       "type": "boolean",
                       "example": true
                     },
-                    "data": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "startDate": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "endDate": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "dropImageUrl": {
-                          "type": "string"
-                        },
-                        "zoneImageUrl": {
-                          "type": "string"
-                        },
-                        "mapLogoUrl": {
-                          "type": "string"
-                        }
-                      }
-                    },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/SponsoredThemeDto"
+                        }
+                      ],
+                      "nullable": true
                     }
                   }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "No active theme",
+                  "data": null
                 }
               }
             }
           },
-          "500": {
-            "description": "Server error",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Not authorized, token failed"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "name": "lat",
-            "in": "query",
-            "description": "Latitude of the user",
-            "required": false,
-            "type": "number"
-          },
-          {
-            "name": "lng",
-            "in": "query",
-            "description": "Longitude of the user",
-            "required": false,
-            "type": "number"
-          }
-        ]
+        }
       }
     },
     "/single-player/history": {
@@ -1851,7 +3229,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Get player history",
+        "summary": "Single player history",
+        "description": "Without type: returns { dailyDrops, rareDrops, raidZones }. With type query, data is an array of that type only.",
         "security": [
           {
             "bearerAuth": []
@@ -1861,16 +3240,19 @@
           {
             "name": "type",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "string"
-            },
-            "description": "Type of history (dailyDrops, rareDrops, raidZones)"
+              "type": "string",
+              "enum": [
+                "dailyDrops",
+                "rareDrops",
+                "raidZones"
+              ]
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "History",
             "content": {
               "application/json": {
                 "schema": {
@@ -1881,78 +3263,123 @@
                       "example": true
                     },
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "dailyDrops": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/SinglePlayerHistoryBundle"
+                        },
+                        {
                           "type": "array",
                           "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "rewardType": {
-                                "type": "string"
-                              },
-                              "createdAt": {
-                                "type": "string"
-                              }
-                            }
+                            "$ref": "#/components/schemas/DailyDropDto"
                           }
                         },
-                        "rareDrops": {
+                        {
                           "type": "array",
                           "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "rewardType": {
-                                "type": "string"
-                              },
-                              "createdAt": {
-                                "type": "string"
-                              }
-                            }
-                          }
-                        },
-                        "raidZones": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              }
-                            }
+                            "$ref": "#/components/schemas/SinglePlayerZoneFormatted"
                           }
                         }
-                      }
+                      ]
                     }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "dailyDrops": [
+                      {
+                        "id": "uuid",
+                        "isCollected": true,
+                        "isRare": false,
+                        "rewardType": "100_COINS",
+                        "latitude": 40.78,
+                        "longitude": -73.96
+                      }
+                    ],
+                    "rareDrops": [],
+                    "raidZones": [
+                      {
+                        "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                        "name": "Postman Test Zone",
+                        "latitude": "40.7829",
+                        "longitude": "-73.9654",
+                        "radius": 80,
+                        "coinsPerHour": 30,
+                        "zoneType": "NORMAL",
+                        "guardCount": 2,
+                        "maxGuardsPerZone": 5,
+                        "status": "conquered_by_me",
+                        "mapPinType": "YOUR_ZONE",
+                        "isShieldActive": true,
+                        "isAttackable": false,
+                        "captureTimeSec": 110,
+                        "defenseBonusSec": 80,
+                        "captureTimeBreakdown": {
+                          "baseSec": 30,
+                          "ownershipDefenseSec": 20,
+                          "guardPenaltySec": 60,
+                          "guardCount": 2
+                        },
+                        "b2b": null
+                      }
+                    ]
                   }
                 }
               }
             }
           },
-          "500": {
-            "description": "Server error",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Not authorized, token failed"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -1965,7 +3392,7 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Get aggregate dashboard data",
+        "summary": "Map dashboard (stats, zones, daily drop)",
         "security": [
           {
             "bearerAuth": []
@@ -1978,8 +3405,7 @@
             "required": true,
             "schema": {
               "type": "number"
-            },
-            "description": "User's current latitude"
+            }
           },
           {
             "name": "longitude",
@@ -1987,13 +3413,19 @@
             "required": true,
             "schema": {
               "type": "number"
-            },
-            "description": "User's current longitude"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Dashboard loaded",
             "content": {
               "application/json": {
                 "schema": {
@@ -2007,153 +3439,150 @@
                       "type": "object",
                       "properties": {
                         "dashboard": {
-                          "type": "object",
-                          "properties": {
-                            "ownedZonesCount": {
-                              "type": "integer"
-                            },
-                            "maxZonesCount": {
-                              "type": "integer"
-                            },
-                            "passiveIncomePerHour": {
-                              "type": "number"
-                            },
-                            "daysUntilNextRareDrop": {
-                              "type": "integer"
-                            }
-                          }
+                          "$ref": "#/components/schemas/SinglePlayerDashboardBlock"
                         },
                         "dailyDrop": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string"
-                            },
-                            "userId": {
-                              "type": "string"
-                            },
-                            "latitude": {
-                              "type": "number"
-                            },
-                            "longitude": {
-                              "type": "number"
-                            },
-                            "isCollected": {
-                              "type": "boolean"
-                            },
-                            "isRare": {
-                              "type": "boolean"
-                            },
-                            "createdAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            },
-                            "updatedAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            },
-                            "distanceMeters": {
-                              "type": "number"
-                            },
-                            "isNewlySpawned": {
-                              "type": "boolean"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/DailyDropDto"
                             }
-                          }
+                          ],
+                          "nullable": true
                         },
                         "zones": {
                           "type": "array",
                           "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              },
-                              "latitude": {
-                                "type": "number"
-                              },
-                              "longitude": {
-                                "type": "number"
-                              },
-                              "radius": {
-                                "type": "number"
-                              },
-                              "isActive": {
-                                "type": "boolean"
-                              },
-                              "coinsPerHour": {
-                                "type": "number"
-                              },
-                              "imageUrl": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "currentOwnerId": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "shieldExpiresAt": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "isConquered": {
-                                "type": "boolean"
-                              },
-                              "status": {
-                                "type": "string",
-                                "enum": [
-                                  "available",
-                                  "conquered_by_me",
-                                  "conquered_by_others"
-                                ],
-                                "example": "available"
-                              }
-                            }
+                            "$ref": "#/components/schemas/SinglePlayerZoneFormatted"
                           }
                         }
                       }
                     }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "dashboard": {
+                      "ownedZonesCount": 2,
+                      "maxOwnedZonesPerPlayer": 5,
+                      "passiveIncomePerHour": 120,
+                      "isVip": false,
+                      "empireVipMinOwnedZones": 5,
+                      "vipRewardMultiplier": 1,
+                      "daysUntilNextRareDrop": 3
+                    },
+                    "dailyDrop": null,
+                    "zones": [
+                      {
+                        "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                        "name": "Postman Test Zone",
+                        "latitude": "40.7829",
+                        "longitude": "-73.9654",
+                        "radius": 80,
+                        "coinsPerHour": 30,
+                        "zoneType": "NORMAL",
+                        "guardCount": 2,
+                        "maxGuardsPerZone": 5,
+                        "status": "conquered_by_me",
+                        "mapPinType": "YOUR_ZONE",
+                        "isShieldActive": true,
+                        "isAttackable": false,
+                        "captureTimeSec": 110,
+                        "defenseBonusSec": 80,
+                        "captureTimeBreakdown": {
+                          "baseSec": 30,
+                          "ownershipDefenseSec": 20,
+                          "guardPenaltySec": 60,
+                          "guardCount": 2
+                        },
+                        "b2b": null
+                      }
+                    ]
                   }
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request (Missing lat/lng)",
+            "description": "Missing query params",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Latitude and longitude are required in query params"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Latitude and longitude are required in query params"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
                 }
               }
             }
           },
           "500": {
-            "description": "Server error",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Something went wrong"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -2166,7 +3595,7 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Get user's collected commercial vouchers",
+        "summary": "User commercial vouchers (from rare drops / campaigns)",
         "security": [
           {
             "bearerAuth": []
@@ -2174,7 +3603,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Vouchers list (empty array if none collected)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2187,68 +3616,87 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "isRedeemed": {
-                            "type": "boolean"
-                          },
-                          "redeemedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "voucher": {
-                            "type": "object",
-                            "properties": {
-                              "title": {
-                                "type": "string"
-                              },
-                              "description": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "sponsorName": {
-                                "type": "string"
-                              },
-                              "imageUrl": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "redemptionCode": {
-                                "type": "string"
-                              }
-                            }
-                          }
-                        }
+                        "$ref": "#/components/schemas/UserVoucherDto"
                       }
                     }
                   }
+                },
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                      "userId": "user-uuid",
+                      "voucherId": "voucher-uuid",
+                      "isRedeemed": false,
+                      "redeemedAt": null,
+                      "createdAt": "2026-10-12T10:00:00.000Z",
+                      "voucher": {
+                        "id": "voucher-uuid",
+                        "title": "Free Coffee & Pastry",
+                        "description": "Valid at participating locations",
+                        "sponsorName": "Local Cafe",
+                        "imageUrl": "https://example.com/logo.png",
+                        "redemptionCode": "CAFE-2026"
+                      }
+                    }
+                  ]
                 }
               }
             }
           },
-          "500": {
-            "description": "Server error",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Not authorized, token failed"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -5042,7 +6490,7 @@
         "tags": [
           "Store"
         ],
-        "summary": "Get all store avatars",
+        "summary": "List store items (avatars and guard products)",
         "security": [
           {
             "bearerAuth": []
@@ -5052,7 +6500,6 @@
           {
             "name": "page",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "integer",
               "default": 1
@@ -5061,66 +6508,49 @@
           {
             "name": "limit",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "integer",
               "default": 10
             }
+          },
+          {
+            "name": "itemType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AVATAR",
+                "GUARD"
+              ]
+            },
+            "description": "Use GUARD for single-player store tab"
           }
         ],
         "responses": {
           "200": {
-            "description": "Store avatars fetched successfully",
+            "description": "Store items",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "status": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     },
                     "msg": {
                       "type": "string"
                     },
+                    "coins": {
+                      "type": "integer"
+                    },
+                    "spGuardInventory": {
+                      "type": "integer"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "frontUrl": {
-                            "type": "string"
-                          },
-                          "backUrl": {
-                            "type": "string"
-                          },
-                          "price": {
-                            "type": "integer"
-                          },
-                          "isNew": {
-                            "type": "boolean"
-                          },
-                          "isFeatured": {
-                            "type": "boolean"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "isOwned": {
-                            "type": "boolean"
-                          }
-                        }
+                        "$ref": "#/components/schemas/StoreItemUser"
                       }
                     },
                     "pagination": {
@@ -5144,142 +6574,84 @@
                 },
                 "example": {
                   "status": true,
-                  "msg": "Store avatars fetched successfully",
-                  "coins": 350,
+                  "msg": "Store items fetched successfully",
+                  "coins": 2450,
+                  "spGuardInventory": 7,
                   "data": [
                     {
-                      "id": "32df5609-0792-4f91-bd30-eed126879fb8",
-                      "name": "Khan Ali Night Fighter   ",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_back.png",
+                      "id": "uuid",
+                      "name": "RAIDR Guard",
+                      "itemType": "GUARD",
                       "price": 50,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T12:00:12.305Z",
-                      "updatedAt": "2026-07-07T12:00:12.305Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "64c1ee88-5ed8-4931-8a4f-9539768f980c",
-                      "name": "Muddassir Night Fighter   ",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/4_back.png",
-                      "price": 10,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:59:32.680Z",
-                      "updatedAt": "2026-07-07T11:59:32.680Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "ad650466-f439-4773-99d6-c8e6820301a5",
-                      "name": "Sheikh molana muddasir qadri   ",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/3_back.png",
-                      "price": 15000,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:58:25.991Z",
-                      "updatedAt": "2026-07-07T11:58:25.991Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "2f96a53a-4f19-4830-bca9-79c58a454291",
-                      "name": "Muddassir Avatar ",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 15000,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:57:11.877Z",
-                      "updatedAt": "2026-07-07T11:57:11.877Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "e9df1517-51b7-4ea8-a069-688fe9accf6e",
-                      "name": "Fire Knight Avatar",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 150,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:43:43.429Z",
-                      "updatedAt": "2026-07-07T11:43:43.429Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "b76cbf3b-b866-426c-8bfa-d1c02c7e70cb",
-                      "name": "Fire Knight Avatar",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 150,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:43:41.465Z",
-                      "updatedAt": "2026-07-07T11:43:41.465Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "5294d5ac-ddeb-48fa-ab05-00eee270879a",
-                      "name": "Fire Knight Avatar",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 150,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:43:39.196Z",
-                      "updatedAt": "2026-07-07T11:43:39.196Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "8b300683-1e2d-43e6-9054-995284376c5d",
-                      "name": "Fire Knight Avatar",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 150,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:43:38.430Z",
-                      "updatedAt": "2026-07-07T11:43:38.430Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "cbbe96cb-7c7c-4847-876a-2e591b6591d0",
-                      "name": "Fire Knight Avatar",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 150,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:43:37.579Z",
-                      "updatedAt": "2026-07-07T11:43:37.579Z",
-                      "isOwned": false
-                    },
-                    {
-                      "id": "f58fc456-6892-4c32-bb1d-b27ae571fdbd",
-                      "name": "Fire Knight Avatar",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 150,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-07T11:43:36.146Z",
-                      "updatedAt": "2026-07-07T11:43:36.146Z",
+                      "guardsPerPurchase": 1,
                       "isOwned": false
                     }
                   ],
                   "pagination": {
                     "page": 1,
                     "limit": 10,
-                    "total": 29,
-                    "hasNextPage": true
+                    "total": 1,
+                    "hasNextPage": false
                   }
                 }
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
           }
         }
       }
@@ -5419,7 +6791,7 @@
         "tags": [
           "Store"
         ],
-        "summary": "Purchase an avatar",
+        "summary": "Purchase avatar or guard product",
         "security": [
           {
             "bearerAuth": []
@@ -5430,30 +6802,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "avatarId"
-                ],
-                "properties": {
-                  "avatarId": {
-                    "type": "string",
-                    "format": "uuid"
-                  }
-                }
+                "$ref": "#/components/schemas/StorePurchaseRequest"
+              },
+              "example": {
+                "storeItemId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                "quantity": 1
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Avatar purchased successfully",
+            "description": "Purchase success",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "status": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     },
                     "msg": {
                       "type": "string"
@@ -5461,61 +6829,20 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "avatar": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "name": {
-                              "type": "string"
-                            },
-                            "frontUrl": {
-                              "type": "string"
-                            },
-                            "backUrl": {
-                              "type": "string"
-                            },
-                            "price": {
-                              "type": "integer"
-                            },
-                            "isNew": {
-                              "type": "boolean"
-                            },
-                            "isFeatured": {
-                              "type": "boolean"
-                            },
-                            "createdAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            },
-                            "updatedAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            }
-                          }
+                        "item": {
+                          "$ref": "#/components/schemas/StoreItemUser"
                         },
-                        "ownedAvatar": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "userId": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "storeId": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "createdAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            }
-                          }
+                        "quantity": {
+                          "type": "integer"
+                        },
+                        "guardsAdded": {
+                          "type": "integer"
+                        },
+                        "raidrCoins": {
+                          "type": "integer"
+                        },
+                        "spGuardInventory": {
+                          "type": "integer"
                         }
                       }
                     }
@@ -5523,41 +6850,128 @@
                 },
                 "example": {
                   "status": true,
-                  "msg": "Avatar purchased successfully",
+                  "msg": "Guards purchased successfully",
                   "data": {
-                    "avatar": {
-                      "id": "00c41f0e-fa63-47de-a225-379bb6c0629f",
-                      "name": "Fire Knight Avatar",
-                      "frontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_front.png",
-                      "backUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/2_back.png",
-                      "price": 150,
-                      "isNew": true,
-                      "isFeatured": false,
-                      "createdAt": "2026-07-06T19:10:03.447Z",
-                      "updatedAt": "2026-07-06T19:10:03.447Z"
-                    },
-                    "ownedAvatar": {
-                      "id": "30965998-2803-47d9-aa15-8f69c7d57ff8",
-                      "userId": "e4abf66a-a5ce-48ae-827a-fe814cc525c6",
-                      "storeId": "00c41f0e-fa63-47de-a225-379bb6c0629f",
-                      "createdAt": "2026-07-06T19:41:33.361Z"
-                    }
+                    "quantity": 1,
+                    "guardsAdded": 1,
+                    "raidrCoins": 2400,
+                    "spGuardInventory": 8
                   }
                 }
               }
             }
           },
           "400": {
-            "description": "Insufficient balance"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Insufficient balance"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Insufficient balance"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
           },
           "404": {
-            "description": "Avatar or User not found"
-          },
-          "409": {
-            "description": "You already own this avatar"
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Store item not found"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Store item not found"
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
           }
         }
       }
@@ -5885,6 +7299,80 @@
         "responses": {
           "200": {
             "description": "Avatar created successfully"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/store/create-guard": {
+      "post": {
+        "tags": [
+          "Admin Store"
+        ],
+        "summary": "Create Guard store product",
+        "description": "Create a Guard product for the RAIDR Store (Single Player). Users buy via POST /store/purchase.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Standard Guard"
+                  },
+                  "frontUrl": {
+                    "type": "string",
+                    "example": "https://example.com/guard-icon.png"
+                  },
+                  "backUrl": {
+                    "type": "string",
+                    "example": "https://example.com/guard-icon.png"
+                  },
+                  "price": {
+                    "type": "integer",
+                    "example": 100
+                  },
+                  "guardsPerPurchase": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "isFeatured": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "isNew": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "isStoreActive": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                },
+                "required": [
+                  "name",
+                  "frontUrl",
+                  "price"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Guard product created"
           },
           "400": {
             "description": "Validation error"
@@ -8490,6 +9978,2268 @@
           }
         }
       }
+    },
+    "/single-player/game-config": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Gameplay constants for mobile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SinglePlayerGameConfigUser"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "baseCaptureTimeSec": 30,
+                    "shieldDurationMin": 60,
+                    "ownershipDefenseSecPerDay": 10,
+                    "secondsPerGuard": 30,
+                    "maxGuardsPerZone": 5,
+                    "guardPurchaseCoinPrice": 100,
+                    "guardEliminationCoinPrice": 50,
+                    "empireVipMinOwnedZones": 5,
+                    "vipRewardMultiplier": 1,
+                    "maxOwnedZonesPerPlayer": 5,
+                    "shieldWarningMinutesBefore": 15,
+                    "rivalryMilestoneHours": [
+                      24,
+                      48
+                    ],
+                    "allowedHoldDurationHours": [
+                      24,
+                      48,
+                      72
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/empire": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Empire / VIP from owned zone count",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Empire status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ownedZonesCount": {
+                          "type": "integer"
+                        },
+                        "empireVipMinOwnedZones": {
+                          "type": "integer"
+                        },
+                        "isVip": {
+                          "type": "boolean"
+                        },
+                        "vipRewardMultiplier": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "ownedZonesCount": 2,
+                    "empireVipMinOwnedZones": 5,
+                    "isVip": false,
+                    "vipRewardMultiplier": 1
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/guards/inventory": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Guard inventory and config prices",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "inventory": {
+                          "type": "integer"
+                        },
+                        "raidrCoins": {
+                          "type": "integer"
+                        },
+                        "guardPurchaseCoinPrice": {
+                          "type": "integer"
+                        },
+                        "guardEliminationCoinPrice": {
+                          "type": "integer"
+                        },
+                        "maxGuardsPerZone": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "inventory": 7,
+                    "raidrCoins": 2450,
+                    "guardPurchaseCoinPrice": 100,
+                    "guardEliminationCoinPrice": 50,
+                    "maxGuardsPerZone": 5
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/guards/purchase": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Deprecated — use Store GUARD purchase",
+        "deprecated": true,
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Endpoint removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "storeItemsPath": {
+                      "type": "string"
+                    },
+                    "storePurchasePath": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Guard purchase moved to the Store. Use GET /api/store/all-items?itemType=GUARD and POST /api/store/purchase.",
+                  "storeItemsPath": "/api/store/all-items?itemType=GUARD",
+                  "storePurchasePath": "/api/store/purchase"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/guards/assign": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Assign guards from inventory to owned zone",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardQuantityRequest"
+              },
+              "example": {
+                "quantity": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guards updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "zoneId": {
+                          "type": "string"
+                        },
+                        "guardCount": {
+                          "type": "integer"
+                        },
+                        "inventory": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Guards assigned to zone",
+                  "data": {
+                    "zoneId": "uuid",
+                    "guardCount": 3,
+                    "inventory": 6
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not enough guards in inventory"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not enough guards in inventory"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You must own this zone to assign guards"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "You must own this zone to assign guards"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Zone not found or inactive"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Zone not found or inactive"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/guards/unassign": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Return guards from zone to inventory",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardQuantityRequest"
+              },
+              "example": {
+                "quantity": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guards returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "zoneId": {
+                          "type": "string"
+                        },
+                        "guardCount": {
+                          "type": "integer"
+                        },
+                        "inventory": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Guards returned to inventory",
+                  "data": {
+                    "zoneId": "uuid",
+                    "guardCount": 2,
+                    "inventory": 8
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Zone does not have that many guards"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Zone does not have that many guards"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You must own this zone to assign guards"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "You must own this zone to assign guards"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Zone not found or inactive"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Zone not found or inactive"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/ping": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Ping during capture (stay in radius)",
+        "description": "Call every few seconds while the player holds snatch. Server checks GPS is still inside zone radius and returns remaining capture time. If the player leaves the radius, returns 400 with cancelled: true and clears the Redis capture session.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureLocationRequest"
+              },
+              "example": {
+                "latitude": 40.7829,
+                "longitude": -73.9654
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Still in radius",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "inRadius": {
+                      "type": "boolean"
+                    },
+                    "remainingSec": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "inRadius": true,
+                  "remainingSec": 45
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Capture cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Left zone radius — capture cancelled."
+                    },
+                    "cancelled": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Left zone radius — capture cancelled.",
+                  "cancelled": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/eliminate-guards": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Eliminate guards during capture (AR)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                  }
+                }
+              },
+              "example": {
+                "count": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guard eliminated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "guardsEliminated": {
+                          "type": "integer"
+                        },
+                        "coinsSpent": {
+                          "type": "integer"
+                        },
+                        "zoneGuardCount": {
+                          "type": "integer"
+                        },
+                        "captureTimeSec": {
+                          "type": "integer"
+                        },
+                        "raidrCoins": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Guards eliminated",
+                  "data": {
+                    "guardsEliminated": 1,
+                    "coinsSpent": 50,
+                    "zoneGuardCount": 4,
+                    "captureTimeSec": 170,
+                    "raidrCoins": 2400
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Insufficient RAIDR Coins"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Insufficient RAIDR Coins"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/b2b/claim": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Claim B2B reward after hold complete",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Claim created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SinglePlayerB2bClaim"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "B2B reward claimed successfully",
+                  "data": {
+                    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "userId": "user-uuid",
+                    "zoneId": "zone-uuid",
+                    "holdStartedAt": "2026-10-10T08:00:00.000Z",
+                    "rewardType": "PHYSICAL",
+                    "rewardTitle": "Meal Voucher",
+                    "rewardDescription": "Redeem at participating restaurant",
+                    "claimCode": "RAIDR-MEAL2026",
+                    "isRedeemed": false,
+                    "redeemedAt": null,
+                    "createdAt": "2026-10-12T14:00:00.000Z",
+                    "zone": {
+                      "id": "zone-uuid",
+                      "name": "McDonald's Raid",
+                      "b2bRewardImageUrl": "https://example.com/meal.png",
+                      "brandLogoUrl": "https://example.com/m.png"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Hold incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Hold requirement not complete yet"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/B2bHoldProgress"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Hold requirement not complete yet",
+                  "data": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "You must own this zone to claim"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "You must own this zone to claim"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "B2B zone not found"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "B2B zone not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Reward already claimed for this hold streak"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Reward already claimed for this hold streak"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/b2b/claims": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "List my B2B claims",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Claims list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SinglePlayerB2bClaim"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                      "userId": "user-uuid",
+                      "zoneId": "zone-uuid",
+                      "holdStartedAt": "2026-10-10T08:00:00.000Z",
+                      "rewardType": "PHYSICAL",
+                      "rewardTitle": "Meal Voucher",
+                      "rewardDescription": "Redeem at participating restaurant",
+                      "claimCode": "RAIDR-MEAL2026",
+                      "isRedeemed": false,
+                      "redeemedAt": null,
+                      "createdAt": "2026-10-12T14:00:00.000Z",
+                      "zone": {
+                        "id": "zone-uuid",
+                        "name": "McDonald's Raid",
+                        "b2bRewardImageUrl": "https://example.com/meal.png",
+                        "brandLogoUrl": "https://example.com/m.png"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/b2b/claims/{claimId}/redeem": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Mark B2B claim redeemed",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "claimId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Redeemed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SinglePlayerB2bClaim"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Claim marked as redeemed",
+                  "data": {
+                    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "userId": "user-uuid",
+                    "zoneId": "zone-uuid",
+                    "holdStartedAt": "2026-10-10T08:00:00.000Z",
+                    "rewardType": "PHYSICAL",
+                    "rewardTitle": "Meal Voucher",
+                    "rewardDescription": "Redeem at participating restaurant",
+                    "claimCode": "RAIDR-MEAL2026",
+                    "isRedeemed": true,
+                    "redeemedAt": "2026-10-12T16:00:00.000Z",
+                    "createdAt": "2026-10-12T14:00:00.000Z",
+                    "zone": {
+                      "id": "zone-uuid",
+                      "name": "McDonald's Raid",
+                      "b2bRewardImageUrl": "https://example.com/meal.png",
+                      "brandLogoUrl": "https://example.com/m.png"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Already redeemed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Already redeemed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Claim not found"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Claim not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/notification-preferences": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get notification preferences",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserNotificationPreference"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "userId": "uuid",
+                    "masterEnabled": true,
+                    "zoneAttackSnatch": true
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Update notification preferences",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "masterEnabled": {
+                    "type": "boolean"
+                  },
+                  "dailyDropReminders": {
+                    "type": "boolean"
+                  },
+                  "rareDropAlerts": {
+                    "type": "boolean"
+                  },
+                  "raidZoneShield": {
+                    "type": "boolean"
+                  },
+                  "zoneAttackSnatch": {
+                    "type": "boolean"
+                  },
+                  "b2bRivalryNearby": {
+                    "type": "boolean"
+                  },
+                  "rewardsVoucher": {
+                    "type": "boolean"
+                  },
+                  "eventsCoinRush": {
+                    "type": "boolean"
+                  },
+                  "promotionalSponsored": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Notification preferences updated"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserNotificationPreference"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Notification preferences updated",
+                  "data": {
+                    "masterEnabled": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Invalid preference payload"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Invalid preference payload"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/single-player/config": {
+      "get": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Get Phase 2 game config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Update game config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "maxOwnedZonesPerPlayer": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "baseCaptureTimeSec": {
+                    "type": "integer"
+                  },
+                  "secondsPerGuard": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          }
+        }
+      }
+    },
+    "/admin/single-player/b2b/pending": {
+      "get": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "List pending B2B zones",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/admin/single-player/b2b/{id}/approve": {
+      "post": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Approve merchant B2B zone",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved"
+          }
+        }
+      }
+    },
+    "/admin/single-player/b2b/{id}/reject": {
+      "post": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Reject merchant B2B zone",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rejected"
+          }
+        }
+      }
+    },
+    "/admin/single-player/b2b/ai-draft": {
+      "post": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "AI draft for B2B campaign copy",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/merchant/single-player/b2b-zones": {
+      "get": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "List merchant B2B zones",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "Submit B2B zone for approval",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Submitted"
+          }
+        }
+      }
+    },
+    "/merchant/single-player/b2b-zones/{id}": {
+      "put": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "Update pending B2B zone",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "404": {
+            "description": "Not pending or not found"
+          }
+        }
+      }
+    },
+    "/merchant/single-player/b2b-zones/ai-draft": {
+      "post": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "AI draft for B2B zone",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
     }
   },
   "/admin/sponsored-theme": {
@@ -8831,5 +12581,15 @@
         }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Admin Single Player",
+      "description": "Single Player Phase 2 — Admin Single Player"
+    },
+    {
+      "name": "Merchant Single Player",
+      "description": "Single Player Phase 2 — Merchant Single Player"
+    }
+  ]
 }

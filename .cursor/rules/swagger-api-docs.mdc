@@ -1,0 +1,23 @@
+---
+description: Keep OpenAPI in sync when adding or changing API endpoints
+globs: swagger.json,controllers/**/*.js,routes/**/*.js
+alwaysApply: false
+---
+
+# Swagger documentation (RAIDR backend)
+
+OpenAPI lives in **`swagger.json`** at the repo root. Served via `swagger-ui-express` in `index.js` (typically under `/api` docs path).
+
+After adding or changing routes:
+
+1. Update **`swagger.json`** with path, method, request body, success response (no empty `{}` placeholders), and error statuses.
+2. Paths are relative to the API mount (e.g. `/single-player/zones`, not missing the router prefix used in `routes/index.js` → `app.use('/api', Routes)`).
+
+Document each endpoint with:
+
+1. **Path & method** — Exact URL and HTTP verb as exposed to clients (`POST /single-player/...` in spec = `POST /api/single-player/...` in app).
+2. **Request body** — Required and optional fields with types.
+3. **Success response** — Full JSON shape (`status`, `msg`, `data`, etc.).
+4. **Errors** — 400, 401, 404, 500 with representative bodies.
+
+Optional: `npm run swagger` runs `node swagger-setup.js` if that script exists; this repo often edits `swagger.json` directly.
