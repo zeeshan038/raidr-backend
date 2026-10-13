@@ -17,5 +17,7 @@ RUN npx prisma generate
 EXPOSE 5001
 EXPOSE 3001
 
-# Start the server
-CMD ["npm", "start"]
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+CMD ["/usr/local/bin/docker-entrypoint.sh"]
