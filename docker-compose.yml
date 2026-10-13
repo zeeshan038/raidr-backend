@@ -11,6 +11,8 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
+      # Override .env host IP so the API uses the compose Postgres service
+      - DATABASE_URL=postgresql://raidr_user:raidr_password@postgres:5432/raidr_db
     depends_on:
       postgres:
         condition: service_healthy
