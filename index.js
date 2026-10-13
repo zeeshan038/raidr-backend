@@ -6,6 +6,9 @@ import { startCleanupCron } from "./cron/cleanupTrips.js";
 import { startEventStatusCron } from "./cron/Events.js";
 import { startPassiveCoinsCron } from "./cron/passiveCoins.js";
 import { startResetZonesCron } from "./cron/resetZones.js";
+import { startSinglePlayerRivalryCron } from "./cron/singlePlayerRivalry.js";
+import { startSinglePlayerShieldCron } from "./cron/singlePlayerShield.js";
+import { startDailyDropReminderCron } from "./cron/dailyDropReminder.js";
 import "./config/firebase.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
@@ -65,6 +68,9 @@ startCleanupCron();
 startEventStatusCron();
 startPassiveCoinsCron();
 startResetZonesCron();
+startSinglePlayerRivalryCron();
+startSinglePlayerShieldCron();
+startDailyDropReminderCron();
 
 // Live tracking / WebSockets — isolated so a uWS failure cannot take down HTTP API
 const initializeLiveTracking = async () => {

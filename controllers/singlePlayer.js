@@ -9,10 +9,61 @@ import {
   userControlsSinglePlayerZone,
   buildSinglePlayerZoneMapWhere,
 } from "../utils/methods/methods.js";
+import {
+  captureAttemptRedisKey,
+  computeCaptureTimeBreakdown,
+  computeRequiredCaptureSeconds,
+  formatSinglePlayerZoneForClient,
+  isZoneAttackable,
+  userOwnsSinglePlayerZone,
+} from "../utils/singlePlayerZone.js";
+import {
+  getSpGameConfig,
+  gameplayFromConfig,
+  userVisibleZoneFilter,
+} from "../utils/singlePlayerConfig.js";
+import { parseJsonIntArray } from "../utils/configJson.js";
+import {
+  countOwnedZones,
+  getEmpireStatus,
+  userAtOwnedZoneCap,
+  userMeetsZoneEligibility,
+} from "../utils/singlePlayerEmpire.js";
+import {
+  notifyUserIfAllowed,
+  SP_NOTIFICATION_CATEGORIES,
+} from "../utils/singlePlayerNotify.js";
+import {
+  clearZoneAttackers,
+  normalizeCaptureAttempt,
+  registerZoneAttacker,
+  unregisterZoneAttacker,
+} from "../utils/singlePlayerCapture.js";
+import { publishZoneCaptureStartedToOwner } from "../sockets/singlePlayerPublisher.js";
 
-// Constants
-const DEFAULT_CAPTURE_TIME_SEC = 30;
-const DEFAULT_SHIELD_DURATION_MIN = 60;
+const CAPTURE_SESSION_BUFFER_SEC = 120;
+
+/**
+ * @Description Get gameplay constants for the mobile app (capture, guards, shields)
+ * @Route GET /api/single-player/game-config
+ * @Access Private
+ */
+export const getGameConfigForUser = async (_req, res) => {
+  try {
+    const configRow = await getSpGameConfig(prisma);
+    const config = gameplayFromConfig(configRow);
+    res.status(200).json({
+      status: true,
+      data: {
+        ...config,
+        rivalryMilestoneHours: parseJsonIntArray(configRow.rivalryMilestoneHours, [24, 48]),
+        allowedHoldDurationHours: parseJsonIntArray(configRow.allowedHoldDurationHours, [24, 48, 72]),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
 
 /**
  * @Description Get all active single player zones
@@ -28,19 +79,37 @@ export const getZones = async (req, res) => {
   const now = new Date();
 
   try {
+    const configRow = await getSpGameConfig(prisma);
+    const gameplay = gameplayFromConfig(configRow);
+
     syncUserLocationFromRequest(req);
     const coords = resolveMapCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
     const city = req.query.city ? String(req.query.city).trim() : null;
 
+    const mapDiscoveryStatuses = new Set([
+      undefined,
+      "available",
+      "conquered_by_others",
+    ]);
+    if (
+      mapDiscoveryStatuses.has(status) &&
+      (coords?.lat == null || coords?.lng == null)
+    ) {
+      return res.status(400).json({
+        status: false,
+        msg:
+          "latitude and longitude query params are required to discover nearby zones (including approved B2B). Use status=conquered_by_me to list only your owned zones without GPS.",
+      });
+    }
+
     let whereClause;
 
     if (userId && status === "conquered_by_me") {
-      // All zones you control — anywhere on the map
+      // All zones you own — anywhere on the map
       whereClause = {
         isActive: true,
         currentOwnerId: userId,
-        shieldExpiresAt: { gt: now },
       };
     } else {
       whereClause = buildSinglePlayerZoneMapWhere({
@@ -56,23 +125,16 @@ export const getZones = async (req, res) => {
             whereClause,
             { currentOwnerId: { not: null } },
             { currentOwnerId: { not: userId } },
-            { shieldExpiresAt: { gt: now } },
           ],
         };
       } else if (status === "available") {
         whereClause = {
-          AND: [
-            whereClause,
-            {
-              OR: [
-                { currentOwnerId: null },
-                { shieldExpiresAt: { lte: now } },
-              ],
-            },
-          ],
+          AND: [whereClause, { currentOwnerId: null }],
         };
       }
     }
+
+    whereClause = { AND: [userVisibleZoneFilter, whereClause] };
 
     const candidateZones = await prisma.singlePlayerZone.findMany({
       where: whereClause,
@@ -95,25 +157,11 @@ export const getZones = async (req, res) => {
     const totalZones = visibleZones.length;
     const zones = visibleZones.slice(skip, skip + limit);
 
-    const processedZones = zones.map(zone => {
-      let zoneStatus = 'available';
-      const isShieldExpired = zone.shieldExpiresAt && new Date(zone.shieldExpiresAt) <= now;
+    const ownedZonesCount = userId ? await countOwnedZones(prisma, userId) : null;
 
-      if (userId && zone.currentOwnerId && !isShieldExpired) {
-        if (zone.currentOwnerId === userId) {
-          zoneStatus = 'conquered_by_me';
-        } else {
-          zoneStatus = 'conquered_by_others';
-        }
-      }
-
-      return {
-        ...zone,
-        currentOwnerId: isShieldExpired ? null : zone.currentOwnerId,
-        shieldExpiresAt: isShieldExpired ? null : zone.shieldExpiresAt,
-        status: zoneStatus
-      };
-    });
+    const processedZones = zones.map((zone) =>
+      formatSinglePlayerZoneForClient(zone, userId, now, gameplay, ownedZonesCount)
+    );
 
     res.status(200).json({
       status: true,
@@ -133,6 +181,333 @@ export const getZones = async (req, res) => {
   }
 };
 
+/**
+ * @Description Get a single zone by id (detail / refresh for map, manage guards, B2B)
+ * @Route GET /api/single-player/zones/:id
+ * @Access Private
+ */
+export const getZoneById = async (req, res) => {
+  const { id: zoneId } = req.params;
+  const userId = req.user?.id;
+  const now = new Date();
+
+  try {
+    const [zone, configRow] = await Promise.all([
+      prisma.singlePlayerZone.findFirst({
+        where: {
+          id: zoneId,
+          ...userVisibleZoneFilter,
+        },
+        include: {
+          owner: {
+            select: { id: true, name: true, photoUrl: true },
+          },
+        },
+      }),
+      getSpGameConfig(prisma),
+    ]);
+    const gameplay = gameplayFromConfig(configRow);
+
+    if (!zone) {
+      return res.status(404).json({ status: false, msg: "Zone not found" });
+    }
+
+    const ownsZone = userId && userOwnsSinglePlayerZone(zone, userId);
+
+    if (!ownsZone && userId) {
+      syncUserLocationFromRequest(req);
+      const coords = resolveMapCoordinates(req);
+      const radiusMeters = getDiscoveryRadiusMeters(req);
+      const city = req.query.city ? String(req.query.city).trim() : null;
+      const visibilityOpts = { coords, radiusMeters, city, userId, now };
+      if (
+        coords?.lat != null &&
+        coords?.lng != null &&
+        !shouldShowSinglePlayerZoneOnMap(zone, visibilityOpts)
+      ) {
+        return res.status(404).json({ status: false, msg: "Zone not found" });
+      }
+    }
+
+    const ownedZonesCount = userId ? await countOwnedZones(prisma, userId) : null;
+    const data = formatSinglePlayerZoneForClient(
+      zone,
+      userId,
+      now,
+      gameplay,
+      ownedZonesCount
+    );
+
+    res.status(200).json({ status: true, data });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+const validateCaptureLocation = (zone, latitude, longitude) => {
+  const distance = haversineDistance(
+    parseFloat(zone.latitude),
+    parseFloat(zone.longitude),
+    parseFloat(latitude),
+    parseFloat(longitude)
+  );
+  if (distance > zone.radius) {
+    return {
+      ok: false,
+      msg: `You must be within ${zone.radius}m of the zone.`,
+    };
+  }
+  return { ok: true };
+};
+
+const resolveShieldDurationMin = async (userId) => {
+  const [user, configRow] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
+    getSpGameConfig(prisma),
+  ]);
+  let shieldDurationMin = gameplayFromConfig(configRow).shieldDurationMin;
+  if (user?.selectedAvatarId) {
+    const avatar = await prisma.store.findUnique({ where: { id: user.selectedAvatarId } });
+    if (avatar?.spShieldDurationMin) {
+      shieldDurationMin = avatar.spShieldDurationMin;
+    }
+  }
+  return shieldDurationMin;
+};
+
+/**
+ * @Description Start a hold-to-capture / snatch attempt (server returns required duration)
+ * @Route POST /api/single-player/zones/:id/capture/start
+ * @Access Private
+ */
+export const startCapture = async (req, res) => {
+  const { id: zoneId } = req.params;
+  const { latitude, longitude } = req.body;
+  const userId = req.user.id;
+  const now = new Date();
+
+  try {
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({
+        status: false,
+        msg: "Latitude and longitude are required",
+      });
+    }
+
+    const [zone, configRow] = await Promise.all([
+      prisma.singlePlayerZone.findUnique({ where: { id: zoneId } }),
+      getSpGameConfig(prisma),
+    ]);
+    const gameplay = gameplayFromConfig(configRow);
+
+    if (!zone || !zone.isActive) {
+      return res.status(404).json({
+        status: false,
+        msg: "Zone not found or inactive",
+      });
+    }
+
+    if (zone.zoneType === "B2B" && zone.approvalStatus !== "approved") {
+      return res.status(400).json({ status: false, msg: "This zone is not available yet." });
+    }
+
+    if (userOwnsSinglePlayerZone(zone, userId)) {
+      return res.status(400).json({
+        status: false,
+        msg: "You already own this zone.",
+      });
+    }
+
+    if (!isZoneAttackable(zone, now)) {
+      return res.status(400).json({
+        status: false,
+        msg: "Zone is currently shielded by another player.",
+      });
+    }
+
+    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
+    if (!locationCheck.ok) {
+      return res.status(400).json({ status: false, msg: locationCheck.msg });
+    }
+
+    const ownedCount = await countOwnedZones(prisma, userId);
+    if (!userMeetsZoneEligibility(ownedCount, zone)) {
+      return res.status(403).json({
+        status: false,
+        msg: `This campaign requires owning at least ${zone.minOwnedZonesRequired} zones.`,
+        ownedZonesCount: ownedCount,
+      });
+    }
+
+    if (userAtOwnedZoneCap(ownedCount, gameplay.maxOwnedZonesPerPlayer)) {
+      return res.status(403).json({
+        status: false,
+        msg: `You can own at most ${gameplay.maxOwnedZonesPerPlayer} zones.`,
+        ownedZonesCount: ownedCount,
+        maxOwnedZonesPerPlayer: gameplay.maxOwnedZonesPerPlayer,
+      });
+    }
+
+    const previousOwnerId = zone.currentOwnerId;
+
+    const captureTimeSec = computeRequiredCaptureSeconds(zone, now, gameplay);
+    const captureTimeBreakdown = computeCaptureTimeBreakdown(zone, now, gameplay);
+    const distanceMeters = Math.round(
+      haversineDistance(
+        parseFloat(zone.latitude),
+        parseFloat(zone.longitude),
+        parseFloat(latitude),
+        parseFloat(longitude)
+      )
+    );
+    const startedAt = Date.now();
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    const sessionTtl = captureTimeSec + CAPTURE_SESSION_BUFFER_SEC;
+    const attempt = normalizeCaptureAttempt(
+      {
+        zoneId,
+        userId,
+        startedAt,
+        captureTimeSec,
+        targetOwnerId: zone.currentOwnerId ?? null,
+        initialGuardCount: zone.guardCount ?? 0,
+        sessionGuardsRemaining: zone.guardCount ?? 0,
+        guardsEliminatedInSession: 0,
+      },
+      zone.guardCount ?? 0
+    );
+
+    await redis.set(attemptKey, JSON.stringify(attempt), "EX", sessionTtl);
+    await registerZoneAttacker(zoneId, userId, sessionTtl);
+
+    if (previousOwnerId && previousOwnerId !== userId) {
+      await notifyUserIfAllowed(
+        prisma,
+        previousOwnerId,
+        SP_NOTIFICATION_CATEGORIES.ATTACK_SNATCH,
+        "Your zone is under attack",
+        `Someone started capturing "${zone.name}".`
+      );
+
+      const attacker = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, photoUrl: true },
+      });
+      publishZoneCaptureStartedToOwner(previousOwnerId, {
+        zoneId: zone.id,
+        zoneName: zone.name,
+        zoneGuardCount: zone.guardCount ?? 0,
+        attacker: {
+          id: attacker?.id ?? userId,
+          name: attacker?.name ?? "Player",
+          photoUrl: attacker?.photoUrl ?? null,
+        },
+        initialGuardCount: attempt.initialGuardCount,
+        at: new Date().toISOString(),
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      msg: "Capture started",
+      captureTimeSec,
+      captureTimeBreakdown,
+      distanceMeters,
+      startedAt: new Date(startedAt).toISOString(),
+      completesAfter: new Date(startedAt + captureTimeSec * 1000).toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      msg: error.message,
+    });
+  }
+};
+
+/**
+ * @Description Ping during capture — fails if player left the zone radius (auto-cancels attempt)
+ * @Route POST /api/single-player/zones/:id/capture/ping
+ * @Access Private
+ */
+export const pingCapture = async (req, res) => {
+  const { id: zoneId } = req.params;
+  const { latitude, longitude } = req.body;
+  const userId = req.user.id;
+
+  try {
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({
+        status: false,
+        msg: "Latitude and longitude are required",
+      });
+    }
+
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    const rawAttempt = await redis.get(attemptKey);
+    if (!rawAttempt) {
+      return res.status(400).json({
+        status: false,
+        msg: "No active capture attempt.",
+      });
+    }
+
+    const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
+    if (!zone) {
+      return res.status(404).json({ status: false, msg: "Zone not found" });
+    }
+
+    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
+    if (!locationCheck.ok) {
+      await redis.del(attemptKey);
+      await unregisterZoneAttacker(zoneId, userId);
+      return res.status(400).json({
+        status: false,
+        msg: "Left zone radius — capture cancelled.",
+        cancelled: true,
+      });
+    }
+
+    const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
+    const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
+    const remainingSec = Math.max(0, Math.ceil(attempt.captureTimeSec - elapsedSec));
+
+    res.status(200).json({
+      status: true,
+      inRadius: true,
+      remainingSec,
+      sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+      initialGuardCount: attempt.initialGuardCount,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+/**
+ * @Description Cancel an in-progress capture attempt
+ * @Route POST /api/single-player/zones/:id/capture/cancel
+ * @Access Private
+ */
+export const cancelCapture = async (req, res) => {
+  const { id: zoneId } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    await redis.del(attemptKey);
+    await unregisterZoneAttacker(zoneId, userId);
+
+    res.status(200).json({
+      status: true,
+      msg: "Capture cancelled",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      msg: error.message,
+    });
+  }
+};
 
 /**
  * @Description Complete capturing a zone
@@ -143,12 +518,13 @@ export const completeCapture = async (req, res) => {
   const { id: zoneId } = req.params;
   const { latitude, longitude } = req.body;
   const userId = req.user.id;
-  try {
+  const now = new Date();
 
-    if (!latitude || !longitude) {
+  try {
+    if (latitude == null || longitude == null) {
       return res.status(400).json({
         status: false,
-        msg: "Latitude and longitude are required"
+        msg: "Latitude and longitude are required",
       });
     }
 
@@ -156,65 +532,123 @@ export const completeCapture = async (req, res) => {
     if (!zone || !zone.isActive) {
       return res.status(404).json({
         status: false,
-        msg: "Zone not found or inactive"
+        msg: "Zone not found or inactive",
       });
     }
 
-    // Check if shielded
-    if (zone.shieldExpiresAt && new Date(zone.shieldExpiresAt) > new Date()) {
-      return res.status(400).json({ status: false, msg: "Zone is currently shielded by another player." });
-    }
-
-    // Fetch user and equipped avatar times for shield duration
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    let shieldDurationMin = DEFAULT_SHIELD_DURATION_MIN;
-
-    if (user && user.selectedAvatarId) {
-      const avatar = await prisma.store.findUnique({ where: { id: user.selectedAvatarId } });
-      if (avatar && avatar.spShieldDurationMin) {
-        shieldDurationMin = avatar.spShieldDurationMin;
-      }
-    }
-
-
-    const distance = haversineDistance(
-      parseFloat(zone.latitude),
-      parseFloat(zone.longitude),
-      parseFloat(latitude),
-      parseFloat(longitude)
-    );
-
-    if (distance > zone.radius) {
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    const rawAttempt = await redis.get(attemptKey);
+    if (!rawAttempt) {
       return res.status(400).json({
         status: false,
-        msg: `Capture failed. You must be within ${zone.radius}m of the zone.`
+        msg: "No active capture attempt. Start capture first.",
       });
     }
 
-    // Set shield time
+    const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
+    if (attempt.zoneId !== zoneId || attempt.userId !== userId) {
+      return res.status(400).json({
+        status: false,
+        msg: "Invalid capture attempt.",
+      });
+    }
+
+    const ownerUnchanged =
+      (attempt.targetOwnerId ?? null) === (zone.currentOwnerId ?? null);
+    if (!ownerUnchanged) {
+      return res.status(409).json({
+        status: false,
+        msg: "This zone was already captured by another player.",
+      });
+    }
+
+    if (attempt.initialGuardCount > 0 && attempt.sessionGuardsRemaining > 0) {
+      return res.status(400).json({
+        status: false,
+        msg: "You must eliminate all guards before completing capture.",
+        sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+        initialGuardCount: attempt.initialGuardCount,
+      });
+    }
+
+    if (!isZoneAttackable(zone, now)) {
+      return res.status(400).json({
+        status: false,
+        msg: "Zone is currently shielded by another player.",
+      });
+    }
+
+    const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
+    if (elapsedSec < attempt.captureTimeSec) {
+      return res.status(400).json({
+        status: false,
+        msg: "Capture time not met. Hold position until the timer completes.",
+        remainingSec: Math.ceil(attempt.captureTimeSec - elapsedSec),
+      });
+    }
+
+    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
+    if (!locationCheck.ok) {
+      return res.status(400).json({ status: false, msg: locationCheck.msg });
+    }
+
+    const [configRow, ownedCount] = await Promise.all([
+      getSpGameConfig(prisma),
+      countOwnedZones(prisma, userId),
+    ]);
+    const gameplay = gameplayFromConfig(configRow);
+    if (userAtOwnedZoneCap(ownedCount, gameplay.maxOwnedZonesPerPlayer)) {
+      return res.status(403).json({
+        status: false,
+        msg: `You can own at most ${gameplay.maxOwnedZonesPerPlayer} zones.`,
+        ownedZonesCount: ownedCount,
+        maxOwnedZonesPerPlayer: gameplay.maxOwnedZonesPerPlayer,
+      });
+    }
+
+    const previousOwnerId = zone.currentOwnerId;
+    const shieldDurationMin = await resolveShieldDurationMin(userId);
     const shieldExpiresAt = new Date(Date.now() + shieldDurationMin * 60 * 1000);
+    const ownedAt = new Date();
+    const holdStartedAt = zone.zoneType === "B2B" ? new Date() : null;
 
-    // Update zone
-    await prisma.singlePlayerZone.update({
-      where: { id: zoneId },
-      data: {
-        currentOwnerId: userId,
-        shieldExpiresAt
-      }
-    });
+    await prisma.$transaction([
+      prisma.singlePlayerZone.update({
+        where: { id: zoneId },
+        data: {
+          currentOwnerId: userId,
+          shieldExpiresAt,
+          ownedAt,
+          holdStartedAt,
+          shieldWarningSentAt: null,
+        },
+      }),
+      prisma.singlePlayerRivalryAlert.deleteMany({ where: { zoneId } }),
+    ]);
 
+    await redis.del(attemptKey);
+    await clearZoneAttackers(zoneId);
 
+    if (previousOwnerId && previousOwnerId !== userId) {
+      await notifyUserIfAllowed(
+        prisma,
+        previousOwnerId,
+        SP_NOTIFICATION_CATEGORIES.ATTACK_SNATCH,
+        "Zone snatched",
+        `You lost "${zone.name}" to another player.`
+      );
+    }
 
     res.status(200).json({
       status: true,
-      msg: "Zone captured successfully",
-      shieldExpiresAt
+      msg: previousOwnerId ? "Zone snatched successfully" : "Zone captured successfully",
+      shieldExpiresAt,
+      ownedAt,
     });
-
   } catch (error) {
     res.status(500).json({
       status: false,
-      msg: error.message
+      msg: error.message,
     });
   }
 };
@@ -279,6 +713,16 @@ export const getDailyDrop = async (req, res) => {
         rewardType
       }
     });
+
+    if (isRare) {
+      await notifyUserIfAllowed(
+        prisma,
+        userId,
+        SP_NOTIFICATION_CATEGORIES.RARE_DROP,
+        "Rare drop spawned!",
+        "A rare daily drop appeared nearby. Open the map to collect it before it's gone."
+      );
+    }
 
     res.status(201).json({ status: true, msg: "New daily drop spawned", data: dailyDrop });
   } catch (error) {
@@ -522,12 +966,15 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     syncUserLocationFromRequest(req);
 
+    const configRow = await getSpGameConfig(prisma);
+    const gameplay = gameplayFromConfig(configRow);
+
     // 1. Fetch User Data (for multiplier)
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     // 2. Fetch zones (all for passive income; map shows nearby + your controlled only)
     const allActiveZones = await prisma.singlePlayerZone.findMany({
-      where: { isActive: true },
+      where: userVisibleZoneFilter,
     });
 
     const visibilityOpts = { coords, radiusMeters, city, userId, now };
@@ -537,14 +984,18 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     // 3. Calculate Dashboard Stats (worldwide owned zones)
     const ownedZones = allActiveZones.filter((z) =>
-      userControlsSinglePlayerZone(z, userId, now)
+      userControlsSinglePlayerZone(z, userId)
     );
-    const ownedZonesCount = ownedZones.length;
+    const empire = await getEmpireStatus(prisma, userId);
+    const ownedZonesCount = empire.ownedZonesCount;
     let passiveIncome = ownedZones.reduce((sum, zone) => sum + zone.coinsPerHour, 0);
 
     const hasActiveBoost = user.coinBoostExpiresAt && new Date(user.coinBoostExpiresAt) > new Date();
     if (hasActiveBoost && user.coinBoostMultiplier) {
       passiveIncome = Math.round(passiveIncome * user.coinBoostMultiplier);
+    }
+    if (empire.isVip && empire.vipRewardMultiplier > 1) {
+      passiveIncome = Math.round(passiveIncome * empire.vipRewardMultiplier);
     }
 
     // 4. Handle Daily Drop
@@ -623,31 +1074,32 @@ export const getSinglePlayerDashboard = async (req, res) => {
         }
       });
       isNewDrop = true;
+
+      if (isRare) {
+        await notifyUserIfAllowed(
+          prisma,
+          userId,
+          SP_NOTIFICATION_CATEGORIES.RARE_DROP,
+          "Rare drop spawned!",
+          "A rare daily drop appeared nearby. Open the map to collect it before it's gone."
+        );
+      }
     }
 
     // Calculate distance to drop
     const dropDistance = haversineDistance(dailyDrop.latitude, dailyDrop.longitude, userLat, userLng);
 
-    // Add status to zones for the frontend
-    const processedZones = zones.map(zone => {
-      let status = "available";
-      const now = new Date();
-      const isShieldExpired = zone.shieldExpiresAt && new Date(zone.shieldExpiresAt) <= now;
-
-      if (zone.currentOwnerId && !isShieldExpired) {
-        if (zone.currentOwnerId === userId) {
-          status = "conquered_by_me";
-        } else {
-          status = "conquered_by_others";
-        }
-      }
-
+    const processedZones = zones.map((zone) => {
+      const formatted = formatSinglePlayerZoneForClient(
+        zone,
+        userId,
+        now,
+        gameplay,
+        ownedZonesCount
+      );
       return {
-        ...zone,
-        currentOwnerId: isShieldExpired ? null : zone.currentOwnerId,
-        shieldExpiresAt: isShieldExpired ? null : zone.shieldExpiresAt,
-        isConquered: zone.currentOwnerId === userId && !isShieldExpired,
-        status
+        ...formatted,
+        isConquered: userOwnsSinglePlayerZone(zone, userId),
       };
     });
 
@@ -674,7 +1126,10 @@ export const getSinglePlayerDashboard = async (req, res) => {
       data: {
         dashboard: {
           ownedZonesCount,
-          maxZonesCount: 5,
+          maxOwnedZonesPerPlayer: gameplay.maxOwnedZonesPerPlayer,
+          empireVipMinOwnedZones: empire.empireVipMinOwnedZones,
+          isVip: empire.isVip,
+          vipRewardMultiplier: empire.vipRewardMultiplier,
           passiveIncomePerHour: passiveIncome,
           daysUntilNextRareDrop: 3
         },

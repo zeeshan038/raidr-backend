@@ -1,0 +1,372 @@
+{
+  "/single-player/game-config": {
+    "get": {
+      "tags": ["Single Player"],
+      "summary": "Gameplay constants (capture, guards, shields, zone cap)",
+      "security": [{ "bearerAuth": [] }],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "baseCaptureTimeSec": { "type": "integer" },
+                      "maxGuardsPerZone": { "type": "integer" },
+                      "maxOwnedZonesPerPlayer": { "type": "integer", "nullable": true },
+                      "guardEliminationCoinPrice": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/single-player/empire": {
+    "get": {
+      "tags": ["Single Player"],
+      "summary": "Empire / VIP status from owned zone count",
+      "security": [{ "bearerAuth": [] }],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean" },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "ownedZonesCount": { "type": "integer" },
+                      "isVip": { "type": "boolean" },
+                      "empireVipMinOwnedZones": { "type": "integer" },
+                      "vipRewardMultiplier": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/single-player/guards/inventory": {
+    "get": {
+      "tags": ["Single Player"],
+      "summary": "Guard inventory and config prices",
+      "security": [{ "bearerAuth": [] }],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean" },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "inventory": { "type": "integer" },
+                      "raidrCoins": { "type": "integer" },
+                      "maxGuardsPerZone": { "type": "integer" },
+                      "guardEliminationCoinPrice": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/single-player/guards/purchase": {
+    "post": {
+      "tags": ["Single Player"],
+      "summary": "Deprecated — use Store GUARD purchase",
+      "deprecated": true,
+      "security": [{ "bearerAuth": [] }],
+      "responses": {
+        "410": {
+          "description": "Gone — use GET /store/all-items?itemType=GUARD and POST /store/purchase",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": false },
+                  "msg": { "type": "string" },
+                  "storePurchasePath": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/single-player/zones/{id}/guards/assign": {
+    "post": {
+      "tags": ["Single Player"],
+      "summary": "Assign guards to owned zone",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": { "quantity": { "type": "integer", "minimum": 1 } }
+            }
+          }
+        }
+      },
+      "responses": { "200": { "description": "Success" }, "400": { "description": "Bad request" } }
+    }
+  },
+  "/single-player/zones/{id}/guards/unassign": {
+    "post": {
+      "tags": ["Single Player"],
+      "summary": "Remove guards from owned zone back to inventory",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": { "quantity": { "type": "integer", "minimum": 1 } }
+            }
+          }
+        }
+      },
+      "responses": { "200": { "description": "Success" }, "400": { "description": "Bad request" } }
+    }
+  },
+  "/single-player/zones/{id}/capture/ping": {
+    "post": {
+      "tags": ["Single Player"],
+      "summary": "Ping during hold-to-capture (must stay in radius)",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["latitude", "longitude"],
+              "properties": {
+                "latitude": { "type": "number" },
+                "longitude": { "type": "number" }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean" },
+                  "inRadius": { "type": "boolean" },
+                  "remainingSec": { "type": "integer" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/single-player/zones/{id}/capture/eliminate-guards": {
+    "post": {
+      "tags": ["Single Player"],
+      "summary": "Spend coins to eliminate guards during active capture (AR)",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": { "count": { "type": "integer", "minimum": 1, "default": 1 } }
+            }
+          }
+        }
+      },
+      "responses": { "200": { "description": "Success" }, "400": { "description": "No active capture or insufficient coins" } }
+    }
+  },
+  "/single-player/zones/{id}/b2b/claim": {
+    "post": {
+      "tags": ["Single Player"],
+      "summary": "Claim B2B prize after hold duration complete",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "responses": { "200": { "description": "Claim created" }, "400": { "description": "Hold incomplete or not owner" } }
+    }
+  },
+  "/single-player/b2b/claims": {
+    "get": {
+      "tags": ["Single Player"],
+      "summary": "List my B2B reward claims",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    }
+  },
+  "/single-player/b2b/claims/{claimId}/redeem": {
+    "post": {
+      "tags": ["Single Player"],
+      "summary": "Redeem a B2B claim code",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "claimId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "responses": { "200": { "description": "Success" } }
+    }
+  },
+  "/user/notification-preferences": {
+    "get": {
+      "tags": ["User"],
+      "summary": "Get single-player notification preferences",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    },
+    "patch": {
+      "tags": ["User"],
+      "summary": "Update notification preferences",
+      "security": [{ "bearerAuth": [] }],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "masterEnabled": { "type": "boolean" },
+                "dailyDropReminders": { "type": "boolean" },
+                "rareDropAlerts": { "type": "boolean" },
+                "raidZoneShield": { "type": "boolean" },
+                "zoneAttackSnatch": { "type": "boolean" },
+                "b2bRivalryNearby": { "type": "boolean" },
+                "rewardsVoucher": { "type": "boolean" },
+                "eventsCoinRush": { "type": "boolean" },
+                "promotionalSponsored": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      },
+      "responses": { "200": { "description": "Success" } }
+    }
+  },
+  "/admin/single-player/config": {
+    "get": {
+      "tags": ["Admin Single Player"],
+      "summary": "Get Phase 2 game config",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    },
+    "put": {
+      "tags": ["Admin Single Player"],
+      "summary": "Update game config",
+      "security": [{ "bearerAuth": [] }],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "maxOwnedZonesPerPlayer": { "type": "integer", "nullable": true },
+                "baseCaptureTimeSec": { "type": "integer" },
+                "secondsPerGuard": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "responses": { "200": { "description": "Updated" } }
+    }
+  },
+  "/admin/single-player/b2b/pending": {
+    "get": {
+      "tags": ["Admin Single Player"],
+      "summary": "List pending B2B zones",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    }
+  },
+  "/admin/single-player/b2b/{id}/approve": {
+    "post": {
+      "tags": ["Admin Single Player"],
+      "summary": "Approve merchant B2B zone",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "responses": { "200": { "description": "Approved" } }
+    }
+  },
+  "/admin/single-player/b2b/{id}/reject": {
+    "post": {
+      "tags": ["Admin Single Player"],
+      "summary": "Reject merchant B2B zone",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "responses": { "200": { "description": "Rejected" } }
+    }
+  },
+  "/admin/single-player/b2b/ai-draft": {
+    "post": {
+      "tags": ["Admin Single Player"],
+      "summary": "AI draft for B2B campaign copy",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    }
+  },
+  "/merchant/single-player/b2b-zones": {
+    "get": {
+      "tags": ["Merchant Single Player"],
+      "summary": "List merchant B2B zones",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    },
+    "post": {
+      "tags": ["Merchant Single Player"],
+      "summary": "Submit B2B zone for approval",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "201": { "description": "Submitted" } }
+    }
+  },
+  "/merchant/single-player/b2b-zones/{id}": {
+    "put": {
+      "tags": ["Merchant Single Player"],
+      "summary": "Update pending B2B zone",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "responses": { "200": { "description": "Updated" }, "404": { "description": "Not pending or not found" } }
+    }
+  },
+  "/merchant/single-player/b2b-zones/ai-draft": {
+    "post": {
+      "tags": ["Merchant Single Player"],
+      "summary": "AI draft for B2B zone",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    }
+  }
+}

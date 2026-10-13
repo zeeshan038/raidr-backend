@@ -354,7 +354,7 @@ CREATE TABLE "CoinRushEvent" (
     "rewardDescription" TEXT NOT NULL DEFAULT '',
     "rewardClaimInstructions" TEXT NOT NULL DEFAULT '',
     "rewardValue" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    "winnerId" TEXT,
+    "winnersCount" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

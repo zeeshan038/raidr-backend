@@ -60,9 +60,12 @@ model User {
   ownedSinglePlayerZones SinglePlayerZone[] @relation("OwnedSinglePlayerZones")
   dailyDrops             DailyDrop[]
   userVouchers           UserVoucher[]
+  notificationPreference UserNotificationPreference?
+  singlePlayerB2bClaims  SinglePlayerB2bClaim[]
   
   coinBoostMultiplier    Float?             @default(1.0)
   coinBoostExpiresAt     DateTime?
+  spGuardInventory       Int                @default(0)
 }
 
 model BoxCollectionLog {
@@ -177,6 +180,7 @@ model Merchant {
   coinRushEvents     CoinRushEvent[]
   creditPurchases    MerchantCreditPurchase[]
   creditLogs         MerchantCreditLog[]
+  singlePlayerZones  SinglePlayerZone[]
 }
 
 model MerchantAds {
@@ -379,9 +383,12 @@ model Admin {
 model Store {
     id                  String            @id @default(uuid())
     name                String
+    itemType            String            @default("AVATAR") // AVATAR | GUARD
     frontUrl            String   
     backUrl             String    
     price               Int               @default(0)
+    guardsPerPurchase   Int               @default(1)
+    isStoreActive       Boolean           @default(true)
     isNew               Boolean           @default(false)
     isFeatured          Boolean           @default(false)
     spCaptureTimeSec    Int               @default(30)
@@ -389,6 +396,9 @@ model Store {
     createdAt           DateTime          @default(now())
     updatedAt           DateTime          @updatedAt
     owners              UserOwnedAvatar[]
+
+    @@index([itemType])
+    @@index([isStoreActive])
 }
 
 model CoinRushEvent {
@@ -530,6 +540,71 @@ model Review {
   @@index([userId])
 }
 
+model SinglePlayerGameConfig {
+  id                        String   @id @default("default")
+  baseCaptureTimeSec        Int      @default(30)
+  shieldDurationMin         Int      @default(60)
+  ownershipDefenseSecPerDay Int      @default(10)
+  secondsPerGuard           Int      @default(30)
+  maxGuardsPerZone          Int      @default(5)
+  guardPurchaseCoinPrice    Int      @default(100)
+  guardEliminationCoinPrice Int      @default(50)
+  empireVipMinOwnedZones    Int      @default(5)
+  vipRewardMultiplier       Float    @default(1.0)
+  rivalryMilestoneHours     Json     @default("[24, 48]")
+  allowedHoldDurationHours  Json     @default("[24, 48, 72]")
+  shieldWarningMinutesBefore Int     @default(15)
+  maxOwnedZonesPerPlayer    Int?     @default(5)
+  updatedAt                 DateTime @updatedAt
+}
+
+model UserNotificationPreference {
+  userId                 String  @id
+  masterEnabled          Boolean @default(true)
+  dailyDropReminders     Boolean @default(true)
+  rareDropAlerts         Boolean @default(true)
+  raidZoneShield         Boolean @default(true)
+  zoneAttackSnatch       Boolean @default(true)
+  b2bRivalryNearby       Boolean @default(true)
+  rewardsVoucher         Boolean @default(true)
+  eventsCoinRush         Boolean @default(true)
+  promotionalSponsored   Boolean @default(true)
+  updatedAt              DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SinglePlayerB2bClaim {
+  id              String   @id @default(uuid())
+  userId          String
+  zoneId          String
+  holdStartedAt   DateTime
+  rewardType      String
+  rewardTitle     String
+  rewardDescription String?
+  claimCode       String?
+  isRedeemed      Boolean  @default(false)
+  redeemedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zone SinglePlayerZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@unique([zoneId, userId, holdStartedAt])
+  @@index([userId])
+}
+
+model SinglePlayerRivalryAlert {
+  id              String   @id @default(uuid())
+  zoneId          String
+  milestoneHours  Int
+  sentAt          DateTime @default(now())
+
+  zone SinglePlayerZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@unique([zoneId, milestoneHours])
+}
+
 model SinglePlayerZone {
   id                String    @id @default(uuid())
   name              String
@@ -541,16 +616,38 @@ model SinglePlayerZone {
   isActive          Boolean   @default(true)
   coinsPerHour      Int       @default(60)
   imageUrl          String?
-  
+  zoneType          String    @default("NORMAL") // NORMAL | B2B
+  merchantId        String?
+  approvalStatus    String?   // pending | approved | rejected (B2B)
+  holdDurationHours Int?
+  b2bRewardType     String?
+  b2bRewardTitle    String?
+  b2bRewardDescription String?
+  b2bRewardImageUrl String?
+  b2bRewardRedemptionCode String?
+  brandLogoUrl      String?
+  eligibilityNote   String?
+  minOwnedZonesRequired Int?
+  holdStartedAt     DateTime?
+  shieldWarningSentAt DateTime?
+
   currentOwnerId    String?
   shieldExpiresAt   DateTime?
-  
+  ownedAt           DateTime?
+  guardCount        Int       @default(0)
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   owner             User?     @relation("OwnedSinglePlayerZones", fields: [currentOwnerId], references: [id])
-  
+  merchant          Merchant? @relation(fields: [merchantId], references: [id])
+  b2bClaims         SinglePlayerB2bClaim[]
+  rivalryAlerts     SinglePlayerRivalryAlert[]
+
   @@index([isActive])
+  @@index([merchantId])
+  @@index([approvalStatus])
+  @@index([zoneType])
 }
 
 model DailyDrop {
