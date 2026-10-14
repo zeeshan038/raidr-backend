@@ -3,7 +3,7 @@
 # Run inside API container:
 #   docker compose exec api sh scripts/baseline-prod-db.sh
 set -e
-cd /app
+cd "$(dirname "$0")/.."
 
 MIGRATIONS="
 0_init
