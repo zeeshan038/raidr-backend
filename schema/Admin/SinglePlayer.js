@@ -60,6 +60,8 @@ export const UpdateGameConfigSchema = (payload) => {
         allowedHoldDurationHours: Joi.array().items(Joi.number().integer().valid(24, 48, 72)).optional(),
         shieldWarningMinutesBefore: Joi.number().integer().min(1).optional(),
         maxOwnedZonesPerPlayer: Joi.number().integer().min(1).allow(null).optional(),
+        dailyDropXpNormal: Joi.number().integer().min(0).optional(),
+        dailyDropXpRare: Joi.number().integer().min(0).optional(),
     }).unknown(false);
 
     return schema.validate(payload);

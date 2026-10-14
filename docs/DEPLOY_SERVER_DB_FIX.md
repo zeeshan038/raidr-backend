@@ -33,6 +33,15 @@ docker compose run -d --name raidr_api_fix --service-ports --no-deps \
 # OR after pull: docker compose up -d --build
 ```
 
+## Local Mac against remote DB (P3005)
+
+```bash
+# Ensure .env DATABASE_URL reaches the server (VPN / firewall open on 5432)
+sh scripts/sync-legacy-db-migrations.sh
+npm run server
+```
+
 ## After fix
 - `DATABASE_URL` in **docker-compose** should be `@postgres:5432` (not `188.245.72.1` inside containers).
 - New images run schema SQL + non-fatal migrate in `docker-entrypoint.sh`.
+- Brand Month tables are included in `scripts/apply-single-player-schema.sql`; baseline list includes `20261014220000_brand_month_xp`.

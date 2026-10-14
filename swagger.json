@@ -1500,6 +1500,487 @@
               48,
               72
             ]
+          },
+          "dailyDropXpNormal": {
+            "type": "integer",
+            "example": 50,
+            "description": "Campaign + lifetime XP awarded on normal daily drop collect."
+          },
+          "dailyDropXpRare": {
+            "type": "integer",
+            "example": 150,
+            "description": "Campaign + lifetime XP awarded on rare daily drop collect."
+          }
+        }
+      },
+      "UserLifetimeXpProgressDto": {
+        "type": "object",
+        "description": "Returned on daily drop collect after XP award.",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "example": 6
+          },
+          "xp_earned": {
+            "type": "integer",
+            "example": 2450
+          },
+          "xp_progress": {
+            "type": "integer",
+            "example": 450
+          },
+          "nextLevel": {
+            "type": "integer",
+            "example": 7
+          },
+          "levelProgressPercent": {
+            "type": "integer",
+            "example": 75
+          },
+          "xpRequiredForNextLevel": {
+            "type": "integer",
+            "example": 3600
+          },
+          "xpRemainingForNextLevel": {
+            "type": "integer",
+            "example": 3150
+          }
+        }
+      },
+      "BrandMonthRewardPreviewDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "sponsorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "redemptionCode": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "BrandMonthPrizeDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BrandMonthRewardPreviewDto"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "userVoucherId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "claimedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "BrandMonthClientStateDto": {
+        "type": "object",
+        "description": "Player-facing Brand Month progression (dashboard, active, history).",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandLogoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "xpTarget": {
+            "type": "integer",
+            "example": 2000
+          },
+          "campaignXp": {
+            "type": "integer",
+            "example": 450
+          },
+          "xpRemaining": {
+            "type": "integer",
+            "example": 1550
+          },
+          "progressPercent": {
+            "type": "integer",
+            "example": 23
+          },
+          "inventoryRemaining": {
+            "type": "integer",
+            "example": 25
+          },
+          "inventoryTotal": {
+            "type": "integer",
+            "example": 50
+          },
+          "vouchersSoldOut": {
+            "type": "boolean"
+          },
+          "allVouchersClaimed": {
+            "type": "boolean"
+          },
+          "prizeStatus": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "CLAIMED",
+              "SOLD_OUT"
+            ]
+          },
+          "canStillWinPrize": {
+            "type": "boolean"
+          },
+          "rewardPreview": {
+            "$ref": "#/components/schemas/BrandMonthRewardPreviewDto"
+          },
+          "prize": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BrandMonthPrizeDto"
+              }
+            ],
+            "nullable": true
+          },
+          "sponsoredThemeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "BrandMonthCampaignAdminDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandLogoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "xpTarget": {
+            "type": "integer"
+          },
+          "inventoryTotal": {
+            "type": "integer"
+          },
+          "inventoryRemaining": {
+            "type": "integer"
+          },
+          "rewardType": {
+            "type": "string",
+            "enum": [
+              "INLINE",
+              "COMMERCIAL_VOUCHER"
+            ]
+          },
+          "commercialVoucherId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "rewardTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardSponsorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardRedemptionCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "sponsoredThemeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "commercialVoucher": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommercialVoucherDto"
+              }
+            ],
+            "nullable": true
+          },
+          "sponsoredTheme": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SponsoredThemeDto"
+              }
+            ],
+            "nullable": true
+          },
+          "_count": {
+            "type": "object",
+            "properties": {
+              "progress": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "CreateBrandMonthRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "startDate",
+          "endDate",
+          "xpTarget",
+          "inventoryTotal"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "McDonald's Month"
+          },
+          "description": {
+            "type": "string"
+          },
+          "brandLogoUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-01T00:00:00.000Z"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-30T23:59:59.000Z"
+          },
+          "xpTarget": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 2000
+          },
+          "inventoryTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 50,
+            "description": "FCFS grand-prize stock for this campaign."
+          },
+          "rewardType": {
+            "type": "string",
+            "enum": [
+              "INLINE",
+              "COMMERCIAL_VOUCHER"
+            ],
+            "default": "INLINE"
+          },
+          "commercialVoucherId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Required when rewardType is COMMERCIAL_VOUCHER."
+          },
+          "rewardTitle": {
+            "type": "string",
+            "description": "Required when rewardType is INLINE."
+          },
+          "rewardSponsorName": {
+            "type": "string",
+            "description": "Required when rewardType is INLINE."
+          },
+          "rewardDescription": {
+            "type": "string"
+          },
+          "rewardImageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "rewardRedemptionCode": {
+            "type": "string",
+            "example": "MCD-MEAL-2026"
+          },
+          "sponsoredThemeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "UpdateBrandMonthRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandLogoUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "xpTarget": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "inventoryTotal": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inventoryRemaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardType": {
+            "type": "string",
+            "enum": [
+              "INLINE",
+              "COMMERCIAL_VOUCHER"
+            ]
+          },
+          "commercialVoucherId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "rewardTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardSponsorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardRedemptionCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "sponsoredThemeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateCommercialVoucherRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "sponsorName",
+          "quantity"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Free Coffee"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sponsorName": {
+            "type": "string",
+            "example": "McDonald's"
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "redemptionCode": {
+            "type": "string",
+            "example": "MCD-COFFEE-001"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 100
           }
         }
       },
@@ -1734,6 +2215,21 @@
           "redemptionCode": {
             "type": "string",
             "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Catalog pool size (rare drops / reference stock)."
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -3164,6 +3660,21 @@
                     },
                     "rewardData": {
                       "$ref": "#/components/schemas/DailyDropCollectReward"
+                    },
+                    "xpAwarded": {
+                      "type": "integer",
+                      "example": 50
+                    },
+                    "lifetimeXp": {
+                      "$ref": "#/components/schemas/UserLifetimeXpProgressDto"
+                    },
+                    "brandMonth": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                        }
+                      ],
+                      "nullable": true
                     }
                   }
                 },
@@ -3173,6 +3684,26 @@
                   "rewardData": {
                     "type": "COINS",
                     "amount": 100
+                  },
+                  "xpAwarded": 50,
+                  "lifetimeXp": {
+                    "level": 6,
+                    "xp_earned": 2450,
+                    "xp_progress": 450,
+                    "nextLevel": 7,
+                    "levelProgressPercent": 13,
+                    "xpRequiredForNextLevel": 3600,
+                    "xpRemainingForNextLevel": 3150
+                  },
+                  "brandMonth": {
+                    "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                    "name": "McDonald's Month",
+                    "xpTarget": 2000,
+                    "campaignXp": 50,
+                    "inventoryRemaining": 48,
+                    "inventoryTotal": 50,
+                    "prizeStatus": "NONE",
+                    "canStillWinPrize": true
                   }
                 }
               }
@@ -3659,6 +4190,15 @@
                       "properties": {
                         "dashboard": {
                           "$ref": "#/components/schemas/SinglePlayerDashboardBlock"
+                        },
+                        "brandMonth": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                            }
+                          ],
+                          "nullable": true,
+                          "description": "Active Brand Month progression; null if no campaign in date range."
                         },
                         "dailyDrop": {
                           "allOf": [
@@ -10349,7 +10889,9 @@
                       24,
                       48,
                       72
-                    ]
+                    ],
+                    "dailyDropXpNormal": 50,
+                    "dailyDropXpRare": 150
                   }
                 }
               }
@@ -12400,6 +12942,14 @@
                   },
                   "secondsPerGuard": {
                     "type": "integer"
+                  },
+                  "dailyDropXpNormal": {
+                    "type": "integer",
+                    "example": 50
+                  },
+                  "dailyDropXpRare": {
+                    "type": "integer",
+                    "example": 150
                   }
                 }
               }
@@ -12408,7 +12958,23 @@
         },
         "responses": {
           "200": {
-            "description": "Updated"
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Game configuration updated" },
+                    "data": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
           }
         }
       }
@@ -12775,44 +13341,45 @@
         "required": true,
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "example": "Free Coffee"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "sponsorName": {
-                  "type": "string",
-                  "example": "Starbucks"
-                },
-                "imageUrl": {
-                  "type": "string"
-                },
-                "redemptionCode": {
-                  "type": "string"
-                },
-                "quantity": {
-                  "type": "number",
-                  "example": 100
-                }
-              }
+            "schema": { "$ref": "#/components/schemas/CreateCommercialVoucherRequest" },
+            "example": {
+              "title": "Free Coffee",
+              "description": "Any size",
+              "sponsorName": "McDonald's",
+              "imageUrl": "https://example.com/coffee.png",
+              "redemptionCode": "MCD-COFFEE-001",
+              "quantity": 100
             }
           }
         }
       },
       "responses": {
         "201": {
-          "description": "Voucher created successfully"
+          "description": "Voucher created successfully",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "msg": { "type": "string", "example": "Voucher created successfully" },
+                  "data": { "$ref": "#/components/schemas/CommercialVoucherDto" }
+                }
+              }
+            }
+          }
         },
         "400": {
-          "description": "Validation error"
+          "description": "Validation error",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+        },
+        "401": {
+          "description": "Unauthorized",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
         },
         "500": {
-          "description": "Server error"
+          "description": "Server error",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
         }
       }
     },
@@ -12821,6 +13388,7 @@
         "Admin - Vouchers"
       ],
       "summary": "Get all commercial vouchers",
+      "description": "Used before linking commercialVoucherId on Brand Month campaigns.",
       "security": [
         {
           "bearerAuth": []
@@ -12828,10 +13396,29 @@
       ],
       "responses": {
         "200": {
-          "description": "Success"
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/CommercialVoucherDto" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Unauthorized",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
         },
         "500": {
-          "description": "Server error"
+          "description": "Server error",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
         }
       }
     }
@@ -12929,7 +13516,321 @@
       }
     }
   },
+  "/admin/brand-months": {
+    "post": {
+      "tags": ["Admin - Brand Month"],
+      "summary": "Create Brand Month campaign",
+      "description": "Monthly season: xpTarget, FCFS inventoryRemaining (starts equal to inventoryTotal), INLINE or COMMERCIAL_VOUCHER reward.",
+      "security": [{ "bearerAuth": [] }],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/CreateBrandMonthRequest" },
+            "examples": {
+              "inlineReward": {
+                "summary": "INLINE grand prize",
+                "value": {
+                  "name": "McDonald's Month",
+                  "description": "Collect Daily Drops to earn XP!",
+                  "brandLogoUrl": "https://example.com/mcd-logo.png",
+                  "startDate": "2026-10-01T00:00:00.000Z",
+                  "endDate": "2026-11-30T23:59:59.000Z",
+                  "xpTarget": 2000,
+                  "inventoryTotal": 50,
+                  "rewardType": "INLINE",
+                  "rewardTitle": "McDonald's Meal Voucher",
+                  "rewardSponsorName": "McDonald's",
+                  "rewardRedemptionCode": "MCD-MEAL-2026",
+                  "isActive": true
+                }
+              },
+              "catalogVoucher": {
+                "summary": "COMMERCIAL_VOUCHER (create voucher first)",
+                "value": {
+                  "name": "McDonald's Month (catalog)",
+                  "startDate": "2026-10-01T00:00:00.000Z",
+                  "endDate": "2026-11-30T23:59:59.000Z",
+                  "xpTarget": 500,
+                  "inventoryTotal": 10,
+                  "rewardType": "COMMERCIAL_VOUCHER",
+                  "commercialVoucherId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                  "isActive": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Campaign created",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "msg": { "type": "string", "example": "Brand Month campaign created" },
+                  "data": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                }
+              },
+              "example": {
+                "status": true,
+                "msg": "Brand Month campaign created",
+                "data": {
+                  "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                  "name": "McDonald's Month",
+                  "xpTarget": 2000,
+                  "inventoryTotal": 50,
+                  "inventoryRemaining": 50,
+                  "rewardType": "INLINE",
+                  "isActive": true
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Validation or missing voucher/theme",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+        },
+        "401": {
+          "description": "Unauthorized",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+        },
+        "500": {
+          "description": "Server error",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+        }
+      }
+    },
+    "get": {
+      "tags": ["Admin - Brand Month"],
+      "summary": "List Brand Month campaigns",
+      "security": [{ "bearerAuth": [] }],
+      "responses": {
+        "200": {
+          "description": "All campaigns (newest first)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+      }
+    }
+  },
+  "/admin/brand-months/{id}": {
+    "get": {
+      "tags": ["Admin - Brand Month"],
+      "summary": "Get Brand Month campaign by id",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "responses": {
+        "200": {
+          "description": "Campaign found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "data": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                }
+              }
+            }
+          }
+        },
+        "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+      }
+    },
+    "put": {
+      "tags": ["Admin - Brand Month"],
+      "summary": "Update Brand Month campaign",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/UpdateBrandMonthRequest" },
+            "example": {
+              "inventoryRemaining": 25,
+              "xpTarget": 2000,
+              "isActive": true
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "msg": { "type": "string", "example": "Campaign updated" },
+                  "data": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                }
+              }
+            }
+          }
+        },
+        "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+        "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+      }
+    },
+    "delete": {
+      "tags": ["Admin - Brand Month"],
+      "summary": "Delete Brand Month campaign",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "responses": {
+        "200": {
+          "description": "Deleted",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "msg": { "type": "string", "example": "Campaign deleted" }
+                }
+              },
+              "example": { "status": true, "msg": "Campaign deleted" }
+            }
+          }
+        },
+        "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+      }
+    }
+  },
+  "/single-player/brand-month/active": {
+    "get": {
+      "tags": ["Single Player"],
+      "summary": "Active Brand Month progression",
+      "description": "XP bar, vouchers remaining (FCFS), prizeStatus. data is null when no campaign is active for current date.",
+      "security": [{ "bearerAuth": [] }],
+      "responses": {
+        "200": {
+          "description": "Active campaign state or null",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "data": {
+                    "allOf": [{ "$ref": "#/components/schemas/BrandMonthClientStateDto" }],
+                    "nullable": true
+                  }
+                }
+              },
+              "examples": {
+                "active": {
+                  "summary": "Campaign in progress",
+                  "value": {
+                    "status": true,
+                    "data": {
+                      "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                      "name": "McDonald's Month",
+                      "xpTarget": 2000,
+                      "campaignXp": 450,
+                      "xpRemaining": 1550,
+                      "progressPercent": 23,
+                      "inventoryRemaining": 25,
+                      "inventoryTotal": 50,
+                      "prizeStatus": "NONE",
+                      "canStillWinPrize": true,
+                      "allVouchersClaimed": false
+                    }
+                  }
+                },
+                "none": {
+                  "summary": "No active campaign",
+                  "value": { "status": true, "data": null }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+      }
+    }
+  },
+  "/single-player/brand-month/history": {
+    "get": {
+      "tags": ["Single Player"],
+      "summary": "User Brand Month history",
+      "description": "All campaigns the user has progress on, newest activity first.",
+      "security": [{ "bearerAuth": [] }],
+      "responses": {
+        "200": {
+          "description": "History list",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/BrandMonthClientStateDto" }
+                  }
+                }
+              },
+              "example": {
+                "status": true,
+                "data": [
+                  {
+                    "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                    "name": "McDonald's Month",
+                    "xpTarget": 2000,
+                    "campaignXp": 2000,
+                    "prizeStatus": "CLAIMED",
+                    "prize": {
+                      "title": "McDonald's Meal Voucher",
+                      "redemptionCode": "MCD-MEAL-2026",
+                      "claimedAt": "2026-10-15T12:00:00.000Z"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+      }
+    }
+  },
   "tags": [
+    {
+      "name": "Admin - Brand Month",
+      "description": "Brand Month / XP progression campaigns (admin CRUD, FCFS inventory)"
+    },
+    {
+      "name": "Admin - Vouchers",
+      "description": "Commercial voucher catalog (used with Brand Month COMMERCIAL_VOUCHER rewards)"
+    },
     {
       "name": "Admin Single Player",
       "description": "Single Player Phase 2 — Admin Single Player"

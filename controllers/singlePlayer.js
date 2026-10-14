@@ -33,6 +33,11 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { awardUserXp } from "../utils/awardUserXp.js";
+import {
+  findActiveBrandMonthCampaign,
+  getBrandMonthStateForUser,
+} from "../utils/brandMonth.js";
 import {
   clearZoneAttackers,
   getActiveCaptureSessionForUser,
@@ -59,6 +64,8 @@ export const getGameConfigForUser = async (_req, res) => {
         ...config,
         rivalryMilestoneHours: parseJsonIntArray(configRow.rivalryMilestoneHours, [24, 48]),
         allowedHoldDurationHours: parseJsonIntArray(configRow.allowedHoldDurationHours, [24, 48, 72]),
+        dailyDropXpNormal: configRow.dailyDropXpNormal ?? 50,
+        dailyDropXpRare: configRow.dailyDropXpRare ?? 150,
       },
     });
   } catch (error) {
@@ -846,7 +853,21 @@ export const collectDailyDrop = async (req, res) => {
       data: { isCollected: true }
     });
 
-    res.status(200).json({ status: true, msg: rewardMsg, rewardData });
+    const configRow = await getSpGameConfig(prisma);
+    const xpAmount = drop.isRare
+      ? configRow.dailyDropXpRare ?? 150
+      : configRow.dailyDropXpNormal ?? 50;
+
+    const xpResult = await awardUserXp(prisma, userId, xpAmount);
+
+    res.status(200).json({
+      status: true,
+      msg: rewardMsg,
+      rewardData,
+      xpAwarded: xpResult.xpAwarded,
+      lifetimeXp: xpResult.lifetime,
+      brandMonth: xpResult.brandMonth,
+    });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
   }
@@ -862,17 +883,19 @@ export const getActiveTheme = async (req, res) => {
     const { lat, lng } = req.query;
     const now = new Date();
 
-    // Find the current active theme
-    const activeTheme = await prisma.sponsoredTheme.findFirst({
-      where: {
-        isActive: true,
-        startDate: { lte: now },
-        endDate: { gte: now }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    const activeBrandMonth = await findActiveBrandMonthCampaign(prisma, now);
+    let activeTheme = activeBrandMonth?.sponsoredTheme ?? null;
+
+    if (!activeTheme) {
+      activeTheme = await prisma.sponsoredTheme.findFirst({
+        where: {
+          isActive: true,
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
 
     if (activeTheme) {
       // If the theme has a specific location, check distance
@@ -1134,6 +1157,8 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     }
 
+    const brandMonth = await getBrandMonthStateForUser(prisma, userId, now);
+
     res.status(200).json({
       status: true,
       data: {
@@ -1144,11 +1169,12 @@ export const getSinglePlayerDashboard = async (req, res) => {
           isVip: empire.isVip,
           vipRewardMultiplier: empire.vipRewardMultiplier,
           passiveIncomePerHour: passiveIncome,
-          daysUntilNextRareDrop: 3
+          daysUntilNextRareDrop: 3,
         },
+        brandMonth,
         dailyDrop: processedDailyDrop,
-        zones: processedZones
-      }
+        zones: processedZones,
+      },
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
