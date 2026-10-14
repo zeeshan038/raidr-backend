@@ -4499,6 +4499,169 @@
         }
       }
     },
+    "/single-player/brand-month/active": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Active Brand Month progression",
+        "description": "XP bar, vouchers remaining (FCFS), prizeStatus. data is null when no campaign is active for the current date.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active campaign state or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                        }
+                      ],
+                      "nullable": true
+                    }
+                  }
+                },
+                "examples": {
+                  "active": {
+                    "summary": "Campaign in progress",
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                        "name": "McDonald's Month",
+                        "xpTarget": 2000,
+                        "campaignXp": 450,
+                        "xpRemaining": 1550,
+                        "progressPercent": 23,
+                        "inventoryRemaining": 25,
+                        "inventoryTotal": 50,
+                        "prizeStatus": "NONE",
+                        "canStillWinPrize": true,
+                        "allVouchersClaimed": false
+                      }
+                    }
+                  },
+                  "none": {
+                    "summary": "No active campaign",
+                    "value": {
+                      "status": true,
+                      "data": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/brand-month/history": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "User Brand Month history",
+        "description": "All campaigns the user has progress on, newest activity first.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                      "name": "McDonald's Month",
+                      "xpTarget": 2000,
+                      "campaignXp": 2000,
+                      "prizeStatus": "CLAIMED",
+                      "prize": {
+                        "title": "McDonald's Meal Voucher",
+                        "redemptionCode": "MCD-MEAL-2026",
+                        "claimedAt": "2026-10-15T12:00:00.000Z"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/review/add": {
       "post": {
         "tags": [
@@ -13722,107 +13885,11 @@
       }
     }
   },
-  "/single-player/brand-month/active": {
-    "get": {
-      "tags": ["Single Player"],
-      "summary": "Active Brand Month progression",
-      "description": "XP bar, vouchers remaining (FCFS), prizeStatus. data is null when no campaign is active for current date.",
-      "security": [{ "bearerAuth": [] }],
-      "responses": {
-        "200": {
-          "description": "Active campaign state or null",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "status": { "type": "boolean", "example": true },
-                  "data": {
-                    "allOf": [{ "$ref": "#/components/schemas/BrandMonthClientStateDto" }],
-                    "nullable": true
-                  }
-                }
-              },
-              "examples": {
-                "active": {
-                  "summary": "Campaign in progress",
-                  "value": {
-                    "status": true,
-                    "data": {
-                      "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
-                      "name": "McDonald's Month",
-                      "xpTarget": 2000,
-                      "campaignXp": 450,
-                      "xpRemaining": 1550,
-                      "progressPercent": 23,
-                      "inventoryRemaining": 25,
-                      "inventoryTotal": 50,
-                      "prizeStatus": "NONE",
-                      "canStillWinPrize": true,
-                      "allVouchersClaimed": false
-                    }
-                  }
-                },
-                "none": {
-                  "summary": "No active campaign",
-                  "value": { "status": true, "data": null }
-                }
-              }
-            }
-          }
-        },
-        "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
-      }
-    }
-  },
-  "/single-player/brand-month/history": {
-    "get": {
-      "tags": ["Single Player"],
-      "summary": "User Brand Month history",
-      "description": "All campaigns the user has progress on, newest activity first.",
-      "security": [{ "bearerAuth": [] }],
-      "responses": {
-        "200": {
-          "description": "History list",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "status": { "type": "boolean", "example": true },
-                  "data": {
-                    "type": "array",
-                    "items": { "$ref": "#/components/schemas/BrandMonthClientStateDto" }
-                  }
-                }
-              },
-              "example": {
-                "status": true,
-                "data": [
-                  {
-                    "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
-                    "name": "McDonald's Month",
-                    "xpTarget": 2000,
-                    "campaignXp": 2000,
-                    "prizeStatus": "CLAIMED",
-                    "prize": {
-                      "title": "McDonald's Meal Voucher",
-                      "redemptionCode": "MCD-MEAL-2026",
-                      "claimedAt": "2026-10-15T12:00:00.000Z"
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
-      }
-    }
-  },
   "tags": [
+    {
+      "name": "Single Player",
+      "description": "Single Player map, zones, daily drops, Brand Month progression, guards, B2B"
+    },
     {
       "name": "Admin - Brand Month",
       "description": "Brand Month / XP progression campaigns (admin CRUD, FCFS inventory)"
