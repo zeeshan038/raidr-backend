@@ -179,20 +179,33 @@
       },
       "UserDto": {
         "type": "object",
+        "description": "Full user profile row returned by GET /user/whoami (scalar fields only; relations not loaded). Secrets omitted: password, OTP, firebaseUid, isNewUser, avatarUpdatedAt.",
         "properties": {
           "_id": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "description": "Same as id (legacy/mobile alias)."
           },
-          "email": {
-            "type": "string"
+          "id": {
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
           },
-          "isVerified": {
-            "type": "boolean"
+          "email": {
+            "type": "string",
+            "nullable": true
           },
-          "isReviewed": {
+          "lat": {
+            "type": "string",
+            "nullable": true
+          },
+          "long": {
+            "type": "string",
+            "nullable": true
+          },
+          "isVerified": {
             "type": "boolean"
           },
           "authProvider": {
@@ -203,26 +216,61 @@
               "apple"
             ]
           },
-          "photoUrl": {
+          "signupMethod": {
             "type": "string",
-            "nullable": true
+            "example": "manual"
+          },
+          "agreedToTerms": {
+            "type": "boolean"
+          },
+          "photoUrl": {
+            "type": "string"
           },
           "avatarFrontUrl": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "avatarBackUrl": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
+          },
+          "selectedAvatarId": {
+            "type": "string"
           },
           "level": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current player level.",
+            "example": 2
           },
           "xp_earned": {
-            "type": "number"
+            "type": "integer",
+            "description": "Lifetime XP earned.",
+            "example": 1250
           },
           "xp_progress": {
-            "type": "number"
+            "type": "integer",
+            "description": "XP bank toward the next level (after current level thresholds).",
+            "example": 88
+          },
+          "nextLevel": {
+            "type": "integer",
+            "description": "Target level after completing the current level bar (level + 1).",
+            "example": 12
+          },
+          "levelProgressPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Progress toward next level (0–100). Bind level bar directly to this value.",
+            "example": 22
+          },
+          "xpRequiredForNextLevel": {
+            "type": "integer",
+            "description": "Total XP required to complete the current level (formula: 100 × level²).",
+            "example": 12100
+          },
+          "xpRemainingForNextLevel": {
+            "type": "integer",
+            "description": "XP still needed to reach nextLevel (xpRequiredForNextLevel − xp_progress).",
+            "example": 9643
           },
           "quests_played": {
             "type": "integer"
@@ -240,11 +288,67 @@
             "type": "integer"
           },
           "distance_covered_km": {
-            "type": "number"
+            "type": "number",
+            "format": "float"
+          },
+          "has_seen_level_welcome": {
+            "type": "boolean"
+          },
+          "fcmToken": {
+            "type": "string",
+            "nullable": true,
+            "description": "Push notification token if set."
+          },
+          "isReviewed": {
+            "type": "boolean"
           },
           "raidrCoins": {
             "type": "integer",
             "example": 500
+          },
+          "coinBoostMultiplier": {
+            "type": "number",
+            "nullable": true,
+            "example": 1
+          },
+          "coinBoostExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "spGuardInventory": {
+            "type": "integer",
+            "description": "Unassigned single-player guards in inventory.",
+            "example": 3
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UserWhoAmIResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "msg",
+          "user"
+        ],
+        "properties": {
+          "status": {
+            "type": "boolean",
+            "example": true
+          },
+          "msg": {
+            "type": "string",
+            "example": "User profile fetched successfully"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
           }
         }
       },
@@ -1096,13 +1200,16 @@
       "B2bHoldProgress": {
         "type": "object",
         "nullable": true,
+        "description": "B2B reward hold timer. Use progressPercent (0–100) directly for list/detail progress bars and \"NN%\" labels.",
         "properties": {
           "holdDurationHours": {
             "type": "number",
+            "description": "Total hold required (hours), e.g. 72 for \"… / 72h\" labels.",
             "example": 72
           },
           "holdElapsedHours": {
             "type": "number",
+            "description": "Elapsed hold time in hours for \"Xd Yh / …\" labels.",
             "example": 32
           },
           "holdComplete": {
@@ -1111,21 +1218,60 @@
           },
           "holdStartedAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Set when the player captures a B2B zone."
           },
           "progressPercent": {
             "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Hold progress 0–100. Bind UI progress bar to this value (e.g. divide by 100 for 0.0–1.0 widgets). Do not recalculate from hours on the client unless this field is null.",
             "example": 44
           },
           "holdRemainingSeconds": {
             "type": "integer",
+            "description": "Countdown until hold completes; format on client for \"Time remaining\".",
             "example": 144000
+          }
+        }
+      },
+      "ActiveCaptureSession": {
+        "type": "object",
+        "nullable": true,
+        "description": "Active snatch/capture attempt in Redis for the current user. Present on GET /single-player/zones/{id} when a session exists. Use sessionGuardsRemaining for AR guard UI (not guardCount on the zone).",
+        "properties": {
+          "initialGuardCount": {
+            "type": "integer",
+            "example": 5
+          },
+          "sessionGuardsRemaining": {
+            "type": "integer",
+            "description": "Guards left to eliminate in this capture attempt only.",
+            "example": 3
+          },
+          "guardsEliminatedInSession": {
+            "type": "integer",
+            "example": 2
+          },
+          "captureTimeSec": {
+            "type": "integer",
+            "example": 170
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "remainingSec": {
+            "type": "integer",
+            "description": "Seconds left until capture timer completes.",
+            "example": 120
           }
         }
       },
       "SinglePlayerB2bBlock": {
         "type": "object",
         "nullable": true,
+        "description": "Present when zoneType is B2B. Progress bar: hold.progressPercent (integer 0–100).",
         "properties": {
           "rewardType": {
             "type": "string",
@@ -1277,6 +1423,9 @@
           },
           "b2b": {
             "$ref": "#/components/schemas/SinglePlayerB2bBlock"
+          },
+          "activeCaptureSession": {
+            "$ref": "#/components/schemas/ActiveCaptureSession"
           },
           "owner": {
             "$ref": "#/components/schemas/ZoneOwnerSummary"
@@ -1796,6 +1945,7 @@
           "Single Player"
         ],
         "summary": "List single player zones (map / My Raid Zones)",
+        "description": "Each zone includes b2b.hold.progressPercent (0–100) for B2B captured zones — use it for My Raid Zones list progress bars. NORMAL zones have b2b: null.",
         "security": [
           {
             "bearerAuth": []
@@ -1923,10 +2073,48 @@
                         "guardCount": 2
                       },
                       "b2b": null
+                    },
+                    {
+                      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                      "name": "McDonald's Raid",
+                      "latitude": "40.7580",
+                      "longitude": "-73.9855",
+                      "radius": 80,
+                      "coinsPerHour": 50,
+                      "zoneType": "B2B",
+                      "guardCount": 0,
+                      "maxGuardsPerZone": 5,
+                      "status": "conquered_by_me",
+                      "mapPinType": "B2B",
+                      "isShieldActive": false,
+                      "isAttackable": false,
+                      "captureTimeSec": 30,
+                      "defenseBonusSec": 0,
+                      "captureTimeBreakdown": {
+                        "baseSec": 30,
+                        "ownershipDefenseSec": 0,
+                        "guardPenaltySec": 0,
+                        "guardCount": 0
+                      },
+                      "b2b": {
+                        "rewardType": "DIGITAL_COUPON",
+                        "rewardTitle": "Free meal combo",
+                        "rewardDescription": "Redeem in app after hold completes",
+                        "rewardImageUrl": "https://example.com/meal.png",
+                        "hold": {
+                          "holdDurationHours": 72,
+                          "holdElapsedHours": 32,
+                          "holdComplete": false,
+                          "holdStartedAt": "2026-10-09T10:00:00.000Z",
+                          "progressPercent": 44,
+                          "holdRemainingSeconds": 144000
+                        },
+                        "canClaim": false
+                      }
                     }
                   ],
                   "pagination": {
-                    "total": 1,
+                    "total": 2,
                     "page": 1,
                     "limit": 10,
                     "totalPages": 1
@@ -2000,6 +2188,7 @@
           "Single Player"
         ],
         "summary": "Get one zone (detail refresh)",
+        "description": "Zone detail / hold progress screen. B2B: use data.b2b.hold.progressPercent for the hold progress bar. When the user has an active capture, data.activeCaptureSession is set (AR guard state); otherwise null or omitted.",
         "security": [
           {
             "bearerAuth": []
@@ -2050,28 +2239,43 @@
                 "example": {
                   "status": true,
                   "data": {
-                    "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
-                    "name": "Postman Test Zone",
-                    "latitude": "40.7829",
-                    "longitude": "-73.9654",
+                    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "name": "McDonald's Raid",
+                    "latitude": "40.7580",
+                    "longitude": "-73.9855",
                     "radius": 80,
-                    "coinsPerHour": 30,
-                    "zoneType": "NORMAL",
-                    "guardCount": 2,
+                    "coinsPerHour": 50,
+                    "zoneType": "B2B",
+                    "guardCount": 0,
                     "maxGuardsPerZone": 5,
-                    "status": "conquered_by_others",
-                    "mapPinType": "VULNERABLE",
-                    "isShieldActive": true,
-                    "isAttackable": true,
-                    "captureTimeSec": 110,
-                    "defenseBonusSec": 80,
+                    "status": "conquered_by_me",
+                    "mapPinType": "B2B",
+                    "isShieldActive": false,
+                    "isAttackable": false,
+                    "captureTimeSec": 30,
+                    "defenseBonusSec": 0,
                     "captureTimeBreakdown": {
                       "baseSec": 30,
-                      "ownershipDefenseSec": 20,
-                      "guardPenaltySec": 60,
-                      "guardCount": 2
+                      "ownershipDefenseSec": 0,
+                      "guardPenaltySec": 0,
+                      "guardCount": 0
                     },
-                    "b2b": null
+                    "b2b": {
+                      "rewardType": "DIGITAL_COUPON",
+                      "rewardTitle": "Free meal combo",
+                      "rewardDescription": "Redeem in app after hold completes",
+                      "rewardImageUrl": "https://example.com/meal.png",
+                      "hold": {
+                        "holdDurationHours": 72,
+                        "holdElapsedHours": 32,
+                        "holdComplete": false,
+                        "holdStartedAt": "2026-10-09T10:00:00.000Z",
+                        "progressPercent": 44,
+                        "holdRemainingSeconds": 144000
+                      },
+                      "canClaim": false
+                    },
+                    "activeCaptureSession": null
                   }
                 }
               }
@@ -2232,6 +2436,17 @@
                     "completesAfter": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "initialGuardCount": {
+                      "type": "integer",
+                      "description": "Guards snapshot at capture start (zone guardCount)."
+                    },
+                    "sessionGuardsRemaining": {
+                      "type": "integer",
+                      "description": "Guards left in this capture attempt; use for AR UI."
+                    },
+                    "guardsEliminatedInSession": {
+                      "type": "integer"
                     }
                   }
                 },
@@ -2247,7 +2462,10 @@
                   },
                   "distanceMeters": 18,
                   "startedAt": "2026-10-12T12:00:00.000Z",
-                  "completesAfter": "2026-10-12T12:03:20.000Z"
+                  "completesAfter": "2026-10-12T12:03:20.000Z",
+                  "initialGuardCount": 5,
+                  "sessionGuardsRemaining": 5,
+                  "guardsEliminatedInSession": 0
                 }
               }
             }
@@ -3393,6 +3611,7 @@
           "Single Player"
         ],
         "summary": "Map dashboard (stats, zones, daily drop)",
+        "description": "data.zones uses SinglePlayerZoneFormatted — B2B entries include b2b.hold.progressPercent (0–100) for hold progress UI.",
         "security": [
           {
             "bearerAuth": []
@@ -3496,6 +3715,42 @@
                           "guardCount": 2
                         },
                         "b2b": null
+                      },
+                      {
+                        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                        "name": "McDonald's Raid",
+                        "latitude": "40.7580",
+                        "longitude": "-73.9855",
+                        "radius": 80,
+                        "coinsPerHour": 50,
+                        "zoneType": "B2B",
+                        "guardCount": 0,
+                        "maxGuardsPerZone": 5,
+                        "status": "conquered_by_me",
+                        "mapPinType": "B2B",
+                        "isShieldActive": false,
+                        "isAttackable": false,
+                        "captureTimeSec": 30,
+                        "defenseBonusSec": 0,
+                        "captureTimeBreakdown": {
+                          "baseSec": 30,
+                          "ownershipDefenseSec": 0,
+                          "guardPenaltySec": 0,
+                          "guardCount": 0
+                        },
+                        "b2b": {
+                          "rewardType": "DIGITAL_COUPON",
+                          "rewardTitle": "Free meal combo",
+                          "hold": {
+                            "holdDurationHours": 72,
+                            "holdElapsedHours": 32,
+                            "holdComplete": false,
+                            "holdStartedAt": "2026-10-09T10:00:00.000Z",
+                            "progressPercent": 44,
+                            "holdRemainingSeconds": 144000
+                          },
+                          "canClaim": false
+                        }
                       }
                     ]
                   }
@@ -4407,6 +4662,7 @@
           "User Profile"
         ],
         "summary": "Get current user profile",
+        "description": "Returns the authenticated user's full profile (all User table columns except secrets). No nested relations (trips, zones, etc.). Level bar: user.levelProgressPercent.",
         "security": [
           {
             "bearerAuth": []
@@ -4418,7 +4674,63 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
+                  "$ref": "#/components/schemas/UserWhoAmIResponse"
+                },
+                "example": {
+                  "status": true,
+                  "msg": "User profile fetched successfully",
+                  "user": {
+                    "_id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                    "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                    "name": "Alex Raider",
+                    "email": "alex@example.com",
+                    "lat": "40.7829",
+                    "long": "-73.9654",
+                    "isVerified": true,
+                    "authProvider": "email",
+                    "signupMethod": "manual",
+                    "agreedToTerms": true,
+                    "photoUrl": "https://example.com/photo.jpg",
+                    "avatarFrontUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_front.png",
+                    "avatarBackUrl": "https://hel1.your-objectstorage.com/raidr-assets/avatars/1_back.png",
+                    "selectedAvatarId": "1",
+                    "level": 11,
+                    "xp_earned": 40957,
+                    "xp_progress": 2457,
+                    "nextLevel": 12,
+                    "levelProgressPercent": 20,
+                    "xpRequiredForNextLevel": 12100,
+                    "xpRemainingForNextLevel": 9643,
+                    "quests_played": 12,
+                    "rewards_claimed": 4,
+                    "green_boxes_count": 20,
+                    "golden_boxes_count": 3,
+                    "purple_boxes_count": 1,
+                    "distance_covered_km": 15.4,
+                    "has_seen_level_welcome": true,
+                    "fcmToken": null,
+                    "isReviewed": false,
+                    "raidrCoins": 2400,
+                    "coinBoostMultiplier": 1,
+                    "coinBoostExpiresAt": null,
+                    "spGuardInventory": 3,
+                    "createdAt": "2026-01-15T10:00:00.000Z",
+                    "updatedAt": "2026-10-12T08:30:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "User not found"
                 }
               }
             }
@@ -4429,6 +4741,10 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
                 }
               }
             }
@@ -4439,6 +4755,10 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -10923,13 +11243,26 @@
                     },
                     "remainingSec": {
                       "type": "integer"
+                    },
+                    "sessionGuardsRemaining": {
+                      "type": "integer",
+                      "description": "Guards left in this capture attempt."
+                    },
+                    "initialGuardCount": {
+                      "type": "integer"
+                    },
+                    "guardsEliminatedInSession": {
+                      "type": "integer"
                     }
                   }
                 },
                 "example": {
                   "status": true,
                   "inRadius": true,
-                  "remainingSec": 45
+                  "remainingSec": 45,
+                  "sessionGuardsRemaining": 3,
+                  "initialGuardCount": 5,
+                  "guardsEliminatedInSession": 2
                 }
               }
             }
@@ -11092,6 +11425,17 @@
                           "type": "integer"
                         },
                         "zoneGuardCount": {
+                          "type": "integer",
+                          "description": "Owner-assigned guards on the zone (DB). Does not decrease during AR elimination."
+                        },
+                        "initialGuardCount": {
+                          "type": "integer"
+                        },
+                        "sessionGuardsRemaining": {
+                          "type": "integer",
+                          "description": "Use for AR guard count after elimination."
+                        },
+                        "guardsEliminatedInSession": {
                           "type": "integer"
                         },
                         "captureTimeSec": {
@@ -11110,7 +11454,10 @@
                   "data": {
                     "guardsEliminated": 1,
                     "coinsSpent": 50,
-                    "zoneGuardCount": 4,
+                    "initialGuardCount": 5,
+                    "sessionGuardsRemaining": 4,
+                    "guardsEliminatedInSession": 1,
+                    "zoneGuardCount": 5,
                     "captureTimeSec": 170,
                     "raidrCoins": 2400
                   }

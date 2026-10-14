@@ -252,11 +252,12 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
     const configRow = await getSpGameConfig(prisma);
     const config = gameplayFromConfig(configRow);
 
-    let attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt));
     const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
     if (!zone) {
       return res.status(404).json({ status: false, msg: "Zone not found" });
     }
+
+    let attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
 
     if (attempt.sessionGuardsRemaining <= 0) {
       return res.status(400).json({

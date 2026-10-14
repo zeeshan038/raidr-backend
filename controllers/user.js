@@ -21,6 +21,10 @@ import {
     generateOTP,
     generateToken
 } from "../utils/methods/methods.js";
+import {
+    sanitizeUserForClient,
+    userLevelProgressFields,
+} from "../utils/userLevel.js";
 
 
 /**
@@ -442,8 +446,10 @@ export const getUserProfile = async (req, res) => {
             });
         }
 
-        const userResponse = { ...user, _id: user.id };
-        delete userResponse.isNewUser;
+        const userResponse = {
+            ...sanitizeUserForClient(user),
+            ...userLevelProgressFields(user),
+        };
 
         res.status(200).json({
             status: true,

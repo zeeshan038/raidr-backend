@@ -35,6 +35,7 @@ import {
 } from "../utils/singlePlayerNotify.js";
 import {
   clearZoneAttackers,
+  getActiveCaptureSessionForUser,
   normalizeCaptureAttempt,
   registerZoneAttacker,
   unregisterZoneAttacker,
@@ -238,6 +239,14 @@ export const getZoneById = async (req, res) => {
       ownedZonesCount
     );
 
+    if (userId) {
+      data.activeCaptureSession = await getActiveCaptureSessionForUser(
+        userId,
+        zoneId,
+        zone.guardCount ?? 0
+      );
+    }
+
     res.status(200).json({ status: true, data });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
@@ -415,6 +424,9 @@ export const startCapture = async (req, res) => {
       distanceMeters,
       startedAt: new Date(startedAt).toISOString(),
       completesAfter: new Date(startedAt + captureTimeSec * 1000).toISOString(),
+      initialGuardCount: attempt.initialGuardCount,
+      sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+      guardsEliminatedInSession: attempt.guardsEliminatedInSession,
     });
   } catch (error) {
     res.status(500).json({
@@ -477,6 +489,7 @@ export const pingCapture = async (req, res) => {
       remainingSec,
       sessionGuardsRemaining: attempt.sessionGuardsRemaining,
       initialGuardCount: attempt.initialGuardCount,
+      guardsEliminatedInSession: attempt.guardsEliminatedInSession,
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
