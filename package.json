@@ -6,7 +6,8 @@
   "scripts": {
     "server": "nodemon index.js",
     "start": "node index.js",
-    "swagger": "node swagger-setup.js"
+    "swagger": "node swagger-setup.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",

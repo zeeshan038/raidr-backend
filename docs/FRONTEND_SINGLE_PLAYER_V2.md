@@ -4,7 +4,7 @@
 
 Base URL: `/api` (Bearer user token unless noted).
 
-## Screen → endpoints
+## Screen → endpoints0
 
 | # | Screen | Endpoints |
 |---|--------|-----------|

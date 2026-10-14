@@ -20,7 +20,10 @@ for name in \
   20261010180000_sp_phase2_complete \
   20261010200000_store_guard_products \
   20261012120000_sp_max_owned_zones \
-  20261014100000_user_sp_boost_columns
+  20261014100000_user_sp_boost_columns \
+  20261014220000_brand_month_xp \
+  20261015010000_drop_brand_month_milestones \
+  20261015020000_brand_month_milestones_compat
 do
   npx prisma migrate resolve --applied "$name" 2>/dev/null || true
 done
