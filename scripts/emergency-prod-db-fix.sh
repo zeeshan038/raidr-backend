@@ -3,7 +3,7 @@
 # Run on server from repo root:
 #   docker compose run --rm --no-deps --entrypoint sh api scripts/emergency-prod-db-fix.sh
 set -e
-cd /app
+cd "$(dirname "$0")/.."
 
 echo "==> DATABASE_URL=${DATABASE_URL:-not set}"
 

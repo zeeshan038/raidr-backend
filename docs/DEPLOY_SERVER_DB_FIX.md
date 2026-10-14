@@ -41,6 +41,10 @@ sh scripts/sync-legacy-db-migrations.sh
 npm run server
 ```
 
+## Docker build fails on `postinstall` / `prisma generate`
+
+If `docker compose up -d --build` fails with *Could not find Prisma Schema* during `npm ci`, the image uses `npm ci --ignore-scripts` and runs `prisma generate` after the full repo is copied. Pull latest `Dockerfile` and rebuild.
+
 ## After fix
 - `DATABASE_URL` in **docker-compose** should be `@postgres:5432` (not `188.245.72.1` inside containers).
 - New images run schema SQL + non-fatal migrate in `docker-entrypoint.sh`.

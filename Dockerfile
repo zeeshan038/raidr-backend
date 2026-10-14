@@ -4,9 +4,9 @@ FROM node:22-trixie
 # Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files and install dependencies (skip postinstall — schema not copied yet)
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copy the rest of the application code
 COPY . .
