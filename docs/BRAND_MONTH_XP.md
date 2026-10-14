@@ -16,6 +16,8 @@ That applies `scripts/apply-single-player-schema.sql` (includes Brand Month tabl
 
 On Docker prod, see [DEPLOY_SERVER_DB_FIX.md](./DEPLOY_SERVER_DB_FIX.md).
 
+**Mobile / Flutter:** Full API handover → **[FLUTTER_BRAND_MONTH_INTEGRATION.md](./FLUTTER_BRAND_MONTH_INTEGRATION.md)**.
+
 ## Overview
 
 - Admin configures a **time-boxed campaign** (e.g. McDonald's Month): `xpTarget`, **voucher inventory** (FCFS), branding, optional `sponsoredThemeId`, and reward (INLINE or linked `CommercialVoucher`).

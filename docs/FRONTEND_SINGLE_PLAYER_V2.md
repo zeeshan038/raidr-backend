@@ -1,6 +1,7 @@
 # Single Player V2 — Frontend API handover (screens 1–10)
 
-> **Flutter / Cursor:** For the full per-API request/response reference, flows, and integration checklist, use **[FLUTTER_SINGLE_PLAYER_INTEGRATION.md](./FLUTTER_SINGLE_PLAYER_INTEGRATION.md)**.
+> **Flutter / Cursor:** For the full per-API request/response reference, flows, and integration checklist, use **[FLUTTER_SINGLE_PLAYER_INTEGRATION.md](./FLUTTER_SINGLE_PLAYER_INTEGRATION.md)**.  
+> **Brand Month / XP season:** **[FLUTTER_BRAND_MONTH_INTEGRATION.md](./FLUTTER_BRAND_MONTH_INTEGRATION.md)**.
 
 Base URL: `/api` (Bearer user token unless noted).
 
@@ -18,6 +19,9 @@ Base URL: `/api` (Bearer user token unless noted).
 | 8 | B2B zone detail | Zone + `zoneType: B2B`, `b2b.*`, `meetsEligibility` |
 | 9 | B2B owned / hold progress | `b2b.hold`, `POST .../zones/:id/b2b/claim` when `b2b.canClaim` |
 | 10 | My raid zones | `GET /single-player/zones?status=available\|conquered_by_me\|conquered_by_others` |
+| 11 | Brand Month bar (map) | `GET /single-player/dashboard` → `data.brandMonth` |
+| 12 | Brand Month progression | `GET /single-player/brand-month/active`, `GET .../history` |
+| 13 | Earn season XP | `POST /single-player/daily-drop/collect` → `xpAwarded`, `lifetimeXp`, `brandMonth` |
 
 ## Map pins (`mapPinType`)
 

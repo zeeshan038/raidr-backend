@@ -31,6 +31,7 @@ Rules:
 | `docs/FLUTTER_SINGLE_PLAYER_INTEGRATION.md` | This document — contract + flows |
 | `docs/POSTMAN_SINGLE_PLAYER_V2.md` | Postman sequences (admin/merchant/user) |
 | `docs/FRONTEND_SINGLE_PLAYER_V2.md` | Short screen → endpoint map |
+| `docs/FLUTTER_BRAND_MONTH_INTEGRATION.md` | Brand Month / XP season (all player APIs) |
 | `swagger.json` | Machine-readable schemas + examples |
 
 **Server prerequisites:** PostgreSQL migrated, **Redis running** (capture session keys).
