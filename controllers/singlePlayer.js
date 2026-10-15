@@ -918,7 +918,7 @@ export const getActiveTheme = async (req, res) => {
       // If no location restrictions or user is within radius
       return res.status(200).json({ status: true, data: activeTheme });
     } else {
-      return res.status(200).json({ status: true, data: null, msg: "No active theme" });
+      return res.status(200).json({ status: false, data: null, msg: "No active theme" });
     }
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
