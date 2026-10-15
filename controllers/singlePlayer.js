@@ -172,7 +172,7 @@ export const getZones = async (req, res) => {
     );
 
     res.status(200).json({
-      status: true,
+      status: totalZones > 0,
       data: processedZones,
       pagination: {
         total: totalZones,
