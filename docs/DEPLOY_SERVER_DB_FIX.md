@@ -1,6 +1,7 @@
 # Production server — DB P3005 / login `spGuardInventory` fix
 
 ## Symptoms
+- Flutter **whoami / login 500**: column `User.preferencesCompleted` does not exist → run profile preferences SQL below or `emergency-prod-db-fix.sh` after pull
 - Flutter login **500**: column `User.spGuardInventory` does not exist
 - `docker compose logs api`: **P3005** (database not empty, no migration baseline)
 - API container **Restarting** (old entrypoint exited on failed `migrate deploy`)
@@ -19,9 +20,21 @@ docker compose up -d --build
 docker compose logs api --tail 30
 ```
 
+**Profile preferences (`preferencesCompleted`):**
+
+```bash
+docker compose run --rm --no-deps --entrypoint sh api \
+  -c 'npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma'
+# optional seed onboarding options:
+docker compose exec postgres psql -U raidr_user -d raidr_db -f scripts/seed-profile-preference-options.sql
+```
+
 If `emergency-prod-db-fix.sh` is not on the server yet, minimal SQL:
 
 ```bash
+docker compose exec postgres psql -U raidr_user -d raidr_db -c \
+'ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferencesCompleted" BOOLEAN NOT NULL DEFAULT false;'
+
 docker compose exec postgres psql -U raidr_user -d raidr_db -c \
 'ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "spGuardInventory" INTEGER NOT NULL DEFAULT 0;
  ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostMultiplier" DOUBLE PRECISION DEFAULT 1.0;

@@ -5,8 +5,9 @@
 set -e
 cd "$(dirname "$0")/.."
 
-echo "==> Applying idempotent schema SQL (Single Player + Brand Month)..."
+echo "==> Applying idempotent schema SQL (Single Player + Brand Month + profile preferences)..."
 npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma
+npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma
 
 echo "==> Marking existing migrations as applied..."
 sh scripts/baseline-prod-db.sh

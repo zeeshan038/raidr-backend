@@ -2,6 +2,8 @@ import { prisma } from "../../config/db.js";
 import { CreateB2bZoneSchema, UpdateB2bZoneSchema } from "../../schema/Merchant/SinglePlayer.js";
 import { getSpGameConfig, isB2bAutoApproveEnabled } from "../../utils/singlePlayerConfig.js";
 import { parseJsonIntArray } from "../../utils/configJson.js";
+import { bumpAdminB2bPendingSignal } from "../../utils/adminB2bPendingSignal.js";
+import { getMerchantB2bApprovalSignal } from "../../utils/merchantB2bApprovalSignal.js";
 
 /**
  * @Description Create a B2B Raid Zone (pending Super Admin approval)
@@ -51,6 +53,10 @@ export const createB2bZone = async (req, res) => {
         minOwnedZonesRequired: value.minOwnedZonesRequired ?? null,
       },
     });
+
+    if (!autoApprove) {
+      await bumpAdminB2bPendingSignal({ zoneId: zone.id, zoneName: zone.name });
+    }
 
     res.status(201).json({
       status: true,
@@ -162,5 +168,20 @@ export const updateB2bZone = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ status: false, msg: err.message });
+  }
+};
+
+/**
+ * @Description Poll for B2B zone approval/rejection (merchant dashboard notifications)
+ * @Route GET /api/merchant/single-player/b2b-zones/approval-signal
+ * @Access Private (Merchant)
+ */
+export const getB2bApprovalSignal = async (req, res) => {
+  const merchantId = req.merchant.id;
+  try {
+    const signal = await getMerchantB2bApprovalSignal(merchantId);
+    res.status(200).json({ status: true, data: signal });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
   }
 };

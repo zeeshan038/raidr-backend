@@ -2,7 +2,8 @@
 cd /app
 
 echo "[entrypoint] Idempotent Single Player schema SQL..."
-if npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma; then
+if npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma \
+  && npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma; then
   echo "[entrypoint] Schema SQL applied."
 else
   echo "[entrypoint] WARN: schema SQL had errors (may be partial); continuing."

@@ -7,6 +7,7 @@
     "server": "nodemon index.js",
     "start": "node index.js",
     "swagger": "node swagger-setup.js",
+    "seed:profile-preferences": "node scripts/seedProfilePreferenceOptions.js",
     "postinstall": "prisma generate"
   },
   "keywords": [],

@@ -14,10 +14,10 @@ OpenAPI details: `swagger.json` (tags: **Single Player**, schemas `BrandMonthCli
 Integrate Brand Month using docs/FLUTTER_BRAND_MONTH_INTEGRATION.md in raidr-backend.
 
 Rules:
-- There is NO separate "collect Brand Month" API. XP comes from POST /single-player/daily-drop/collect (and future XP sources).
+- XP from POST /single-player/daily-drop/collect (and future XP sources). Grand prize: POST /single-player/brand-month/{campaignId}/claim when eligibleToClaim is true.
 - Show map bar from GET /single-player/dashboard → data.brandMonth OR GET /single-player/brand-month/active.
 - Dual XP: same xpAwarded updates lifetime level (lifetimeXp) AND campaign bar (brandMonth.campaignXp).
-- prizeStatus: NONE | CLAIMED | SOLD_OUT. Grand prize is auto-claimed server-side at xpTarget when inventoryRemaining > 0.
+- prizeStatus: NONE | CLAIMED | SOLD_OUT. When eligibleToClaim, call POST /single-player/brand-month/{campaignId}/claim (FCFS inventory at claim time).
 - Urgency copy: inventoryRemaining / inventoryTotal (e.g. "25/50 vouchers left").
 - Do NOT implement milestone tiers from old mockups — backend has single xpTarget only.
 ```
@@ -32,7 +32,7 @@ Rules:
 | **Campaign XP** | Temporary bar: `campaignXp` → `xpTarget`. Resets conceptually when a **new** campaign starts (new season). |
 | **Lifetime XP** | Permanent player level (`xp_earned`, `level`) — **never** resets. Same XP events feed both bars. |
 | **Inventory (FCFS)** | Only the first `inventoryTotal` players who reach `xpTarget` while stock lasts win the grand prize. |
-| **Auto-claim** | When `campaignXp >= xpTarget` and stock > 0, server assigns prize — **no** extra "Claim" button required. |
+| **Claim prize** | When `eligibleToClaim === true`, call `POST /brand-month/{campaignId}/claim` (show **Claim reward** button). |
 | **Sold out** | `inventoryRemaining === 0` → `allVouchersClaimed: true`. User can still earn **lifetime** XP from drops; they cannot win this month's grand prize (`prizeStatus` may become `SOLD_OUT`). |
 
 **Important:** Collecting the **daily drop** is the only player action that awards Brand Month XP today. The collect response includes updated `brandMonth` for animations.
@@ -61,6 +61,7 @@ When no campaign is active, value is **`null`**.
 | `vouchersSoldOut` | bool | Same as stock 0 |
 | `allVouchersClaimed` | bool | Show "All vouchers claimed" |
 | `prizeStatus` | string | `NONE` \| `CLAIMED` \| `SOLD_OUT` |
+| `eligibleToClaim` | bool | Show **Claim reward** → POST `…/brand-month/{campaignId}/claim` |
 | `canStillWinPrize` | bool | Show competitive urgency |
 | `rewardPreview` | object | Grand prize before win (see below) |
 | `prize` | object? | Populated when `prizeStatus === CLAIMED` |
@@ -205,11 +206,50 @@ Order: most recently updated first.
 
 ---
 
-### 4.4 `POST /single-player/daily-drop/collect`
+### 4.4 `POST /single-player/brand-month/{campaignId}/claim`
+
+**Purpose:** Claim the Brand Month **grand prize** after the XP bar is full (`eligibleToClaim` on active/dashboard).
+
+**Path:** `campaignId` = `data.campaignId` from active/history.
+
+**Body:** none.
+
+**Success 200:**
+
+```json
+{
+  "status": true,
+  "msg": "Brand Month reward claimed",
+  "data": {
+    "campaignId": "...",
+    "prizeStatus": "CLAIMED",
+    "eligibleToClaim": false,
+    "prize": {
+      "title": "McDonald's Meal Voucher",
+      "redemptionCode": "MCD-MEAL-2026",
+      "claimedAt": "2026-10-15T13:00:00.000Z",
+      "userVoucherId": "..."
+    }
+  }
+}
+```
+
+**Errors:**
+
+| HTTP | Typical `msg` |
+|------|----------------|
+| 400 | Target not reached; campaign inactive; all vouchers claimed (`SOLD_OUT` in `data`) |
+| 404 | Campaign not found |
+| 409 | Already claimed |
+| 401 | Unauthorized |
+
+---
+
+### 4.5 `POST /single-player/daily-drop/collect`
 
 **Purpose:** Collect today's daily drop (coins, boost, etc.) and **award XP** (lifetime + Brand Month).
 
-**There is no separate Brand Month collect.** This is the action that moves the month bar.
+This endpoint **only** moves the month bar (XP). Use **§4.4 claim** for the grand prize when `eligibleToClaim` is true.
 
 **Body (JSON):**
 
@@ -268,7 +308,7 @@ Order: most recently updated first.
 
 ---
 
-### 4.5 `GET /single-player/game-config`
+### 4.6 `GET /single-player/game-config`
 
 **Purpose:** Read **`dailyDropXpNormal`** and **`dailyDropXpRare`** (defaults 50 / 150) for labels like "Collect for +50 XP".
 
@@ -290,7 +330,7 @@ Order: most recently updated first.
 
 ---
 
-### 4.6 `GET /single-player/vouchers`
+### 4.7 `GET /single-player/vouchers`
 
 **Purpose:** User's won vouchers (includes Brand Month wins when `rewardType` was **COMMERCIAL_VOUCHER**).
 
@@ -319,7 +359,7 @@ Order: most recently updated first.
 
 ---
 
-### 4.7 `GET /single-player/theme` (optional branding)
+### 4.8 `GET /single-player/theme` (optional branding)
 
 **Purpose:** Map/drop skin during sponsored period.
 

@@ -1,4 +1,6 @@
 import { prisma } from "../../config/db.js";
+import { getAdminB2bPendingSignal } from "../../utils/adminB2bPendingSignal.js";
+import { bumpMerchantB2bApprovalSignal } from "../../utils/merchantB2bApprovalSignal.js";
 
 /**
  * @Description List B2B raid zones pending Super Admin approval
@@ -11,7 +13,13 @@ export const listPendingB2bZones = async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    const where = { zoneType: "B2B", approvalStatus: "pending" };
+    const where = {
+      zoneType: "B2B",
+      merchantId: { not: null },
+      NOT: {
+        approvalStatus: { in: ["approved", "rejected"] },
+      },
+    };
     const [zones, total] = await Promise.all([
       prisma.singlePlayerZone.findMany({
         where,
@@ -62,6 +70,15 @@ export const approveB2bZone = async (req, res) => {
       },
     });
 
+    if (zone.merchantId) {
+      await bumpMerchantB2bApprovalSignal({
+        merchantId: zone.merchantId,
+        zoneId: zone.id,
+        zoneName: zone.name,
+        status: "approved",
+      });
+    }
+
     res.status(200).json({
       status: true,
       msg: "B2B zone approved and live",
@@ -94,10 +111,48 @@ export const rejectB2bZone = async (req, res) => {
       },
     });
 
+    if (zone.merchantId) {
+      await bumpMerchantB2bApprovalSignal({
+        merchantId: zone.merchantId,
+        zoneId: zone.id,
+        zoneName: zone.name,
+        status: "rejected",
+      });
+    }
+
     res.status(200).json({
       status: true,
       msg: "B2B zone rejected",
       data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+/**
+ * @Description Lightweight signal for Super Admin polling (new merchant submissions)
+ * @Route GET /api/admin/single-player/b2b/pending/signal
+ * @Access Private (Admin)
+ */
+export const getB2bPendingSignal = async (_req, res) => {
+  try {
+    const signal = await getAdminB2bPendingSignal();
+    const pendingCount = await prisma.singlePlayerZone.count({
+      where: {
+        zoneType: "B2B",
+        merchantId: { not: null },
+        NOT: {
+          approvalStatus: { in: ["approved", "rejected"] },
+        },
+      },
+    });
+    res.status(200).json({
+      status: true,
+      data: {
+        ...signal,
+        pendingCount,
+      },
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });

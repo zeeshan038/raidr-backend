@@ -116,3 +116,15 @@ export const AgreeSafetySchema = (payload) => {
 
     return schema.validate(payload);
 }
+
+export const SearchLocationSchema = (payload) => {
+    const schema = Joi.object({
+        query: Joi.string().trim().min(1).required().messages({
+            'string.empty': 'Query cannot be empty',
+            'any.required': 'Query is required'
+        }),
+        types: Joi.string().optional()
+    }).unknown(false);
+
+    return schema.validate(payload);
+}

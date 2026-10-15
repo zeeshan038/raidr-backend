@@ -30,5 +30,7 @@ export const sanitizeUserForClient = (user) => {
   delete userResponse.otpCreatedAt;
   delete userResponse.otpUpdatedAt;
   delete userResponse.otpCodeExpireTime;
+  userResponse.preferences = Boolean(user.preferencesCompleted);
+  delete userResponse.preferencesCompleted;
   return userResponse;
 };

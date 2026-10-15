@@ -30,6 +30,7 @@ import AdminSinglePlayerRoutes from "./Admin/singlePlayer.js"
 import AdminSponsoredThemeRoutes from "./Admin/sponsoredTheme.js"
 import AdminCommercialVoucherRoutes from "./Admin/commercialVoucher.js"
 import AdminBrandMonthRoutes from "./Admin/brandMonth.js"
+import AdminProfilePreferenceOptionsRoutes from "./Admin/profilePreferenceOptions.js"
 
 //Merchant Routes 
 router.use('/merchant/ads',AdsRoutes);
@@ -66,6 +67,7 @@ router.use("/admin/single-player", AdminSinglePlayerRoutes);
 router.use("/admin/sponsored-themes", AdminSponsoredThemeRoutes);
 router.use('/admin/vouchers', AdminCommercialVoucherRoutes);
 router.use('/admin/brand-months', AdminBrandMonthRoutes);
+router.use('/admin/profile-preference-options', AdminProfilePreferenceOptionsRoutes);
 
 //Test
 router.use("/test", TestRoutes)

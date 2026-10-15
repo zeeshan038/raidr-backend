@@ -77,6 +77,10 @@ export const formatBrandMonthForClient = (campaign, progress, userVoucher = null
   const inventoryTotal = campaign.inventoryTotal;
   const vouchersSoldOut = inventoryRemaining <= 0;
   const prizeStatus = progress?.prizeStatus ?? BRAND_MONTH_PRIZE_STATUS.NONE;
+  const eligibleToClaim =
+    campaignXp >= xpTarget &&
+    prizeStatus === BRAND_MONTH_PRIZE_STATUS.NONE &&
+    inventoryRemaining > 0;
 
   let prize = null;
   if (prizeStatus === BRAND_MONTH_PRIZE_STATUS.CLAIMED) {
@@ -106,6 +110,7 @@ export const formatBrandMonthForClient = (campaign, progress, userVoucher = null
     vouchersSoldOut,
     allVouchersClaimed: vouchersSoldOut,
     prizeStatus,
+    eligibleToClaim,
     canStillWinPrize:
       !vouchersSoldOut &&
       prizeStatus !== BRAND_MONTH_PRIZE_STATUS.CLAIMED &&
@@ -238,13 +243,13 @@ export const tryClaimBrandMonthPrize = async (
 };
 
 /**
- * Increment campaign XP for the active Brand Month and auto-claim when eligible.
+ * Increment campaign XP for the active Brand Month (prize via POST …/brand-month/:campaignId/claim).
  */
 export const applyBrandMonthXp = async (
   prisma,
   userId,
   xpDelta,
-  { notifyOnPrize = true } = {}
+  _opts = {}
 ) => {
   const amount = Math.max(0, Math.floor(xpDelta ?? 0));
   if (amount === 0) {
@@ -269,13 +274,6 @@ export const applyBrandMonthXp = async (
       campaignXp: { increment: amount },
     },
   });
-
-  if (
-    progress.campaignXp >= campaign.xpTarget &&
-    progress.prizeStatus === BRAND_MONTH_PRIZE_STATUS.NONE
-  ) {
-    await tryClaimBrandMonthPrize(prisma, userId, campaign.id, { notifyOnPrize });
-  }
 
   const freshCampaign = await prisma.brandMonthCampaign.findUnique({
     where: { id: campaign.id },
@@ -320,16 +318,6 @@ export const getBrandMonthStateForUser = async (prisma, userId, now = new Date()
       data: { prizeStatus: BRAND_MONTH_PRIZE_STATUS.SOLD_OUT },
     });
     return formatBrandMonthForClient(campaign, updated, null);
-  }
-
-  if (
-    progress.campaignXp >= campaign.xpTarget &&
-    progress.prizeStatus === BRAND_MONTH_PRIZE_STATUS.NONE &&
-    campaign.inventoryRemaining > 0
-  ) {
-    await tryClaimBrandMonthPrize(prisma, userId, campaign.id, {
-      notifyOnPrize: false,
-    });
   }
 
   let userVoucher = null;

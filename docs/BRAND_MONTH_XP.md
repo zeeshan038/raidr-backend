@@ -22,7 +22,7 @@ On Docker prod, see [DEPLOY_SERVER_DB_FIX.md](./DEPLOY_SERVER_DB_FIX.md).
 
 - Admin configures a **time-boxed campaign** (e.g. McDonald's Month): `xpTarget`, **voucher inventory** (FCFS), branding, optional `sponsoredThemeId`, and reward (INLINE or linked `CommercialVoucher`).
 - Players earn **campaign XP** and **lifetime XP** from the same events (daily/rare drop collect uses config `dailyDropXpNormal` / `dailyDropXpRare`).
-- First players to reach `xpTarget` while `inventoryRemaining > 0` auto-claim the prize.
+- First players to reach `xpTarget` and call **claim** while `inventoryRemaining > 0` win the prize (FCFS at claim time).
 
 ## Admin
 
@@ -49,13 +49,14 @@ Base: `/api/admin/brand-months` (Bearer admin token)
 |--------|------|--------|
 | GET | `/api/single-player/brand-month/active` | Progress bar + `inventoryRemaining` / `inventoryTotal` |
 | GET | `/api/single-player/brand-month/history` | Past campaigns |
+| POST | `/api/single-player/brand-month/:campaignId/claim` | Claim grand prize when `eligibleToClaim` |
 | GET | `/api/single-player/dashboard` | Includes `brandMonth` (same shape as active) |
-| POST | `/api/single-player/daily-drop/collect` | Adds `xpAwarded`, `lifetimeXp`, `brandMonth` |
+| POST | `/api/single-player/daily-drop/collect` | Adds `xpAwarded`, `lifetimeXp`, `brandMonth` (XP only) |
 
 ## `brandMonth` response (client)
 
 - `campaignXp`, `xpTarget`, `progressPercent`, `inventoryRemaining`, `inventoryTotal`
-- `allVouchersClaimed`, `prizeStatus`: `NONE` | `CLAIMED` | `SOLD_OUT`
+- `eligibleToClaim`, `allVouchersClaimed`, `prizeStatus`: `NONE` | `CLAIMED` | `SOLD_OUT`
 - `rewardPreview`, `prize` (when claimed)
 
 No intermediate milestone tiers on the backend — one `xpTarget` and one grand prize per campaign (matches approved product flow).

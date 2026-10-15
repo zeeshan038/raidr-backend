@@ -17,6 +17,7 @@ import {
 import {
   getActiveBrandMonth,
   getBrandMonthHistory,
+  claimBrandMonthReward,
 } from "../controllers/singlePlayerBrandMonth.js";
 import {
   getGuardInventory,
@@ -62,5 +63,6 @@ router.get("/dashboard", getSinglePlayerDashboard);
 router.get("/vouchers", getUserVouchers);
 router.get("/brand-month/active", getActiveBrandMonth);
 router.get("/brand-month/history", getBrandMonthHistory);
+router.post("/brand-month/:campaignId/claim", claimBrandMonthReward);
 
 export default router;

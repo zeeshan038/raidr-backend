@@ -63,10 +63,12 @@ model User {
   notificationPreference UserNotificationPreference?
   singlePlayerB2bClaims  SinglePlayerB2bClaim[]
   brandMonthProgress     BrandMonthProgress[]
-  
+  profilePreference      UserProfilePreference?
+
   coinBoostMultiplier    Float?             @default(1.0)
   coinBoostExpiresAt     DateTime?
   spGuardInventory       Int                @default(0)
+  preferencesCompleted   Boolean            @default(false)
 }
 
 model BoxCollectionLog {
@@ -769,4 +771,37 @@ model UserVoucher {
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   voucher         CommercialVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   brandMonthClaim BrandMonthProgress?
+}
+
+/** Admin-managed onboarding choices (raid cities, interests, gender, age range). */
+model ProfilePreferenceOption {
+  id          String   @id @default(uuid())
+  type        String
+  label       String
+  subtitle    String?
+  iconKey     String?
+  accentColor String?
+  slug        String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type, slug])
+  @@index([type, isActive, sortOrder])
+}
+
+model UserProfilePreference {
+  userId            String   @id
+  homeAddress       String?
+  homeCityLabel     String?
+  homeLatitude      Float?
+  homeLongitude     Float?
+  genderOptionId    String?
+  ageRangeOptionId  String?
+  raidCityOptionIds String[] @default([])
+  interestOptionIds String[] @default([])
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
