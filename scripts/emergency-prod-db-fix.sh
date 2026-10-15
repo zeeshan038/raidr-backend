@@ -9,6 +9,7 @@ echo "==> DATABASE_URL=${DATABASE_URL:-not set}"
 
 echo "==> Applying idempotent schema SQL..."
 npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma || true
+npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma || true
 
 echo "==> Baselining migration history..."
 for name in \
@@ -23,12 +24,16 @@ for name in \
   20261014100000_user_sp_boost_columns \
   20261014220000_brand_month_xp \
   20261015010000_drop_brand_month_milestones \
-  20261015020000_brand_month_milestones_compat
+  20261015020000_brand_month_milestones_compat \
+  20261015183000_user_profile_preferences
 do
   npx prisma migrate resolve --applied "$name" 2>/dev/null || true
 done
 
 echo "==> migrate deploy..."
 npx prisma migrate deploy || true
+
+echo "==> Seed profile preference options (onboarding)..."
+node scripts/seedProfilePreferenceOptions.js || true
 
 echo "==> Done. Restart API: docker compose up -d api"

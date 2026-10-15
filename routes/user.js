@@ -19,7 +19,11 @@ import {
     // getKeys,
     UpdateLocation,
     UpdateFCM,
-    agreeSafetyWarning
+    agreeSafetyWarning,
+    getProfilePreferenceOptions,
+    saveProfilePreferences,
+    updateProfilePreferences,
+    searchLocation,
 } from '../controllers/user.js';
 import {
     getNotificationPreferences,
@@ -37,6 +41,7 @@ router.post('/signin-with-google' , signInWithGoogle);
 router.post('/signin-with-apple' , signInWithApple);
 router.post('/forgot-password' , forgotPassword);
 router.post('/reset-password' , resetPassword);
+router.post('/search-location', searchLocation);
 
 router.use(verifyUser);
 router.get('/avatars' , getAvatars);
@@ -50,5 +55,8 @@ router.patch('/update-fcm' , UpdateFCM);
 router.post('/agree-safety', agreeSafetyWarning);
 router.get('/notification-preferences', getNotificationPreferences);
 router.patch('/notification-preferences', updateNotificationPreferences);
+router.get('/profile-preferences/options', getProfilePreferenceOptions);
+router.post('/profile-preferences', saveProfilePreferences);
+router.post('/update-profile-preferences', updateProfilePreferences);
 
 export default router;

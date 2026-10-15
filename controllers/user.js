@@ -12,8 +12,18 @@ import {
     UpdateSchema,
     ForgotPasswordSchema,
     ResetPasswordSchema,
-    AgreeSafetySchema
+    AgreeSafetySchema,
+    SearchLocationSchema,
 } from "../schema/User.js";
+import {
+    SaveProfilePreferencesSchema,
+    UpdateProfilePreferencesSchema,
+} from "../schema/UserProfilePreferences.js";
+import {
+    loadGroupedProfileOptions,
+    validateProfileOptionIds,
+    formatUserProfilePreferenceResponse,
+} from "../utils/profilePreferences.js";
 
 //Utils
 import sendEmail from "../utils/Nodemailer.js";
@@ -936,5 +946,246 @@ export const agreeSafetyWarning = async (req, res) => {
             status: false,
             msg: err.message
         });
+    }
+};
+
+
+/**
+ * @Description Onboarding option lists (admin-managed cities, interests, gender, age ranges)
+ * @Route GET /api/user/profile-preferences/options
+ * @Access Private
+ */
+export const getProfilePreferenceOptions = async (req, res) => {
+    try {
+        const data = await loadGroupedProfileOptions(prisma);
+        res.status(200).json({ status: true, data });
+    } catch (error) {
+        res.status(500).json({ status: false, msg: error.message });
+    }
+};
+
+/**
+ * @Description Save post-register onboarding preferences (sets preferences true on user)
+ * @Route POST /api/user/profile-preferences
+ * @Access Private 
+ */
+export const saveProfilePreferences = async (req, res) => {
+    const userId = req.user.id;
+    const { error, value } = SaveProfilePreferencesSchema(req.body);
+    if (error) {
+        return res.status(400).json({ status: false, msg: error.details[0].message });
+    }
+
+    try {
+        const validation = await validateProfileOptionIds(prisma, value);
+        if (!validation.ok) {
+            return res.status(400).json({ status: false, msg: validation.msg });
+        }
+
+        const raidCityOptionIds = [...new Set(value.raidCityOptionIds)];
+        const interestOptionIds = [...new Set(value.interestOptionIds)];
+
+        const pref = await prisma.userProfilePreference.upsert({
+            where: { userId },
+            create: {
+                userId,
+                homeAddress: value.homeAddress,
+                homeCityLabel: value.homeCityLabel,
+                homeLatitude: value.homeLatitude ?? null,
+                homeLongitude: value.homeLongitude ?? null,
+                genderOptionId: value.genderOptionId,
+                ageRangeOptionId: value.ageRangeOptionId,
+                raidCityOptionIds,
+                interestOptionIds,
+            },
+            update: {
+                homeAddress: value.homeAddress,
+                homeCityLabel: value.homeCityLabel,
+                homeLatitude: value.homeLatitude ?? null,
+                homeLongitude: value.homeLongitude ?? null,
+                genderOptionId: value.genderOptionId,
+                ageRangeOptionId: value.ageRangeOptionId,
+                raidCityOptionIds,
+                interestOptionIds,
+            },
+        });
+
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: { preferencesCompleted: true },
+        });
+
+        const profile = await formatUserProfilePreferenceResponse(prisma, userId, pref);
+
+        res.status(200).json({
+            status: true,
+            msg: "Profile preferences saved",
+            preferences: true,
+            data: profile,
+            user: {
+                ...sanitizeUserForClient(user),
+                ...userLevelProgressFields(user),
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ status: false, msg: error.message });
+    }
+};
+
+
+
+/**
+ * @Description Update profile preferences
+ * @Route POST /api/user/update-profile-preferences
+ * @Access Private 
+ */
+export const updateProfilePreferences = async (req, res) => {
+    const userId = req.user.id;
+    const { error, value } = UpdateProfilePreferencesSchema(req.body);
+    if (error) {
+        return res.status(400).json({ status: false, msg: error.details[0].message });
+    }
+
+    try {
+        const existing = await prisma.userProfilePreference.findUnique({
+            where: { userId },
+        });
+
+        if (!existing) {
+            return res.status(404).json({
+                status: false,
+                msg: "Profile preferences not found. Complete onboarding with POST /profile-preferences first.",
+            });
+        }
+
+        const validation = await validateProfileOptionIds(prisma, value, { partial: true });
+        if (!validation.ok) {
+            return res.status(400).json({ status: false, msg: validation.msg });
+        }
+
+        const updateData = {};
+        if (value.homeAddress !== undefined) updateData.homeAddress = value.homeAddress;
+        if (value.homeCityLabel !== undefined) updateData.homeCityLabel = value.homeCityLabel;
+        if (value.homeLatitude !== undefined) updateData.homeLatitude = value.homeLatitude;
+        if (value.homeLongitude !== undefined) updateData.homeLongitude = value.homeLongitude;
+        if (value.genderOptionId !== undefined) updateData.genderOptionId = value.genderOptionId;
+        if (value.ageRangeOptionId !== undefined) updateData.ageRangeOptionId = value.ageRangeOptionId;
+        if (value.raidCityOptionIds !== undefined) {
+            updateData.raidCityOptionIds = [...new Set(value.raidCityOptionIds)];
+        }
+        if (value.interestOptionIds !== undefined) {
+            updateData.interestOptionIds = [...new Set(value.interestOptionIds)];
+        }
+
+        const pref = await prisma.userProfilePreference.update({
+            where: { userId },
+            data: updateData,
+        });
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const profile = await formatUserProfilePreferenceResponse(prisma, userId, pref);
+
+        res.status(200).json({
+            status: true,
+            msg: "Profile preferences updated",
+            preferences: Boolean(user?.preferencesCompleted),
+            data: profile,
+            user: user
+                ? {
+                      ...sanitizeUserForClient(user),
+                      ...userLevelProgressFields(user),
+                  }
+                : null,
+        });
+    } catch (error) {
+        res.status(500).json({ status: false, msg: error.message });
+    }
+};
+
+
+
+/**
+ * @Description Search Location we need to use google map places api here
+ * @Route POST /api/user/search-location
+ * @Access Public
+ */
+export const searchLocation = async (req, res) => {
+    const payload = req.body;
+
+    const result = SearchLocationSchema(payload);
+    if (result.error) {
+        return res.status(400).json({
+            status: false,
+            msg: result.error.message,
+        });
+    }
+
+    try {
+        const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({
+                status: false,
+                msg: "Google Places API key is not configured",
+            });
+        }
+
+        const query = (payload.query || "").trim();
+        // default to (cities) to match city search use-cases, or custom types if provided
+        const typesParam = payload.types !== undefined ? payload.types : "(cities)";
+        let autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${apiKey}`;
+        if (typesParam) {
+            autocompleteUrl += `&types=${encodeURIComponent(typesParam)}`;
+        }
+
+        const autoRes = await fetch(autocompleteUrl);
+        const autoData = await autoRes.json();
+
+        if (autoData.status !== "OK" && autoData.status !== "ZERO_RESULTS") {
+            return res.status(502).json({
+                status: false,
+                msg: autoData.error_message || `Places API autocomplete error: ${autoData.status}`,
+            });
+        }
+
+        const predictions = autoData.predictions || [];
+
+        // Fetch coordinates / details for each prediction in parallel
+        const places = await Promise.all(
+            predictions.map(async (item) => {
+                let latitude = null;
+                let longitude = null;
+
+                try {
+                    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(item.place_id)}&fields=geometry&key=${apiKey}`;
+                    const detailsRes = await fetch(detailsUrl);
+                    const detailsData = await detailsRes.json();
+
+                    if (detailsData?.result?.geometry?.location) {
+                        latitude = detailsData.result.geometry.location.lat;
+                        longitude = detailsData.result.geometry.location.lng;
+                    }
+                } catch (e) {
+                    // non-blocking fallback if place details lookup fails for a single prediction
+                }
+
+                return {
+                    placeId: item.place_id,
+                    description: item.description,
+                    mainText: item.structured_formatting?.main_text || item.description,
+                    secondaryText: item.structured_formatting?.secondary_text || "",
+                    types: item.types || [],
+                    latitude,
+                    longitude,
+                };
+            })
+        );
+
+        res.status(200).json({
+            status: true,
+            msg: "Locations retrieved successfully",
+            data: places,
+        });
+    } catch (error) {
+        res.status(500).json({ status: false, msg: error.message });
     }
 };

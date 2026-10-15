@@ -302,6 +302,11 @@
           "isReviewed": {
             "type": "boolean"
           },
+          "preferences": {
+            "type": "boolean",
+            "description": "True after POST /user/profile-preferences onboarding is completed.",
+            "example": false
+          },
           "raidrCoins": {
             "type": "integer",
             "example": 500
@@ -1594,6 +1599,62 @@
           }
         ]
       },
+      "ProfilePreferenceOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "type": {
+            "type": "string",
+            "enum": ["RAID_CITY", "INTEREST", "GENDER", "AGE_RANGE"]
+          },
+          "label": { "type": "string" },
+          "subtitle": { "type": "string", "nullable": true },
+          "iconKey": { "type": "string", "nullable": true },
+          "accentColor": { "type": "string", "nullable": true },
+          "slug": { "type": "string", "nullable": true },
+          "sortOrder": { "type": "integer" }
+        }
+      },
+      "ProfilePreferenceOptionsGroupedDto": {
+        "type": "object",
+        "properties": {
+          "raidCities": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+          },
+          "interests": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+          },
+          "genders": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+          },
+          "ageRanges": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+          }
+        }
+      },
+      "UserProfilePreferenceSavedDto": {
+        "type": "object",
+        "properties": {
+          "homeAddress": { "type": "string" },
+          "homeCityLabel": { "type": "string" },
+          "homeLatitude": { "type": "number", "nullable": true },
+          "homeLongitude": { "type": "number", "nullable": true },
+          "gender": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" },
+          "ageRange": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" },
+          "raidCities": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+          },
+          "interests": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+          }
+        }
+      },
       "BrandMonthClientStateDto": {
         "type": "object",
         "description": "Player-facing Brand Month progression (dashboard, active, history).",
@@ -1661,6 +1722,10 @@
           },
           "canStillWinPrize": {
             "type": "boolean"
+          },
+          "eligibleToClaim": {
+            "type": "boolean",
+            "description": "True when campaignXp >= xpTarget, prizeStatus is NONE, and inventoryRemaining > 0. Call POST /single-player/brand-month/{campaignId}/claim."
           },
           "rewardPreview": {
             "$ref": "#/components/schemas/BrandMonthRewardPreviewDto"
@@ -3606,6 +3671,7 @@
           "Single Player"
         ],
         "summary": "Collect daily drop within range",
+        "description": "Awards drop reward plus lifetime and Brand Month campaign XP (brandMonth in response). Does not claim the Brand Month grand prize — when eligibleToClaim is true, call POST /single-player/brand-month/{campaignId}/claim.",
         "security": [
           {
             "bearerAuth": []
@@ -4505,7 +4571,7 @@
           "Single Player"
         ],
         "summary": "Active Brand Month progression",
-        "description": "XP bar, vouchers remaining (FCFS), prizeStatus. data is null when no campaign is active for the current date.",
+        "description": "XP bar, vouchers remaining (FCFS), prizeStatus, eligibleToClaim. Grand prize is claimed via POST /single-player/brand-month/{campaignId}/claim. data is null when no campaign is active for the current date.",
         "security": [
           {
             "bearerAuth": []
@@ -4548,6 +4614,27 @@
                         "inventoryRemaining": 25,
                         "inventoryTotal": 50,
                         "prizeStatus": "NONE",
+                        "eligibleToClaim": false,
+                        "canStillWinPrize": true,
+                        "allVouchersClaimed": false
+                      }
+                    }
+                  },
+                  "readyToClaim": {
+                    "summary": "Target reached — show Claim button",
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                        "name": "McDonald's Month",
+                        "xpTarget": 2000,
+                        "campaignXp": 2000,
+                        "xpRemaining": 0,
+                        "progressPercent": 100,
+                        "inventoryRemaining": 12,
+                        "inventoryTotal": 50,
+                        "prizeStatus": "NONE",
+                        "eligibleToClaim": true,
                         "canStillWinPrize": true,
                         "allVouchersClaimed": false
                       }
@@ -4645,6 +4732,202 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/brand-month/{campaignId}/claim": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Claim Brand Month grand prize",
+        "description": "Call when eligibleToClaim is true on GET /single-player/brand-month/active (campaignXp >= xpTarget, prize not yet claimed, vouchers still available). FCFS: inventoryRemaining decrements on success. Does not award XP — use POST /single-player/daily-drop/collect to earn campaign XP.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "campaignId",
+            "in": "path",
+            "required": true,
+            "description": "Brand Month campaign UUID (same as data.campaignId from active/history)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prize claimed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg",
+                    "data"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Brand Month reward claimed"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Brand Month reward claimed",
+                  "data": {
+                    "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                    "name": "McDonald's Month",
+                    "xpTarget": 2000,
+                    "campaignXp": 2000,
+                    "progressPercent": 100,
+                    "inventoryRemaining": 11,
+                    "inventoryTotal": 50,
+                    "prizeStatus": "CLAIMED",
+                    "eligibleToClaim": false,
+                    "canStillWinPrize": false,
+                    "prize": {
+                      "title": "McDonald's Meal Voucher",
+                      "sponsorName": "McDonald's",
+                      "redemptionCode": "MCD-MEAL-2026",
+                      "claimedAt": "2026-10-15T13:00:00.000Z",
+                      "userVoucherId": "8c4e2a1b-9d0f-4e3a-b2c1-0f9e8d7c6b5a"
+                    },
+                    "rewardPreview": {
+                      "title": "McDonald's Meal Voucher",
+                      "sponsorName": "McDonald's"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not eligible (target not reached, no progress, inactive campaign, or sold out)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                        }
+                      ],
+                      "nullable": true
+                    }
+                  }
+                },
+                "examples": {
+                  "belowTarget": {
+                    "summary": "XP target not reached",
+                    "value": {
+                      "status": false,
+                      "msg": "Campaign XP target not reached yet"
+                    }
+                  },
+                  "soldOut": {
+                    "summary": "Vouchers exhausted",
+                    "value": {
+                      "status": false,
+                      "msg": "All Brand Month vouchers have been claimed",
+                      "data": {
+                        "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                        "prizeStatus": "SOLD_OUT",
+                        "eligibleToClaim": false,
+                        "allVouchersClaimed": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Campaign not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Brand Month campaign not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already claimed for this campaign",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Brand Month reward already claimed"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                    }
+                  }
                 }
               }
             }
@@ -5365,7 +5648,7 @@
           "User Profile"
         ],
         "summary": "Get current user profile",
-        "description": "Returns the authenticated user's full profile (all User table columns except secrets). No nested relations (trips, zones, etc.). Level bar: user.levelProgressPercent.",
+        "description": "Returns the authenticated user's full profile (all User table columns except secrets). No nested relations (trips, zones, etc.). Level bar: user.levelProgressPercent. Onboarding flag: user.preferences (false until POST /user/profile-preferences).",
         "security": [
           {
             "bearerAuth": []
@@ -5413,6 +5696,7 @@
                     "has_seen_level_welcome": true,
                     "fcmToken": null,
                     "isReviewed": false,
+                    "preferences": false,
                     "raidrCoins": 2400,
                     "coinBoostMultiplier": 1,
                     "coinBoostExpiresAt": null,
@@ -13056,6 +13340,347 @@
                 "example": {
                   "status": false,
                   "msg": "Something went wrong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/profile-preferences/options": {
+      "get": {
+        "tags": ["User Profile"],
+        "summary": "Get onboarding preference options (admin-managed)",
+        "description": "Lists active raid cities, interests, genders, and age ranges for the post-register onboarding flow.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Grouped option lists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/ProfilePreferenceOptionsGroupedDto" }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "raidCities": [{ "id": "uuid", "type": "RAID_CITY", "label": "Tel Aviv", "sortOrder": 1 }],
+                    "interests": [{ "id": "uuid", "type": "INTEREST", "label": "Fashion", "subtitle": "Clothes & Accessories", "iconKey": "fashion", "accentColor": "#3B82F6", "sortOrder": 2 }],
+                    "genders": [{ "id": "uuid", "type": "GENDER", "label": "Male", "slug": "male", "sortOrder": 1 }],
+                    "ageRanges": [{ "id": "uuid", "type": "AGE_RANGE", "label": "25 - 34", "slug": "25_34", "sortOrder": 3 }]
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/user/profile-preferences": {
+      "post": {
+        "tags": ["User Profile"],
+        "summary": "Save onboarding profile preferences",
+        "description": "Completes the 5-step onboarding. Sets user.preferences to true (also returned on GET /user/whoami).",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "homeAddress",
+                  "homeCityLabel",
+                  "genderOptionId",
+                  "ageRangeOptionId",
+                  "raidCityOptionIds",
+                  "interestOptionIds"
+                ],
+                "properties": {
+                  "homeAddress": { "type": "string", "example": "Ben Yehuda St 123" },
+                  "homeCityLabel": { "type": "string", "example": "Tel Aviv" },
+                  "homeLatitude": { "type": "number", "example": 32.0853 },
+                  "homeLongitude": { "type": "number", "example": 34.7818 },
+                  "genderOptionId": { "type": "string", "format": "uuid" },
+                  "ageRangeOptionId": { "type": "string", "format": "uuid" },
+                  "raidCityOptionIds": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uuid" },
+                    "minItems": 1
+                  },
+                  "interestOptionIds": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uuid" },
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Profile preferences saved" },
+                    "preferences": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/UserProfilePreferenceSavedDto" },
+                    "user": { "$ref": "#/components/schemas/UserDto" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation or invalid option ids" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/user/update-profile-preferences": {
+      "post": {
+        "tags": ["User Profile"],
+        "summary": "Update profile preferences (settings / edit flow)",
+        "description": "Partial update after onboarding. Requires an existing row from POST /user/profile-preferences. Send only fields to change (at least one). Option ids must match active admin options.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "homeAddress": { "type": "string", "example": "Ben Yehuda St 123" },
+                  "homeCityLabel": { "type": "string", "example": "Tel Aviv" },
+                  "homeLatitude": { "type": "number", "example": 32.0853 },
+                  "homeLongitude": { "type": "number", "example": 34.7818 },
+                  "genderOptionId": { "type": "string", "format": "uuid" },
+                  "ageRangeOptionId": { "type": "string", "format": "uuid" },
+                  "raidCityOptionIds": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uuid" },
+                    "minItems": 1
+                  },
+                  "interestOptionIds": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uuid" },
+                    "minItems": 1
+                  }
+                }
+              },
+              "example": {
+                "homeCityLabel": "Jerusalem",
+                "raidCityOptionIds": ["3b0f718f-1f1b-4c6a-628a-3e727421a7e7"],
+                "interestOptionIds": ["8c4e2a1b-9d0f-4e3a-b2c1-0f9e8d7c6b5a"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Profile preferences updated" },
+                    "preferences": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/UserProfilePreferenceSavedDto" },
+                    "user": { "$ref": "#/components/schemas/UserDto" }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Profile preferences updated",
+                  "preferences": true,
+                  "data": {
+                    "homeAddress": "Ben Yehuda St 123",
+                    "homeCityLabel": "Jerusalem",
+                    "gender": { "id": "uuid", "type": "GENDER", "label": "Male" },
+                    "ageRange": { "id": "uuid", "type": "AGE_RANGE", "label": "25 - 34" },
+                    "raidCities": [{ "id": "uuid", "type": "RAID_CITY", "label": "Jerusalem" }],
+                    "interests": [{ "id": "uuid", "type": "INTEREST", "label": "Fashion" }]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error, empty body, or invalid option ids",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "example": { "status": false, "msg": "At least one field is required to update" }
+              }
+            }
+          },
+          "404": {
+            "description": "No saved preferences yet",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "example": {
+                  "status": false,
+                  "msg": "Profile preferences not found. Complete onboarding with POST /profile-preferences first."
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/user/search-location": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Search locations using Google Places API",
+        "description": "Searches for locations and cities using the Google Places Autocomplete API with coordinates from Place Details.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query"
+                ],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Search term or city name entered by the user",
+                    "example": "Tel Aviv"
+                  },
+                  "types": {
+                    "type": "string",
+                    "description": "Place types filter for Google Places API (defaults to '(cities)')",
+                    "example": "(cities)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Locations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Locations retrieved successfully"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "placeId": {
+                            "type": "string",
+                            "example": "ChIJH3wAALflAhURrwUS4DuhptM"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Tel Aviv-Yafo, Israel"
+                          },
+                          "mainText": {
+                            "type": "string",
+                            "example": "Tel Aviv-Yafo"
+                          },
+                          "secondaryText": {
+                            "type": "string",
+                            "example": "Israel"
+                          },
+                          "types": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "example": [
+                              "locality",
+                              "political",
+                              "geocode"
+                            ]
+                          },
+                          "latitude": {
+                            "type": "number",
+                            "nullable": true,
+                            "example": 32.0852999
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "nullable": true,
+                            "example": 34.78176759999999
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Query is required"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Google Places API key is not configured"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway - Google Places API failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "The provided API key is invalid."
                 }
               }
             }
