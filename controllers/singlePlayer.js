@@ -159,8 +159,8 @@ export const getZones = async (req, res) => {
       userId && status === "conquered_by_me"
         ? candidateZones
         : candidateZones.filter((zone) =>
-            shouldShowSinglePlayerZoneOnMap(zone, visibilityOpts)
-          );
+          shouldShowSinglePlayerZoneOnMap(zone, visibilityOpts)
+        );
 
     const totalZones = visibleZones.length;
     const zones = visibleZones.slice(skip, skip + limit);
@@ -898,7 +898,6 @@ export const getActiveTheme = async (req, res) => {
     }
 
     if (activeTheme) {
-      // If the theme has a specific location, check distance
       if (activeTheme.latitude !== null && activeTheme.longitude !== null) {
         if (!lat || !lng) {
           return res.status(200).json({ status: true, data: null, msg: "Theme requires location. Please provide lat and lng." });
@@ -914,14 +913,22 @@ export const getActiveTheme = async (req, res) => {
           return res.status(200).json({ status: true, data: null, msg: `You are too far away from the active theme. Distance: ${Math.round(distance)}m, Radius: ${radius}m` });
         }
       }
-
-      // If no location restrictions or user is within radius
-      return res.status(200).json({ status: true, data: activeTheme });
+      return res.status(200).json({
+        status: true,
+        data: activeTheme
+      });
     } else {
-      return res.status(200).json({ status: false, data: null, msg: "No active theme" });
+      return res.status(200).json({
+        status: false,
+        data: null,
+        msg: "No active theme"
+      });
     }
   } catch (error) {
-    res.status(500).json({ status: false, msg: error.message });
+    res.status(500).json({
+      status: false,
+      msg: error.message
+    });
   }
 };
 
@@ -1180,6 +1187,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
     res.status(500).json({ status: false, msg: error.message });
   }
 };
+
 
 /**
  * @Description Get all commercial vouchers collected by the user
