@@ -10529,20 +10529,168 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "Fields to update"
+                "properties": {
+                  "title": { "type": "string", "example": "Downtown Treasure Hunt" },
+                  "description": { "type": "string", "example": "Explore the downtown area and claim rewards" },
+                  "duration": { "type": "integer", "example": 180 },
+                  "checkpointCount": { "type": "integer", "example": 3 },
+                  "startTime": { "type": "string", "format": "date-time", "example": "2026-10-17T15:00:00.000Z" },
+                  "endTime": { "type": "string", "format": "date-time", "example": "2026-10-17T18:00:00.000Z" },
+                  "centerLat": { "type": "number", "format": "float", "example": 37.7749 },
+                  "centerLng": { "type": "number", "format": "float", "example": -122.4194 },
+                  "radiusMeter": { "type": "number", "format": "float", "example": 500 },
+                  "rewardType": { "type": "string", "enum": ["CASH", "PHYSICAL", "DIGITAL_COUPON"], "example": "CASH" },
+                  "rewardTitle": { "type": "string", "example": "500 Dollars" },
+                  "rewardValue": { "type": "number", "format": "float", "example": 500 },
+                  "rewardImageUrl": { "type": "string", "example": "" },
+                  "rewardDescription": { "type": "string", "example": "Grand cash prize" },
+                  "rewardClaimInstructions": { "type": "string", "example": "Show claim ticket at store counter" },
+                  "winnersCount": { "type": "integer", "example": 1 },
+                  "checkpoints": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sequence": { "type": "integer", "example": 1 },
+                        "type": { "type": "string", "enum": ["GPS", "QR", "PHOTO", "QNA", "SECRET_CODE"], "example": "QR" },
+                        "latitude": { "type": "number", "format": "float", "nullable": true, "example": null },
+                        "longitude": { "type": "number", "format": "float", "nullable": true, "example": null },
+                        "qrCode": { "type": "string", "nullable": true, "example": "cr_d1c3c8fe161487213f1f0fb9" },
+                        "question": { "type": "string", "nullable": true, "example": null },
+                        "answer": { "type": "string", "nullable": true, "example": null },
+                        "secretCode": { "type": "string", "nullable": true, "example": null },
+                        "photoRequirements": { "type": "string", "nullable": true, "example": null },
+                        "referencePhotoUrl": { "type": "string", "nullable": true, "example": null },
+                        "description": { "type": "string", "example": "Scan code at entrance" },
+                        "xp": { "type": "integer", "example": 150 }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Event updated successfully"
+            "description": "Event updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "msg": { "type": "string", "example": "Event updated successfully" },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "example": "91844232-7eb4-479b-9045-8968685b2321" },
+                        "title": { "type": "string", "example": "TTTTTT" },
+                        "description": { "type": "string", "example": "Event description" },
+                        "merchantId": { "type": "string", "example": "merchant_uuid" },
+                        "eventType": { "type": "string", "example": "HYBRID" },
+                        "status": { "type": "string", "example": "scheduled" },
+                        "checkpointCount": { "type": "integer", "example": 3 },
+                        "duration": { "type": "integer", "example": 180 },
+                        "startTime": { "type": "string", "format": "date-time", "example": "2026-10-17T15:00:00.000Z" },
+                        "endTime": { "type": "string", "format": "date-time", "example": "2026-10-17T18:00:00.000Z" },
+                        "centerLat": { "type": "number", "format": "float", "nullable": true, "example": null },
+                        "centerLng": { "type": "number", "format": "float", "nullable": true, "example": null },
+                        "radiusMeter": { "type": "number", "format": "float", "nullable": true, "example": 500 },
+                        "rewardType": { "type": "string", "example": "CASH" },
+                        "rewardTitle": { "type": "string", "example": "500 Dollars" },
+                        "rewardImageUrl": { "type": "string", "example": "" },
+                        "rewardDescription": { "type": "string", "example": "asdfasdfasd" },
+                        "rewardClaimInstructions": { "type": "string", "example": "adsfsasdf" },
+                        "rewardValue": { "type": "number", "format": "float", "example": 500 },
+                        "winnersCount": { "type": "integer", "example": 1 },
+                        "createdAt": { "type": "string", "format": "date-time", "example": "2026-10-17T14:00:00.000Z" },
+                        "updatedAt": { "type": "string", "format": "date-time", "example": "2026-10-17T14:30:00.000Z" },
+                        "checkpoints": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string", "example": "cp_uuid" },
+                              "eventId": { "type": "string", "example": "91844232-7eb4-479b-9045-8968685b2321" },
+                              "sequence": { "type": "integer", "example": 1 },
+                              "type": { "type": "string", "example": "QR" },
+                              "latitude": { "type": "number", "format": "float", "nullable": true, "example": null },
+                              "longitude": { "type": "number", "format": "float", "nullable": true, "example": null },
+                              "qrCode": { "type": "string", "nullable": true, "example": "cr_d1c3c8fe161487213f1f0fb9" },
+                              "question": { "type": "string", "nullable": true, "example": null },
+                              "answer": { "type": "string", "nullable": true, "example": null },
+                              "secretCode": { "type": "string", "nullable": true, "example": null },
+                              "photoRequirements": { "type": "string", "nullable": true, "example": null },
+                              "referencePhotoUrl": { "type": "string", "nullable": true, "example": null },
+                              "description": { "type": "string", "example": "One" },
+                              "xp": { "type": "integer", "example": 189 },
+                              "createdAt": { "type": "string", "format": "date-time", "example": "2026-10-17T14:04:58.797Z" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Cannot update event configuration while the raid is currently live",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "msg": { "type": "string", "example": "Cannot update event configuration while the raid is currently live." }
+                  }
+                }
+              }
+            }
           },
           "403": {
-            "description": "Forbidden"
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "msg": { "type": "string", "example": "Forbidden" }
+                  }
+                }
+              }
+            }
           },
           "404": {
-            "description": "Event not found"
+            "description": "Event not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "msg": { "type": "string", "example": "Event not found" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": false },
+                    "msg": { "type": "string", "example": "Internal server error" }
+                  }
+                }
+              }
+            }
           }
         }
       }

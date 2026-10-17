@@ -306,11 +306,12 @@ export const GetCoinRushQRCheckpoints = async (req, res) => {
 export const UpdateCoinRushEvent = async (req, res) => {
     const { id: merchantId } = req.merchant;
     const { eventId } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
 
     try {
         const event = await prisma.coinRushEvent.findUnique({
-            where: { id: eventId }
+            where: { id: eventId },
+            include: { checkpoints: true }
         });
 
         if (!event) {
@@ -334,10 +335,93 @@ export const UpdateCoinRushEvent = async (req, res) => {
             });
         }
 
-        const updatedEvent = await prisma.coinRushEvent.update({
-            where: { id: eventId },
-            data: updateData
-        });
+        const checkpoints = updateData.checkpoints;
+        delete updateData.checkpoints;
+        delete updateData.id;
+        delete updateData.merchantId;
+        delete updateData.createdAt;
+        delete updateData.updatedAt;
+
+        if (updateData.duration !== undefined) {
+            updateData.duration = parseInt(updateData.duration);
+        }
+        if (updateData.checkpointCount !== undefined) {
+            updateData.checkpointCount = parseInt(updateData.checkpointCount);
+        }
+        if (updateData.rewardValue !== undefined) {
+            updateData.rewardValue = parseFloat(updateData.rewardValue);
+        }
+        if (updateData.winnersCount !== undefined) {
+            updateData.winnersCount = parseInt(updateData.winnersCount);
+        }
+        if (updateData.startTime !== undefined) {
+            updateData.startTime = updateData.startTime ? new Date(updateData.startTime) : null;
+        }
+        if (updateData.endTime !== undefined) {
+            updateData.endTime = updateData.endTime ? new Date(updateData.endTime) : null;
+        }
+        if (updateData.centerLat !== undefined) {
+            updateData.centerLat = updateData.centerLat !== null ? parseFloat(updateData.centerLat) : null;
+        }
+        if (updateData.centerLng !== undefined) {
+            updateData.centerLng = updateData.centerLng !== null ? parseFloat(updateData.centerLng) : null;
+        }
+        if (updateData.radiusMeter !== undefined) {
+            updateData.radiusMeter = updateData.radiusMeter !== null ? parseFloat(updateData.radiusMeter) : null;
+        }
+
+        let updatedEvent;
+
+        if (Array.isArray(checkpoints)) {
+            const mappedCheckpoints = checkpoints.map((cp, idx) => {
+                const cpType = cp.type || 'GPS';
+                const cpData = {
+                    eventId,
+                    sequence: cp.sequence !== undefined ? parseInt(cp.sequence) : idx + 1,
+                    type: cpType,
+                    description: cp.description || `Checkpoint ${idx + 1}`,
+                    xp: cp.xp !== undefined ? parseInt(cp.xp) : Math.floor(Math.random() * (200 - 50 + 1)) + 50,
+                    latitude: cp.latitude !== undefined && cp.latitude !== null ? parseFloat(cp.latitude) : null,
+                    longitude: cp.longitude !== undefined && cp.longitude !== null ? parseFloat(cp.longitude) : null,
+                    qrCode: cp.qrCode || (cpType === 'QR' ? `cr_${crypto.randomBytes(12).toString('hex')}` : null),
+                    question: cp.question || null,
+                    answer: cp.answer || null,
+                    secretCode: cp.secretCode || null,
+                    photoRequirements: cp.photoRequirements || cp.aiPrompt || null,
+                    referencePhotoUrl: cp.referencePhotoUrl || null
+                };
+                return cpData;
+            });
+
+            const [_, newEvent] = await prisma.$transaction([
+                prisma.coinRushCheckpoint.deleteMany({
+                    where: { eventId }
+                }),
+                prisma.coinRushCheckpoint.createMany({
+                    data: mappedCheckpoints
+                }),
+                prisma.coinRushEvent.update({
+                    where: { id: eventId },
+                    data: updateData,
+                    include: {
+                        checkpoints: {
+                            orderBy: { sequence: 'asc' }
+                        }
+                    }
+                })
+            ]);
+            updatedEvent = newEvent;
+        } else {
+            updatedEvent = await prisma.coinRushEvent.update({
+                where: { id: eventId },
+                data: updateData,
+                include: {
+                    checkpoints: {
+                        orderBy: { sequence: 'asc' }
+                    }
+                }
+            });
+        }
 
         return res.status(200).json({
             status: true,
