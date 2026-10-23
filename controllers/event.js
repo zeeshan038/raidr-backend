@@ -12,72 +12,80 @@ import {
     haversineDistance,
     applyDiscoveryLocationFilter,
     buildDiscoveryProximityWhere,
+    buildDiscoveryStatusWhere,
     getDiscoveryRadiusMeters,
-    resolveMapCoordinates,
+    mergeDiscoveryWhere,
+    resolveRequestCoordinates,
     syncUserLocationFromRequest,
     userControlsDiscoveryZone,
 } from "../utils/methods/methods.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
- * @Route GET /api/user/events/discovery?page=1&limit=10&status=live
+ * @Route GET /api/events/discovery?page=1&limit=10&status=live
  * @Access Private (User)
  */
 export const GetEvents = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const { status } = req.query;
+    const statusKey = String(req.query.status || "").toLowerCase();
     const { id: userId } = req.user;
 
-    let statusFilter;
     let participantFilter = undefined;
-    if (status === "live") {
-        statusFilter = "live";
-    } else if (status === "scheduled") {
-        statusFilter = "scheduled";
-    } else if (status === "ended") {
-        statusFilter = { in: ["completed", "cancelled"] };
+    if (statusKey === "ended") {
         participantFilter = { some: { userId: userId } };
-    } else if (status === "joined") {
-        statusFilter = { in: ["live", "scheduled"] };
+    } else if (statusKey === "joined") {
         participantFilter = { some: { userId: userId } };
-    } else {
-        statusFilter = { in: ["live", "scheduled"] };
     }
 
     try {
         syncUserLocationFromRequest(req);
 
-        const applyMapProximity = status !== "joined" && status !== "ended";
-        const mapCoords = applyMapProximity ? resolveMapCoordinates(req) : null;
+        const applyMapProximity = statusKey !== "joined" && statusKey !== "ended";
+        const discoveryCoords = applyMapProximity ? resolveRequestCoordinates(req) : null;
         const radiusMeters = getDiscoveryRadiusMeters(req);
+        const statusWhere = buildDiscoveryStatusWhere(statusKey);
         const liveProximityWhere = applyMapProximity
             ? buildDiscoveryProximityWhere({
                 userId,
-                coords: mapCoords,
+                coords: discoveryCoords,
                 radiusMeters,
                 latField: "latitude",
                 lngField: "longitude",
             })
             : {};
-        const coinProximityWhere = applyMapProximity
-            ? buildDiscoveryProximityWhere({
-                userId,
-                coords: mapCoords,
-                radiusMeters,
-                latField: "centerLat",
-                lngField: "centerLng",
-            })
-            : {};
+        const liveEventWhere = mergeDiscoveryWhere(
+            statusWhere,
+            participantFilter ? { participants: participantFilter } : null,
+            liveProximityWhere
+        );
+        // Coin rush: geo filter in memory (centerLat may be null; use first checkpoint).
+        const coinRushEventWhere = mergeDiscoveryWhere(
+            statusWhere,
+            participantFilter ? { participants: participantFilter } : null
+        );
+
+        const resolveEventDiscoveryLatLng = (event) => {
+            if (event.isCoinRush) {
+                let lat = event.centerLat;
+                let lng = event.centerLng;
+                if (
+                    (lat == null || lng == null) &&
+                    Array.isArray(event.checkpoints) &&
+                    event.checkpoints.length > 0
+                ) {
+                    lat = event.checkpoints[0].latitude;
+                    lng = event.checkpoints[0].longitude;
+                }
+                return { lat, lng };
+            }
+            return { lat: event.latitude, lng: event.longitude };
+        };
 
         const [liveEvents, coinRushEvents] = await Promise.all([
             prisma.liveEvent.findMany({
-                where: {
-                    status: statusFilter,
-                    ...(participantFilter && { participants: participantFilter }),
-                    ...liveProximityWhere,
-                },
+                where: liveEventWhere,
                 include: {
                     participants: {
                         where: { userId: userId }
@@ -88,11 +96,7 @@ export const GetEvents = async (req, res) => {
                 }
             }),
             prisma.coinRushEvent.findMany({
-                where: {
-                    status: statusFilter,
-                    ...(participantFilter && { participants: participantFilter }),
-                    ...coinProximityWhere,
-                },
+                where: coinRushEventWhere,
                 include: {
                     participants: {
                         where: { userId: userId }
@@ -102,7 +106,12 @@ export const GetEvents = async (req, res) => {
                     },
                     progress: {
                         where: { userId: userId }
-                    }
+                    },
+                    checkpoints: {
+                        orderBy: { sequence: "asc" },
+                        take: 1,
+                        select: { latitude: true, longitude: true },
+                    },
                 }
             })
         ]);
@@ -123,7 +132,7 @@ export const GetEvents = async (req, res) => {
             const isJoined = event.participants.length > 0;
             const hasCompleted = event.claims && event.claims.length > 0;
             const inProgress = event.progress && event.progress.length > 0;
-            const { participants, claims, progress, ...eventData } = event;
+            const { participants, claims, progress, checkpoints, ...eventData } = event;
             return {
                 ...eventData,
                 isJoined,
@@ -137,11 +146,11 @@ export const GetEvents = async (req, res) => {
 
         // Move completed events based on claims dynamically
         mergedEvents = mergedEvents.filter(event => {
-            if (status === "live" || status === "scheduled" || status === "joined") {
+            if (statusKey === "live" || statusKey === "scheduled" || statusKey === "joined") {
                 // If it's technically live/scheduled globally, but the user has already completed it, exclude it from live tabs
                 return !event.hasCompleted;
             }
-            if (status === "ended") {
+            if (statusKey === "ended") {
                 // Include if globally ended OR user has already completed it locally
                 return event.hasCompleted || event.status === "completed" || event.status === "cancelled";
             }
@@ -150,7 +159,7 @@ export const GetEvents = async (req, res) => {
 
         let filteredEvents = mergedEvents;
 
-        if (status === "joined") {
+        if (statusKey === "joined") {
             // Task 2: order by nearest in time chronologically
             filteredEvents.sort((a, b) => {
                 const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
@@ -159,10 +168,7 @@ export const GetEvents = async (req, res) => {
             });
         } else {
             filteredEvents = applyDiscoveryLocationFilter(mergedEvents, req, {
-                getLatLng: (event) => ({
-                    lat: event.isCoinRush ? event.centerLat : event.latitude,
-                    lng: event.isCoinRush ? event.centerLng : event.longitude
-                }),
+                getLatLng: resolveEventDiscoveryLatLng,
                 getAlwaysShow: (event) => userControlsDiscoveryZone(event),
             });
         }

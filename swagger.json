@@ -8972,6 +8972,7 @@
           "User Events"
         ],
         "summary": "Get live, scheduled, or ended events for players",
+        "description": "For live/scheduled discovery (not joined/ended tabs), send lat/long (or use stored profile location). status=live includes DB rows with status live, and scheduled events whose startTime has passed and endTime is still in the future (even if cron has not flipped status yet). Default search radius is ~50 km unless radiusKm or DISCOVERY_RADIUS_KM is set.",
         "security": [
           {
             "bearerAuth": []
@@ -9007,6 +9008,38 @@
                 "ended"
               ]
             }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "User GPS latitude (aliases: latitude, userLat)"
+          },
+          {
+            "name": "long",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "User GPS longitude (aliases: lng, longitude, userLng)"
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Discovery radius in kilometers (default from DISCOVERY_RADIUS_KM env or 50)"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional city context; when set, uses DISCOVERY_CITY_RADIUS_KM or 80 km cap"
           }
         ],
         "responses": {
