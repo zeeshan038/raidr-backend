@@ -231,7 +231,7 @@ export const buildDiscoveryProximityWhere = ({
     const controlled = { participants: { some: { userId } } };
 
     if (!coords || !userId) {
-        return controlled;
+        return {};
     }
 
     const { lat, lng } = coords;
@@ -430,8 +430,55 @@ export const buildSinglePlayerZoneMapWhere = ({ userId, coords, radiusMeters, no
     };
 };
 
+/** Combine Prisma where fragments without clobbering nested OR clauses. */
+export const mergeDiscoveryWhere = (...clauses) => {
+    const parts = clauses.filter(
+        (c) => c && typeof c === "object" && Object.keys(c).length > 0
+    );
+    if (parts.length === 0) {
+        return {};
+    }
+    if (parts.length === 1) {
+        return parts[0];
+    }
+    return { AND: parts };
+};
+
+/**
+ * Discovery list status filter; includes time window when cron has not flipped status yet.
+ */
+export const buildDiscoveryStatusWhere = (status, now = new Date()) => {
+    const normalized = String(status || "").toLowerCase();
+
+    if (normalized === "live") {
+        return {
+            OR: [
+                { status: "live", endTime: { gt: now } },
+                {
+                    status: "scheduled",
+                    startTime: { lte: now },
+                    endTime: { gt: now },
+                },
+            ],
+        };
+    }
+    if (normalized === "scheduled") {
+        return {
+            status: "scheduled",
+            startTime: { gt: now },
+        };
+    }
+    if (normalized === "ended") {
+        return { status: { in: ["completed", "cancelled"] } };
+    }
+    if (normalized === "joined") {
+        return { status: { in: ["live", "scheduled"] } };
+    }
+    return { status: { in: ["live", "scheduled"] } };
+};
+
 export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlwaysShow }) => {
-    const coords = resolveMapCoordinates(req);
+    const coords = resolveRequestCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
 
     let filtered = events;
