@@ -447,18 +447,64 @@ export const mergeDiscoveryWhere = (...clauses) => {
 /**
  * Discovery list status filter; includes time window when cron has not flipped status yet.
  */
-export const buildDiscoveryStatusWhere = (status, now = new Date()) => {
+/** LiveEvent.endTime is required; CoinRushEvent.endTime is optional. */
+const discoveryLiveStatusRow = (now, allowNullEndTime) => {
+    const base = { status: "live" };
+    if (allowNullEndTime) {
+        return {
+            AND: [base, { OR: [{ endTime: { gt: now } }, { endTime: null }] }],
+        };
+    }
+    return { ...base, endTime: { gt: now } };
+};
+
+const discoveryScheduledInProgressRow = (now, allowNullEndTime) => {
+    const base = { status: "scheduled", startTime: { lte: now } };
+    if (allowNullEndTime) {
+        return {
+            AND: [base, { OR: [{ endTime: { gt: now } }, { endTime: null }] }],
+        };
+    }
+    return { ...base, endTime: { gt: now } };
+};
+
+export const hasDiscoveryMapCoordinates = (lat, lng) => {
+    if (lat == null || lng == null) {
+        return false;
+    }
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    return !isNaN(parsedLat) && !isNaN(parsedLng);
+};
+
+/** Map pin for coin rush: center, else first checkpoint with GPS. */
+export const resolveCoinRushDiscoveryLatLng = (event) => {
+    if (hasDiscoveryMapCoordinates(event?.centerLat, event?.centerLng)) {
+        return { lat: event.centerLat, lng: event.centerLng };
+    }
+    const checkpoints = event?.checkpoints;
+    if (Array.isArray(checkpoints)) {
+        for (const cp of checkpoints) {
+            if (hasDiscoveryMapCoordinates(cp?.latitude, cp?.longitude)) {
+                return { lat: cp.latitude, lng: cp.longitude };
+            }
+        }
+    }
+    return { lat: null, lng: null };
+};
+
+export const buildDiscoveryStatusWhere = (
+    status,
+    now = new Date(),
+    { allowNullEndTime = false } = {}
+) => {
     const normalized = String(status || "").toLowerCase();
 
     if (normalized === "live") {
         return {
             OR: [
-                { status: "live", endTime: { gt: now } },
-                {
-                    status: "scheduled",
-                    startTime: { lte: now },
-                    endTime: { gt: now },
-                },
+                discoveryLiveStatusRow(now, allowNullEndTime),
+                discoveryScheduledInProgressRow(now, allowNullEndTime),
             ],
         };
     }
@@ -481,22 +527,30 @@ export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlways
     const coords = resolveRequestCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
 
-    let filtered = events;
-    if (!coords) {
-        filtered = events.filter((event) => getAlwaysShow(event));
-    } else {
-        filtered = events.filter((event) => {
-            const { lat: eventLat, lng: eventLng } = getLatLng(event);
-            return shouldShowInDiscovery({
-                userLat: coords.lat,
-                userLng: coords.lng,
-                eventLat,
-                eventLng,
-                radiusMeters,
-                alwaysShow: getAlwaysShow(event)
-            });
+    const filtered = events.filter((event) => {
+        if (getAlwaysShow(event)) {
+            return true;
+        }
+
+        const { lat: eventLat, lng: eventLng } = getLatLng(event);
+        // QR / hybrid coin rush with no GPS pin still belongs in the events list.
+        if (!hasDiscoveryMapCoordinates(eventLat, eventLng)) {
+            return true;
+        }
+
+        if (!coords) {
+            return false;
+        }
+
+        return shouldShowInDiscovery({
+            userLat: coords.lat,
+            userLng: coords.lng,
+            eventLat,
+            eventLng,
+            radiusMeters,
+            alwaysShow: false,
         });
-    }
+    });
 
     return filtered.map((event) => {
         const { lat: eventLat, lng: eventLng } = getLatLng(event);

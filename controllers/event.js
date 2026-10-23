@@ -15,6 +15,7 @@ import {
     buildDiscoveryStatusWhere,
     getDiscoveryRadiusMeters,
     mergeDiscoveryWhere,
+    resolveCoinRushDiscoveryLatLng,
     resolveRequestCoordinates,
     syncUserLocationFromRequest,
     userControlsDiscoveryZone,
@@ -45,7 +46,10 @@ export const GetEvents = async (req, res) => {
         const applyMapProximity = statusKey !== "joined" && statusKey !== "ended";
         const discoveryCoords = applyMapProximity ? resolveRequestCoordinates(req) : null;
         const radiusMeters = getDiscoveryRadiusMeters(req);
-        const statusWhere = buildDiscoveryStatusWhere(statusKey);
+        const liveEventStatusWhere = buildDiscoveryStatusWhere(statusKey);
+        const coinRushStatusWhere = buildDiscoveryStatusWhere(statusKey, new Date(), {
+            allowNullEndTime: true,
+        });
         const liveProximityWhere = applyMapProximity
             ? buildDiscoveryProximityWhere({
                 userId,
@@ -56,29 +60,19 @@ export const GetEvents = async (req, res) => {
             })
             : {};
         const liveEventWhere = mergeDiscoveryWhere(
-            statusWhere,
+            liveEventStatusWhere,
             participantFilter ? { participants: participantFilter } : null,
             liveProximityWhere
         );
         // Coin rush: geo filter in memory (centerLat may be null; use first checkpoint).
         const coinRushEventWhere = mergeDiscoveryWhere(
-            statusWhere,
+            coinRushStatusWhere,
             participantFilter ? { participants: participantFilter } : null
         );
 
         const resolveEventDiscoveryLatLng = (event) => {
             if (event.isCoinRush) {
-                let lat = event.centerLat;
-                let lng = event.centerLng;
-                if (
-                    (lat == null || lng == null) &&
-                    Array.isArray(event.checkpoints) &&
-                    event.checkpoints.length > 0
-                ) {
-                    lat = event.checkpoints[0].latitude;
-                    lng = event.checkpoints[0].longitude;
-                }
-                return { lat, lng };
+                return resolveCoinRushDiscoveryLatLng(event);
             }
             return { lat: event.latitude, lng: event.longitude };
         };
@@ -109,8 +103,7 @@ export const GetEvents = async (req, res) => {
                     },
                     checkpoints: {
                         orderBy: { sequence: "asc" },
-                        take: 1,
-                        select: { latitude: true, longitude: true },
+                        select: { latitude: true, longitude: true, sequence: true },
                     },
                 }
             })

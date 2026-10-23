@@ -577,6 +577,19 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
             return cpData;
         });
 
+        if (
+            (finalCenterLat == null || finalCenterLng == null) &&
+            createdCheckpoints.length > 0
+        ) {
+            const gpsCheckpoint = createdCheckpoints.find(
+                (cp) => cp.latitude != null && cp.longitude != null
+            );
+            if (gpsCheckpoint) {
+                finalCenterLat = gpsCheckpoint.latitude;
+                finalCenterLng = gpsCheckpoint.longitude;
+            }
+        }
+
         const newEvent = await prisma.coinRushEvent.create({
             data: {
                 title : payload.title,
