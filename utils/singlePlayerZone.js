@@ -2,6 +2,8 @@
  * Single Player Phase 2 — zone state, capture duration, API shaping.
  */
 
+import { haversineDistance } from "./methods/methods.js";
+
 export const SP_DEFAULTS = {
   baseCaptureTimeSec: 30,
   shieldDurationMin: 60,
@@ -181,3 +183,19 @@ export const formatSinglePlayerZoneForClient = (
 };
 
 export const captureAttemptRedisKey = (userId, zoneId) => `single_player:capture:${userId}:${zoneId}`;
+
+export const validateCaptureLocation = (zone, latitude, longitude) => {
+  const distance = haversineDistance(
+    parseFloat(zone.latitude),
+    parseFloat(zone.longitude),
+    parseFloat(latitude),
+    parseFloat(longitude)
+  );
+  if (distance > zone.radius) {
+    return {
+      ok: false,
+      msg: `You must be within ${zone.radius}m of the zone.`,
+    };
+  }
+  return { ok: true };
+};

@@ -7,13 +7,13 @@ import {
 } from "../utils/singlePlayerZone.js";
 import { getSpGameConfig, gameplayFromConfig } from "../utils/singlePlayerConfig.js";
 import {
+  CAPTURE_SESSION_BUFFER_SEC,
   isZoneUnderAttack,
   normalizeCaptureAttempt,
+  resolveCaptureAttemptForGuardAction,
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
 import { publishGuardEliminatedToOwner } from "../sockets/singlePlayerPublisher.js";
-
-const CAPTURE_SESSION_BUFFER_SEC = 120;
 
 const refreshCaptureAttemptTimer = async (userId, zone, configGameplay, attemptOverride = null) => {
   const attemptKey = captureAttemptRedisKey(userId, zone.id);
@@ -238,17 +238,9 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
   const userId = req.user.id;
   const { id: zoneId } = req.params;
   const requestedCount = req.body.count != null ? parseInt(req.body.count, 10) : null;
+  const { latitude, longitude } = req.body;
 
   try {
-    const attemptKey = captureAttemptRedisKey(userId, zoneId);
-    const rawAttempt = await redis.get(attemptKey);
-    if (!rawAttempt) {
-      return res.status(400).json({
-        status: false,
-        msg: "No active capture attempt. Start capture first.",
-      });
-    }
-
     const configRow = await getSpGameConfig(prisma);
     const config = gameplayFromConfig(configRow);
 
@@ -257,7 +249,25 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
       return res.status(404).json({ status: false, msg: "Zone not found" });
     }
 
-    let attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
+    const resolved = await resolveCaptureAttemptForGuardAction(userId, zoneId, zone, config, {
+      latitude,
+      longitude,
+    });
+
+    if (resolved?.error) {
+      const { status, msg, ...rest } = resolved.error;
+      return res.status(status).json({ status: false, msg, ...rest });
+    }
+
+    if (!resolved?.attempt) {
+      return res.status(400).json({
+        status: false,
+        code: "NO_CAPTURE_SESSION",
+        msg: "No active capture attempt. Call POST .../capture/start first, or include latitude and longitude in this request while in the zone.",
+      });
+    }
+
+    let attempt = resolved.attempt;
 
     if (attempt.sessionGuardsRemaining <= 0) {
       return res.status(400).json({
