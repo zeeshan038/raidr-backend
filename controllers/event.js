@@ -20,6 +20,7 @@ import {
     syncUserLocationFromRequest,
     userControlsDiscoveryZone,
 } from "../utils/methods/methods.js";
+import { buildCoinRushCheckpointsPayload } from "../utils/coinRushCheckpoints.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
@@ -272,18 +273,15 @@ export const eventDetails = async (req, res) => {
             const isJoined = coinRushEvent.participants.length > 0;
             const coinRushAgreedToSafetyWarning = coinRushParticipant ? (coinRushParticipant.agreedToSafetyWarning || false) : false;
 
-            // Determine which checkpoint IDs are completed
-            const completedCheckpointIds = coinRushEvent.progress.map(p => p.checkpointId);
-
-            // Hide qrCode strings for security and set isAchieved status
-            const safeCheckpoints = coinRushEvent.checkpoints.map(cp => {
-                const { qrCode, ...rest } = cp;
-                const isAchieved = completedCheckpointIds.includes(cp.id);
-                return {
-                    ...rest,
-                    isAchieved
-                };
-            });
+            const completedCheckpointIds = coinRushEvent.progress.map((p) => p.checkpointId);
+            const {
+                safeCheckpoints,
+                upcomingCheckpoint,
+                checkpointRadiusMeters,
+            } = buildCoinRushCheckpointsPayload(
+                coinRushEvent.checkpoints,
+                completedCheckpointIds
+            );
 
             return res.status(200).json({
                 status: true,
@@ -291,6 +289,8 @@ export const eventDetails = async (req, res) => {
                 event: {
                     ...coinRushEvent,
                     checkpoints: safeCheckpoints,
+                    upcomingCheckpoint,
+                    checkpointRadiusMeters,
                     participants: undefined,
                     progress: undefined,
                     isJoined,

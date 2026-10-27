@@ -12,6 +12,11 @@ import {
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
 import { publishToUser } from '../sockets/eventPublisher.js';
 import { compareImagesWithAI } from '../utils/Openai.js';
+import {
+    COIN_RUSH_CHECKPOINT_GPS_RADIUS_METERS,
+    buildCoinRushCheckpointsPayload,
+    sanitizeCoinRushCheckpointForClient,
+} from '../utils/coinRushCheckpoints.js';
 
 // Custom publisher function for Coin Rush to distinct from normal live event rooms
 const publishToCoinRushRoom = (eventId, payload) => {
@@ -236,25 +241,12 @@ export const GetCoinRushEventDetails = async (req, res) => {
         const isJoined = event.participants.length > 0;
         const agreedToSafetyWarning = participant ? (participant.agreedToSafetyWarning || false) : false;
         
-        // Determine which checkpoint IDs are completed
-        const completedCheckpointIds = event.progress.map(p => p.checkpointId);
-
-        // Hide Future Checkpoints: Slice the array up to the user's current progress + 1
-        const completedCount = completedCheckpointIds.length;
-        const visibleCheckpoints = event.checkpoints.slice(0, completedCount + 1);
-
-        // Hide sensitive answers for security and set isAchieved status
-        const safeCheckpoints = visibleCheckpoints.map(cp => {
-            const isAchieved = completedCheckpointIds.includes(cp.id);
-            const safeCp = { ...cp, isAchieved };
-            
-            // Delete sensitive answers from the payload so users cannot cheat by inspecting API responses
-            delete safeCp.qrCode;
-            delete safeCp.answer;
-            delete safeCp.secretCode;
-
-            return safeCp;
-        });
+        const completedCheckpointIds = event.progress.map((p) => p.checkpointId);
+        const {
+            safeCheckpoints,
+            upcomingCheckpoint,
+            checkpointRadiusMeters,
+        } = buildCoinRushCheckpointsPayload(event.checkpoints, completedCheckpointIds);
 
         const leaderboard = await getCoinRushLeaderboard(eventId);
 
@@ -264,8 +256,10 @@ export const GetCoinRushEventDetails = async (req, res) => {
             event: {
                 ...event,
                 checkpoints: safeCheckpoints,
-                participants: undefined, 
-                progress: undefined,    
+                upcomingCheckpoint,
+                checkpointRadiusMeters,
+                participants: undefined,
+                progress: undefined,
                 isJoined,
                 agreedToSafetyWarning,
                 totalParticipants: event._count.participants,
@@ -490,10 +484,10 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                 checkpoint.latitude,
                 checkpoint.longitude
             );
-            if (dist > 15) { // 15 meters radius check
+            if (dist > COIN_RUSH_CHECKPOINT_GPS_RADIUS_METERS) {
                 return res.status(400).json({
                     status: false,
-                    msg: `You are not within range. Distance is ${dist.toFixed(1)} meters.`
+                    msg: `You are not within range. Distance is ${dist.toFixed(1)} meters (must be within ${COIN_RUSH_CHECKPOINT_GPS_RADIUS_METERS}m).`
                 });
             }
         } else if (actualType === 'QR') {
@@ -697,10 +691,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
         if (completedCount < totalCheckpoints) {
             const nextCp = event.checkpoints[completedCount];
             if (nextCp) {
-                safeNextCheckpoint = { ...nextCp, isAchieved: false };
-                delete safeNextCheckpoint.qrCode;
-                delete safeNextCheckpoint.answer;
-                delete safeNextCheckpoint.secretCode;
+                safeNextCheckpoint = sanitizeCoinRushCheckpointForClient(nextCp, false);
             }
         }
 
