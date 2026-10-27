@@ -16,6 +16,7 @@ import {
   formatSinglePlayerZoneForClient,
   isZoneAttackable,
   userOwnsSinglePlayerZone,
+  validateCaptureLocation,
 } from "../utils/singlePlayerZone.js";
 import {
   getSpGameConfig,
@@ -39,15 +40,14 @@ import {
   getBrandMonthStateForUser,
 } from "../utils/brandMonth.js";
 import {
+  CAPTURE_SESSION_BUFFER_SEC,
   clearZoneAttackers,
   getActiveCaptureSessionForUser,
   normalizeCaptureAttempt,
-  registerZoneAttacker,
+  persistCaptureAttempt,
   unregisterZoneAttacker,
 } from "../utils/singlePlayerCapture.js";
 import { publishZoneCaptureStartedToOwner } from "../sockets/singlePlayerPublisher.js";
-
-const CAPTURE_SESSION_BUFFER_SEC = 120;
 
 /**
  * @Description Get gameplay constants for the mobile app (capture, guards, shields)
@@ -260,22 +260,6 @@ export const getZoneById = async (req, res) => {
   }
 };
 
-const validateCaptureLocation = (zone, latitude, longitude) => {
-  const distance = haversineDistance(
-    parseFloat(zone.latitude),
-    parseFloat(zone.longitude),
-    parseFloat(latitude),
-    parseFloat(longitude)
-  );
-  if (distance > zone.radius) {
-    return {
-      ok: false,
-      msg: `You must be within ${zone.radius}m of the zone.`,
-    };
-  }
-  return { ok: true };
-};
-
 const resolveShieldDurationMin = async (userId) => {
   const [user, configRow] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
@@ -377,8 +361,6 @@ export const startCapture = async (req, res) => {
       )
     );
     const startedAt = Date.now();
-    const attemptKey = captureAttemptRedisKey(userId, zoneId);
-    const sessionTtl = captureTimeSec + CAPTURE_SESSION_BUFFER_SEC;
     const attempt = normalizeCaptureAttempt(
       {
         zoneId,
@@ -393,8 +375,7 @@ export const startCapture = async (req, res) => {
       zone.guardCount ?? 0
     );
 
-    await redis.set(attemptKey, JSON.stringify(attempt), "EX", sessionTtl);
-    await registerZoneAttacker(zoneId, userId, sessionTtl);
+    await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
 
     if (previousOwnerId && previousOwnerId !== userId) {
       await notifyUserIfAllowed(
