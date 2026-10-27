@@ -8,6 +8,8 @@
     "start": "node index.js",
     "swagger": "node swagger-setup.js",
     "seed:profile-preferences": "node scripts/seedProfilePreferenceOptions.js",
+    "coin-rush:test-list": "node scripts/coinRushTestEvent.js list",
+    "coin-rush:test-create": "node scripts/coinRushTestEvent.js create --live",
     "postinstall": "prisma generate"
   },
   "keywords": [],
