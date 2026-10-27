@@ -67,12 +67,31 @@ export const persistCaptureAttempt = async (userId, zoneId, attempt, captureTime
  * Load Redis capture session, or recover / lazy-start when the app calls eliminate-guards
  * without a session (e.g. AR opened before start, or Redis key lost while attacker set remains).
  */
+const buildFreshCaptureAttempt = (userId, zoneId, zone, gameplay, zoneGuardCount) => {
+  const now = Date.now();
+  const captureTimeSec = computeRequiredCaptureSeconds(zone, new Date(now), gameplay);
+  const attempt = normalizeCaptureAttempt(
+    {
+      zoneId,
+      userId,
+      startedAt: now,
+      captureTimeSec,
+      targetOwnerId: zone.currentOwnerId ?? null,
+      initialGuardCount: zoneGuardCount,
+      sessionGuardsRemaining: zoneGuardCount,
+      guardsEliminatedInSession: 0,
+    },
+    zoneGuardCount
+  );
+  return { attempt, captureTimeSec };
+};
+
 export const resolveCaptureAttemptForGuardAction = async (
   userId,
   zoneId,
   zone,
   gameplay,
-  { latitude = null, longitude = null } = {}
+  { latitude = null, longitude = null, autoStartForEliminate = false } = {}
 ) => {
   const zoneGuardCount = zone.guardCount ?? 0;
   const raw = await redis.get(captureAttemptRedisKey(userId, zoneId));
@@ -80,28 +99,15 @@ export const resolveCaptureAttemptForGuardAction = async (
     return { attempt: normalizeCaptureAttempt(JSON.parse(raw), zoneGuardCount) };
   }
 
-  const isRegisteredAttacker = await redis.sismember(zoneAttackersRedisKey(zoneId), userId);
+  const isRegisteredAttacker = Number(await redis.sismember(zoneAttackersRedisKey(zoneId), userId)) === 1;
   if (isRegisteredAttacker) {
-    const now = Date.now();
-    const captureTimeSec = computeRequiredCaptureSeconds(zone, new Date(), gameplay);
-    const attempt = normalizeCaptureAttempt(
-      {
-        zoneId,
-        userId,
-        startedAt: now,
-        captureTimeSec,
-        targetOwnerId: zone.currentOwnerId ?? null,
-        initialGuardCount: zoneGuardCount,
-        sessionGuardsRemaining: zoneGuardCount,
-        guardsEliminatedInSession: 0,
-      },
-      zoneGuardCount
-    );
+    const { attempt, captureTimeSec } = buildFreshCaptureAttempt(userId, zoneId, zone, gameplay, zoneGuardCount);
     await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
     return { attempt, recovered: true };
   }
 
-  if (latitude == null || longitude == null) {
+  const hasCoords = latitude != null && longitude != null;
+  if (!hasCoords && !autoStartForEliminate) {
     return null;
   }
 
@@ -119,9 +125,15 @@ export const resolveCaptureAttemptForGuardAction = async (
     return { error: { status: 400, msg: "Zone is currently shielded by another player." } };
   }
 
-  const locationCheck = validateCaptureLocation(zone, latitude, longitude);
-  if (!locationCheck.ok) {
-    return { error: { status: 400, msg: locationCheck.msg } };
+  if (autoStartForEliminate && zoneGuardCount <= 0) {
+    return { error: { status: 400, msg: "This zone has no guards to eliminate." } };
+  }
+
+  if (hasCoords) {
+    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
+    if (!locationCheck.ok) {
+      return { error: { status: 400, msg: locationCheck.msg } };
+    }
   }
 
   const ownedCount = await countOwnedZones(prisma, userId);
@@ -145,21 +157,7 @@ export const resolveCaptureAttemptForGuardAction = async (
     };
   }
 
-  const startedAt = Date.now();
-  const captureTimeSec = computeRequiredCaptureSeconds(zone, now, gameplay);
-  const attempt = normalizeCaptureAttempt(
-    {
-      zoneId,
-      userId,
-      startedAt,
-      captureTimeSec,
-      targetOwnerId: zone.currentOwnerId ?? null,
-      initialGuardCount: zoneGuardCount,
-      sessionGuardsRemaining: zoneGuardCount,
-      guardsEliminatedInSession: 0,
-    },
-    zoneGuardCount
-  );
+  const { attempt, captureTimeSec } = buildFreshCaptureAttempt(userId, zoneId, zone, gameplay, zoneGuardCount);
   await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
   return { attempt, lazyStarted: true };
 };

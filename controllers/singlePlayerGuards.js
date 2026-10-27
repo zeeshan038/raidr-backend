@@ -252,6 +252,7 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
     const resolved = await resolveCaptureAttemptForGuardAction(userId, zoneId, zone, config, {
       latitude,
       longitude,
+      autoStartForEliminate: true,
     });
 
     if (resolved?.error) {
