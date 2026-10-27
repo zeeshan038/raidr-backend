@@ -15,6 +15,35 @@ export function sanitizeCoinRushCheckpointForClient(checkpoint, isAchieved = fal
 }
 
 /**
+ * GET /events/details/:eventId (coin rush) — full checkpoint list for progress UI.
+ * Matches pre-change behavior: hide qrCode only; do not slice future checkpoints.
+ */
+export function buildCoinRushCheckpointsForEventDetails(checkpoints, completedCheckpointIds) {
+    const completedCount = completedCheckpointIds.length;
+    const safeCheckpoints = checkpoints.map((cp) => {
+        const { qrCode, ...rest } = cp;
+        const instruction = cp.description || '';
+        return {
+            ...rest,
+            isAchieved: completedCheckpointIds.includes(cp.id),
+            hint: instruction,
+            instruction,
+        };
+    });
+
+    const upcomingCheckpoint =
+        completedCount < checkpoints.length ? safeCheckpoints[completedCount] : null;
+
+    return {
+        safeCheckpoints,
+        upcomingCheckpoint,
+        checkpointRadiusMeters: COIN_RUSH_CHECKPOINT_GPS_RADIUS_METERS,
+        completedCount,
+    };
+}
+
+/**
+ * GET /coin-rush/details/:eventId — hide future checkpoints (progress + 1 only).
  * @param {Array} checkpoints - ordered by sequence asc
  * @param {string[]} completedCheckpointIds
  */

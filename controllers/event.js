@@ -20,7 +20,7 @@ import {
     syncUserLocationFromRequest,
     userControlsDiscoveryZone,
 } from "../utils/methods/methods.js";
-import { buildCoinRushCheckpointsPayload } from "../utils/coinRushCheckpoints.js";
+import { buildCoinRushCheckpointsForEventDetails } from "../utils/coinRushCheckpoints.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
@@ -278,7 +278,7 @@ export const eventDetails = async (req, res) => {
                 safeCheckpoints,
                 upcomingCheckpoint,
                 checkpointRadiusMeters,
-            } = buildCoinRushCheckpointsPayload(
+            } = buildCoinRushCheckpointsForEventDetails(
                 coinRushEvent.checkpoints,
                 completedCheckpointIds
             );
