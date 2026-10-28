@@ -248,8 +248,6 @@ export const getZoneById = async (req, res) => {
       ownedZonesCount
     );
 
-    const ownsZone = Boolean(userId && userOwnsSinglePlayerZone(zone, userId));
-
     if (userId) {
       data.activeCaptureSession = await getActiveCaptureSessionForUser(
         userId,
