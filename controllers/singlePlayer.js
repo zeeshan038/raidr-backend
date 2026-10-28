@@ -40,8 +40,10 @@ import {
   getBrandMonthStateForUser,
 } from "../utils/brandMonth.js";
 import {
+  applyCaptureSessionToZoneClientView,
   CAPTURE_SESSION_BUFFER_SEC,
   clearZoneAttackers,
+  extendCaptureSessionTtl,
   getActiveCaptureSessionForUser,
   normalizeCaptureAttempt,
   persistCaptureAttempt,
@@ -246,12 +248,25 @@ export const getZoneById = async (req, res) => {
       ownedZonesCount
     );
 
+    const ownsZone = Boolean(userId && userOwnsSinglePlayerZone(zone, userId));
+
     if (userId) {
       data.activeCaptureSession = await getActiveCaptureSessionForUser(
         userId,
         zoneId,
         zone.guardCount ?? 0
       );
+      if (data.activeCaptureSession) {
+        await extendCaptureSessionTtl(userId, zoneId, data.activeCaptureSession.captureTimeSec);
+        applyCaptureSessionToZoneClientView(
+          data,
+          data.activeCaptureSession,
+          ownsZone,
+          zone,
+          gameplay,
+          now
+        );
+      }
     }
 
     res.status(200).json({ status: true, data });
