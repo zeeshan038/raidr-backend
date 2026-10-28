@@ -7,9 +7,12 @@ import {
 } from "../utils/singlePlayerZone.js";
 import { getSpGameConfig, gameplayFromConfig } from "../utils/singlePlayerConfig.js";
 import {
+  applyCaptureSessionToZoneClientView,
   CAPTURE_SESSION_BUFFER_SEC,
+  formatActiveCaptureSessionFromAttempt,
   isZoneUnderAttack,
   normalizeCaptureAttempt,
+  persistCaptureAttempt,
   resolveCaptureAttemptForGuardAction,
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
@@ -18,7 +21,7 @@ import { publishGuardEliminatedToOwner } from "../sockets/singlePlayerPublisher.
 const refreshCaptureAttemptTimer = async (userId, zone, configGameplay, attemptOverride = null) => {
   const attemptKey = captureAttemptRedisKey(userId, zone.id);
   const raw = await redis.get(attemptKey);
-  if (!raw) return null;
+  if (!raw && !attemptOverride) return null;
 
   const attempt = attemptOverride ?? JSON.parse(raw);
   const zoneForTimer = zoneForSessionCaptureTimer(zone, attempt);
@@ -302,6 +305,11 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
     attempt.guardsEliminatedInSession += eliminated;
 
     const timer = await refreshCaptureAttemptTimer(userId, zone, config, attempt);
+    const captureTimeSec = timer?.captureTimeSec ?? attempt.captureTimeSec;
+    attempt.captureTimeSec = captureTimeSec;
+    await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
+
+    const activeCaptureSession = formatActiveCaptureSessionFromAttempt(attempt);
 
     const [userAfter, attacker] = await Promise.all([
       prisma.user.findUnique({
@@ -334,6 +342,18 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
       });
     }
 
+    const zoneView = applyCaptureSessionToZoneClientView(
+      {
+        guardCount: zone.guardCount ?? 0,
+        captureTimeSec,
+      },
+      activeCaptureSession,
+      userOwnsSinglePlayerZone(zone, userId),
+      zone,
+      config,
+      new Date()
+    );
+
     res.status(200).json({
       status: true,
       msg: "Guards eliminated",
@@ -343,11 +363,13 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
         initialGuardCount: attempt.initialGuardCount,
         sessionGuardsRemaining: attempt.sessionGuardsRemaining,
         guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+        activeCaptureSession,
         /** Guards left for this capture — bind AR / map UI to this (not deployedGuardCount). */
         guardCount: attempt.sessionGuardsRemaining,
         deployedGuardCount: zone.guardCount ?? 0,
         zoneGuardCount: zone.guardCount,
-        captureTimeSec: timer?.captureTimeSec,
+        captureTimeSec: zoneView.captureTimeSec ?? captureTimeSec,
+        captureTimeBreakdown: zoneView.captureTimeBreakdown,
         raidrCoins: userAfter?.raidrCoins,
       },
     });

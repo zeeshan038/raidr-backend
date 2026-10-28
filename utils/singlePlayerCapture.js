@@ -14,7 +14,8 @@ import {
   userMeetsZoneEligibility,
 } from "./singlePlayerEmpire.js";
 
-export const CAPTURE_SESSION_BUFFER_SEC = 120;
+/** Extra Redis TTL after capture timer so AR / leave-screen / retry eliminate still sees session state. */
+export const CAPTURE_SESSION_BUFFER_SEC = 600;
 
 export const zoneAttackersRedisKey = (zoneId) => `single_player:zone:${zoneId}:attackers`;
 
@@ -210,16 +211,10 @@ export const applyCaptureSessionToZoneClientView = (
   return zoneData;
 };
 
-export const getActiveCaptureSessionForUser = async (userId, zoneId, zoneGuardCount = 0) => {
-  if (!userId || !zoneId) return null;
-
-  const raw = await redis.get(captureAttemptRedisKey(userId, zoneId));
-  if (!raw) return null;
-
-  const attempt = normalizeCaptureAttempt(JSON.parse(raw), zoneGuardCount);
+export const formatActiveCaptureSessionFromAttempt = (attempt) => {
+  if (!attempt?.startedAt) return null;
   const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
-  const remainingSec = Math.max(0, Math.ceil(attempt.captureTimeSec - elapsedSec));
-
+  const remainingSec = Math.max(0, Math.ceil((attempt.captureTimeSec ?? 0) - elapsedSec));
   return {
     initialGuardCount: attempt.initialGuardCount,
     sessionGuardsRemaining: attempt.sessionGuardsRemaining,
@@ -228,4 +223,14 @@ export const getActiveCaptureSessionForUser = async (userId, zoneId, zoneGuardCo
     startedAt: new Date(attempt.startedAt).toISOString(),
     remainingSec,
   };
+};
+
+export const getActiveCaptureSessionForUser = async (userId, zoneId, zoneGuardCount = 0) => {
+  if (!userId || !zoneId) return null;
+
+  const raw = await redis.get(captureAttemptRedisKey(userId, zoneId));
+  if (!raw) return null;
+
+  const attempt = normalizeCaptureAttempt(JSON.parse(raw), zoneGuardCount);
+  return formatActiveCaptureSessionFromAttempt(attempt);
 };

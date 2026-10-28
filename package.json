@@ -10,6 +10,8 @@
     "seed:profile-preferences": "node scripts/seedProfilePreferenceOptions.js",
     "coin-rush:test-list": "node scripts/coinRushTestEvent.js list",
     "coin-rush:test-create": "node scripts/coinRushTestEvent.js create --live",
+    "test:guard-eliminate": "node scripts/testGuardEliminateFlow.js",
+    "test:guard-eliminate:reset": "node scripts/testGuardEliminateFlow.js --cancel",
     "postinstall": "prisma generate"
   },
   "keywords": [],
