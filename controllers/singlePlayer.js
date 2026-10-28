@@ -41,13 +41,13 @@ import {
 } from "../utils/brandMonth.js";
 import {
   applyCaptureSessionToZoneClientView,
-  CAPTURE_SESSION_BUFFER_SEC,
   clearZoneAttackers,
   extendCaptureSessionTtl,
   getActiveCaptureSessionForUser,
   normalizeCaptureAttempt,
   persistCaptureAttempt,
   unregisterZoneAttacker,
+  zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
 import { publishZoneCaptureStartedToOwner } from "../sockets/singlePlayerPublisher.js";
 
@@ -363,8 +363,6 @@ export const startCapture = async (req, res) => {
 
     const previousOwnerId = zone.currentOwnerId;
 
-    const captureTimeSec = computeRequiredCaptureSeconds(zone, now, gameplay);
-    const captureTimeBreakdown = computeCaptureTimeBreakdown(zone, now, gameplay);
     const distanceMeters = Math.round(
       haversineDistance(
         parseFloat(zone.latitude),
@@ -373,6 +371,37 @@ export const startCapture = async (req, res) => {
         parseFloat(longitude)
       )
     );
+
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    const existingRaw = await redis.get(attemptKey);
+    if (existingRaw) {
+      const attempt = normalizeCaptureAttempt(JSON.parse(existingRaw), zone.guardCount ?? 0);
+      const zoneForTimer = zoneForSessionCaptureTimer(zone, attempt);
+      const captureTimeSec =
+        attempt.captureTimeSec ??
+        computeRequiredCaptureSeconds(zoneForTimer, now, gameplay);
+      attempt.captureTimeSec = captureTimeSec;
+      await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
+      const captureTimeBreakdown = computeCaptureTimeBreakdown(zoneForTimer, now, gameplay);
+      const startedAt = attempt.startedAt ?? Date.now();
+
+      return res.status(200).json({
+        status: true,
+        msg: "Capture in progress",
+        resumed: true,
+        captureTimeSec,
+        captureTimeBreakdown,
+        distanceMeters,
+        startedAt: new Date(startedAt).toISOString(),
+        completesAfter: new Date(startedAt + captureTimeSec * 1000).toISOString(),
+        initialGuardCount: attempt.initialGuardCount,
+        sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+        guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+      });
+    }
+
+    const captureTimeSec = computeRequiredCaptureSeconds(zone, now, gameplay);
+    const captureTimeBreakdown = computeCaptureTimeBreakdown(zone, now, gameplay);
     const startedAt = Date.now();
     const attempt = normalizeCaptureAttempt(
       {

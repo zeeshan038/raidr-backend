@@ -127,18 +127,35 @@ async function main() {
     `   activeCaptureSession=${sess ? `remaining=${sess.sessionGuardsRemaining}` : "null"}`
   );
 
+  const restart = await api("POST", `/single-player/zones/${ZONE_ID}/capture/start`, token, {
+    latitude: lat,
+    longitude: lng,
+  });
+  console.log("\n5) POST capture/start again (simulate re-open AR)");
+  console.log(`   status=${restart.status} msg=${restart.json?.msg} resumed=${restart.json?.resumed}`);
+  console.log(`   sessionGuardsRemaining=${restart.json?.sessionGuardsRemaining}`);
+
   const passElim = elim.status === 200 && elim.json?.data?.guardCount === (zone.guardCount ?? 0) - 1;
   const passGet =
     get2.status === 200 &&
     get2.json?.data?.activeCaptureSession != null &&
     get2.json?.data?.guardCount === elim.json?.data?.guardCount;
+  const passRestart =
+    restart.status === 200 &&
+    restart.json?.resumed === true &&
+    restart.json?.sessionGuardsRemaining === elim.json?.data?.sessionGuardsRemaining;
 
   console.log("\n--- Result ---");
   console.log(passElim ? "PASS eliminate response guardCount" : "FAIL eliminate response (check coins / guards / deploy version)");
   console.log(passGet ? "PASS GET zone synced with session" : "FAIL GET zone (session missing or guardCount mismatch — redeploy latest backend)");
+  console.log(
+    passRestart
+      ? "PASS capture/start resumes session (guards do not reset)"
+      : "FAIL capture/start reset guards — deploy latest backend with idempotent start"
+  );
 
   await prisma.$disconnect();
-  process.exit(passElim && passGet ? 0 : 1);
+  process.exit(passElim && passGet && passRestart ? 0 : 1);
 }
 
 main().catch((e) => {
