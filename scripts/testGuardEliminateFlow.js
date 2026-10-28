@@ -106,6 +106,7 @@ async function main() {
   if (start.json?.sessionGuardsRemaining != null) {
     console.log(`   sessionGuardsRemaining=${start.json.sessionGuardsRemaining}`);
   }
+  const captureTimeAtStart = start.json?.captureTimeSec;
 
   const elim = await api("POST", `/single-player/zones/${ZONE_ID}/capture/eliminate-guards`, token, {
     count: 1,
@@ -116,6 +117,9 @@ async function main() {
     const d = elim.json.data;
     console.log(
       `   data.guardCount=${d.guardCount} sessionRemaining=${d.sessionGuardsRemaining} deployed=${d.deployedGuardCount} activeSession=${d.activeCaptureSession ? "yes" : "no"}`
+    );
+    console.log(
+      `   captureTimeSec ${d.captureTimeSecBefore ?? "?"} → ${d.captureTimeSec} remainingSec=${d.remainingSec ?? d.activeCaptureSession?.remainingSec}`
     );
   }
 
@@ -144,6 +148,14 @@ async function main() {
     restart.status === 200 &&
     restart.json?.resumed === true &&
     restart.json?.sessionGuardsRemaining === elim.json?.data?.sessionGuardsRemaining;
+  const afterCaptureTime = elim.json?.data?.captureTimeSec;
+  const passTimer =
+    elim.status === 200 &&
+    captureTimeAtStart != null &&
+    afterCaptureTime != null &&
+    afterCaptureTime < captureTimeAtStart &&
+    (elim.json?.data?.remainingSec ?? elim.json?.data?.activeCaptureSession?.remainingSec ?? 0) <=
+      (afterCaptureTime ?? 0);
 
   console.log("\n--- Result ---");
   console.log(passElim ? "PASS eliminate response guardCount" : "FAIL eliminate response (check coins / guards / deploy version)");
@@ -153,9 +165,14 @@ async function main() {
       ? "PASS capture/start resumes session (guards do not reset)"
       : "FAIL capture/start reset guards — deploy latest backend with idempotent start"
   );
+  console.log(
+    passTimer
+      ? "PASS capture time reduced after eliminate"
+      : "FAIL capture time did not decrease after eliminate"
+  );
 
   await prisma.$disconnect();
-  process.exit(passElim && passGet && passRestart ? 0 : 1);
+  process.exit(passElim && passGet && passRestart && passTimer ? 0 : 1);
 }
 
 main().catch((e) => {

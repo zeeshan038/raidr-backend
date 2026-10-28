@@ -5,6 +5,7 @@ import {
   computeCaptureTimeBreakdown,
   computeRequiredCaptureSeconds,
   isZoneAttackable,
+  SP_DEFAULTS,
   userOwnsSinglePlayerZone,
   validateCaptureLocation,
 } from "./singlePlayerZone.js";
@@ -56,6 +57,40 @@ export const zoneForSessionCaptureTimer = (zone, attempt) => ({
   ...zone,
   guardCount: attempt.sessionGuardsRemaining ?? zone.guardCount ?? 0,
 });
+
+/**
+ * After guard elimination: shorten capture time by secondsPerGuard × eliminated.
+ * Never increases total or remaining vs before this action (avoids lazy-start / recompute spikes).
+ */
+export const recomputeCaptureTimeAfterGuardElimination = (
+  attempt,
+  zone,
+  config,
+  eliminatedCount,
+  now = new Date()
+) => {
+  const secondsPerGuard = config.secondsPerGuard ?? SP_DEFAULTS.secondsPerGuard;
+  const startedAt = attempt.startedAt ?? now.getTime();
+  const elapsedSec = Math.max(0, (now.getTime() - startedAt) / 1000);
+  const zoneForTimer = zoneForSessionCaptureTimer(zone, attempt);
+  const formulaTotal = computeRequiredCaptureSeconds(zoneForTimer, now, config);
+  const previousTotal = attempt.captureTimeSec ?? formulaTotal;
+  const previousRemaining = Math.max(0, previousTotal - elapsedSec);
+  const remainingAfterElim = Math.max(0, previousRemaining - eliminatedCount * secondsPerGuard);
+  const totalFromRemaining = elapsedSec + remainingAfterElim;
+
+  const floorTotal = computeRequiredCaptureSeconds(
+    zoneForSessionCaptureTimer(zone, { ...attempt, sessionGuardsRemaining: 0 }),
+    now,
+    config
+  );
+
+  attempt.captureTimeSec = Math.max(
+    floorTotal,
+    Math.min(formulaTotal, totalFromRemaining, previousTotal)
+  );
+  return attempt.captureTimeSec;
+};
 
 /** Active capture attempt in Redis (guard elimination is session-only; zone.guardCount in DB is unchanged). */
 export const persistCaptureAttempt = async (userId, zoneId, attempt, captureTimeSec) => {
@@ -201,10 +236,11 @@ export const applyCaptureSessionToZoneClientView = (
     : computeCaptureTimeBreakdown({ ...zoneForTimer, ownedAt: null, guardCount: 0 }, now, config);
 
   zoneData.captureTimeBreakdown = captureTimeBreakdown;
-  zoneData.captureTimeSec =
+  const breakdownTotal =
     captureTimeBreakdown.baseSec +
     captureTimeBreakdown.ownershipDefenseSec +
     captureTimeBreakdown.guardPenaltySec;
+  zoneData.captureTimeSec = activeCaptureSession.captureTimeSec ?? breakdownTotal;
   zoneData.defenseBonusSec =
     captureTimeBreakdown.ownershipDefenseSec + captureTimeBreakdown.guardPenaltySec;
 
@@ -222,6 +258,8 @@ export const formatActiveCaptureSessionFromAttempt = (attempt) => {
     captureTimeSec: attempt.captureTimeSec,
     startedAt: new Date(attempt.startedAt).toISOString(),
     remainingSec,
+    /** Use for snatch timer after eliminate — matches Redis attempt, not zone DB estimate. */
+    elapsedSec: Math.max(0, Math.floor(elapsedSec)),
   };
 };
 
