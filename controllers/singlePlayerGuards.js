@@ -13,20 +13,32 @@ import {
   isZoneUnderAttack,
   normalizeCaptureAttempt,
   persistCaptureAttempt,
+  recomputeCaptureTimeAfterGuardElimination,
   resolveCaptureAttemptForGuardAction,
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
 import { publishGuardEliminatedToOwner } from "../sockets/singlePlayerPublisher.js";
 
-const refreshCaptureAttemptTimer = async (userId, zone, configGameplay, attemptOverride = null) => {
+const refreshCaptureAttemptTimer = async (
+  userId,
+  zone,
+  configGameplay,
+  attemptOverride = null,
+  { eliminatedCount = 0 } = {}
+) => {
   const attemptKey = captureAttemptRedisKey(userId, zone.id);
   const raw = await redis.get(attemptKey);
   if (!raw && !attemptOverride) return null;
 
   const attempt = attemptOverride ?? JSON.parse(raw);
-  const zoneForTimer = zoneForSessionCaptureTimer(zone, attempt);
-  const captureTimeSec = computeRequiredCaptureSeconds(zoneForTimer, new Date(), configGameplay);
-  attempt.captureTimeSec = captureTimeSec;
+  const now = new Date();
+  const captureTimeSec =
+    eliminatedCount > 0
+      ? recomputeCaptureTimeAfterGuardElimination(attempt, zone, configGameplay, eliminatedCount, now)
+      : computeRequiredCaptureSeconds(zoneForSessionCaptureTimer(zone, attempt), now, configGameplay);
+  if (eliminatedCount <= 0) {
+    attempt.captureTimeSec = captureTimeSec;
+  }
   await redis.set(
     attemptKey,
     JSON.stringify(attempt),
@@ -301,10 +313,14 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
       return { eliminated: eliminateCount };
     });
 
+    const captureTimeSecBefore = attempt.captureTimeSec;
+
     attempt.sessionGuardsRemaining -= eliminated;
     attempt.guardsEliminatedInSession += eliminated;
 
-    const timer = await refreshCaptureAttemptTimer(userId, zone, config, attempt);
+    const timer = await refreshCaptureAttemptTimer(userId, zone, config, attempt, {
+      eliminatedCount: eliminated,
+    });
     const captureTimeSec = timer?.captureTimeSec ?? attempt.captureTimeSec;
     attempt.captureTimeSec = captureTimeSec;
     await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
@@ -368,8 +384,10 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
         guardCount: attempt.sessionGuardsRemaining,
         deployedGuardCount: zone.guardCount ?? 0,
         zoneGuardCount: zone.guardCount,
-        captureTimeSec: zoneView.captureTimeSec ?? captureTimeSec,
+        captureTimeSec: attempt.captureTimeSec ?? captureTimeSec,
+        captureTimeSecBefore: captureTimeSecBefore ?? null,
         captureTimeBreakdown: zoneView.captureTimeBreakdown,
+        remainingSec: activeCaptureSession?.remainingSec,
         raidrCoins: userAfter?.raidrCoins,
       },
     });
