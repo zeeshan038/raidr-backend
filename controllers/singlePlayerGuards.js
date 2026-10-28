@@ -343,6 +343,9 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
         initialGuardCount: attempt.initialGuardCount,
         sessionGuardsRemaining: attempt.sessionGuardsRemaining,
         guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+        /** Guards left for this capture — bind AR / map UI to this (not deployedGuardCount). */
+        guardCount: attempt.sessionGuardsRemaining,
+        deployedGuardCount: zone.guardCount ?? 0,
         zoneGuardCount: zone.guardCount,
         captureTimeSec: timer?.captureTimeSec,
         raidrCoins: userAfter?.raidrCoins,

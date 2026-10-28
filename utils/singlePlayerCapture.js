@@ -2,6 +2,7 @@ import { redis } from "../config/redis.js";
 import { prisma } from "../config/db.js";
 import {
   captureAttemptRedisKey,
+  computeCaptureTimeBreakdown,
   computeRequiredCaptureSeconds,
   isZoneAttackable,
   userOwnsSinglePlayerZone,
@@ -15,7 +16,6 @@ import {
 
 export const CAPTURE_SESSION_BUFFER_SEC = 120;
 
-/** Active snatch attempts on a zone (owners cannot reassign guards while set is non-empty). */
 export const zoneAttackersRedisKey = (zoneId) => `single_player:zone:${zoneId}:attackers`;
 
 export const registerZoneAttacker = async (zoneId, userId, ttlSec) => {
@@ -160,6 +160,54 @@ export const resolveCaptureAttemptForGuardAction = async (
   const { attempt, captureTimeSec } = buildFreshCaptureAttempt(userId, zoneId, zone, gameplay, zoneGuardCount);
   await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
   return { attempt, lazyStarted: true };
+};
+
+export const extendCaptureSessionTtl = async (userId, zoneId, captureTimeSec) => {
+  const key = captureAttemptRedisKey(userId, zoneId);
+  const raw = await redis.get(key);
+  if (!raw) return false;
+  const ttl = (captureTimeSec ?? 0) + CAPTURE_SESSION_BUFFER_SEC;
+  await redis.set(key, raw, "EX", Math.max(ttl, 60));
+  await registerZoneAttacker(zoneId, userId, ttl);
+  return true;
+};
+
+/**
+ * While a player is mid-capture, zone.guardCount (DB) is the owner's deployed defense.
+ * Attackers must see sessionGuardsRemaining on the main guardCount field when they return to the screen.
+ */
+export const applyCaptureSessionToZoneClientView = (
+  zoneData,
+  activeCaptureSession,
+  userOwnsZone,
+  zone,
+  config,
+  now = new Date()
+) => {
+  if (!activeCaptureSession || userOwnsZone || !zone) {
+    return zoneData;
+  }
+
+  zoneData.deployedGuardCount = zoneData.guardCount ?? zone.guardCount ?? 0;
+  zoneData.guardCount = activeCaptureSession.sessionGuardsRemaining ?? 0;
+
+  const zoneForTimer = {
+    ...zone,
+    guardCount: zoneData.guardCount,
+  };
+  const captureTimeBreakdown = zone.currentOwnerId
+    ? computeCaptureTimeBreakdown(zoneForTimer, now, config)
+    : computeCaptureTimeBreakdown({ ...zoneForTimer, ownedAt: null, guardCount: 0 }, now, config);
+
+  zoneData.captureTimeBreakdown = captureTimeBreakdown;
+  zoneData.captureTimeSec =
+    captureTimeBreakdown.baseSec +
+    captureTimeBreakdown.ownershipDefenseSec +
+    captureTimeBreakdown.guardPenaltySec;
+  zoneData.defenseBonusSec =
+    captureTimeBreakdown.ownershipDefenseSec + captureTimeBreakdown.guardPenaltySec;
+
+  return zoneData;
 };
 
 export const getActiveCaptureSessionForUser = async (userId, zoneId, zoneGuardCount = 0) => {
