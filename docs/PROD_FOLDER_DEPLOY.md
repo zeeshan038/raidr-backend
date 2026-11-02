@@ -72,15 +72,9 @@ Dev overlay is only for **`~/raidr-backend`**.
 
 ## `.env` database (must match what exists in Postgres)
 
-The API reads **`DATABASE_URL` from `.env`**. Compose no longer overrides it.
+Prod **`docker-compose.yml` sets `DATABASE_URL`** to `@postgres:5432/raidr_prod` so a dev `.env` copy cannot point prod at the wrong DB.
 
-Recommended for Docker on the same server (prod API container → prod Postgres container):
-
-```env
-DATABASE_URL="postgresql://raidr_user:raidr_password@postgres:5432/raidr_prod?schema=public"
-```
-
-Using `@188.245.72.1:5432` also works from inside the container (host port **5432** → `raidr_postgres`).
+Do **not** use `@188.245.72.1:5432` in prod or dev `.env` on this server — host **5432** is always **prod Postgres**; dev DB is the **dev** stack on port **5433** only.
 
 **Create the database if missing:**
 
