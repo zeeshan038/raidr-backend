@@ -31,7 +31,7 @@ JWT comes from existing auth: `POST /user/register`, `POST /user/login`, `POST /
 | Self-referral | Prevented server-side (code ignored) |
 | One payout per friend | One reward per new account; duplicates cannot farm |
 | Existing user login | `inviteCode` on Google/Apple/login is **ignored** (only **new** account creation) |
-| Share link format | `https://raidr.app/invite/{CODE}` (server may override base via env; use `shareUrl` from API when possible) |
+| Share link format | `https://raidr.app/{CODE}` (legacy `/invite/{CODE}` still accepted; use `shareUrl` + `inviteCode` from API) |
 
 ---
 
@@ -48,7 +48,7 @@ JWT comes from existing auth: `POST /user/register`, `POST /user/login`, `POST /
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ FRIEND (not logged in)                                           │
-│  Opens deep link …/invite/AB7X9K                                 │
+│  Opens deep link …/AB7X9K                                          │
 │  App stores pending code locally until signup completes          │
 │  Optional: POST /referral/validate → show "Referred by {name}"   │
 │  Signup with inviteCode in body (register or social)             │
@@ -69,12 +69,12 @@ JWT comes from existing auth: `POST /user/register`, `POST /user/login`, `POST /
 
 ### URL pattern
 
-- Universal link / app link: `https://raidr.app/invite/AB7X9K`
+- Universal link / app link: `https://raidr.app/AB7X9K` (still parse legacy `…/invite/AB7X9K`)
 - Backend also accepts the **full URL string** as `inviteCode` in validate/signup (parses the last path segment).
 
 ### Client responsibilities
 
-1. On cold start / link open, parse code from path `/invite/:code`.
+1. On cold start / link open, parse code from path `/:code` on `raidr.app` (or legacy `/invite/:code`).
 2. Persist in secure storage, e.g. key `pendingReferralInviteCode`, until:
    - successfully sent on **new user** signup, or
    - user clears onboarding without signing up (product choice).
@@ -110,7 +110,7 @@ Or full link:
 
 ```json
 {
-  "inviteCode": "https://raidr.app/invite/AB7X9K"
+  "inviteCode": "https://raidr.app/AB7X9K"
 }
 ```
 
@@ -169,7 +169,7 @@ Invite screen primary load.
   "status": true,
   "data": {
     "inviteCode": "AB7X9K",
-    "shareUrl": "https://raidr.app/invite/AB7X9K",
+    "shareUrl": "https://raidr.app/AB7X9K",
     "rewardCoins": 100
   }
 }
@@ -193,7 +193,7 @@ Invite screen primary load.
   "status": true,
   "data": {
     "inviteCode": "AB7X9K",
-    "shareUrl": "https://raidr.app/invite/AB7X9K",
+    "shareUrl": "https://raidr.app/AB7X9K",
     "friendsInvited": 3,
     "totalCoinsEarned": 300,
     "rewardCoinsPerReferral": 100,
@@ -389,8 +389,10 @@ type ReferralRedeemData = {
 const PENDING_REFERRAL_KEY = "pendingReferralInviteCode";
 
 function parseInviteFromUrl(url: string): string | null {
-  const match = url.match(/\/invite\/([A-Za-z0-9]+)\/?$/i);
-  return match ? match[1].toUpperCase() : null;
+  const legacy = url.match(/\/invite\/([A-Za-z0-9]+)\/?$/i);
+  if (legacy) return legacy[1].toUpperCase();
+  const short = url.match(/^https?:\/\/[^/?#]+\/([A-Za-z0-9]{4,32})\/?(?:[?#].*)?$/i);
+  return short ? short[1].toUpperCase() : null;
 }
 
 async function signupWithReferral(registerFn: (body: object) => Promise<void>) {

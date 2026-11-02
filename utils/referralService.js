@@ -16,17 +16,24 @@ export function normalizeInviteCodeInput(raw) {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  const pathMatch = trimmed.match(/\/invite\/([A-Za-z0-9]+)\/?$/i);
-  if (pathMatch) {
-    return pathMatch[1].toUpperCase();
+  const legacyInvitePath = trimmed.match(/\/invite\/([A-Za-z0-9]+)\/?$/i);
+  if (legacyInvitePath) {
+    return legacyInvitePath[1].toUpperCase();
+  }
+
+  // https://raidr.app/EDX6YR or https://raidr.app/EDX6YR/
+  const shortLinkPath = trimmed.match(/^https?:\/\/[^/?#]+\/([A-Za-z0-9]{4,32})\/?(?:[?#].*)?$/i);
+  if (shortLinkPath) {
+    return shortLinkPath[1].toUpperCase();
   }
 
   return trimmed.toUpperCase();
 }
 
 export function buildInviteShareUrl(inviteCode) {
-  const base = (process.env.RAIDR_INVITE_BASE_URL || "https://raidr.app/invite").replace(/\/$/, "");
-  return `${base}/${inviteCode}`;
+  const base = (process.env.RAIDR_INVITE_BASE_URL || "https://raidr.app").replace(/\/$/, "");
+  const code = String(inviteCode || "").trim();
+  return `${base}/${code}`;
 }
 
 function generateInviteCodeCandidate() {

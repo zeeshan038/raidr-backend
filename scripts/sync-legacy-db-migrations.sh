@@ -8,6 +8,9 @@ cd "$(dirname "$0")/.."
 echo "==> Economy / referral config (SinglePlayerGameConfig)..."
 npm run fix:db-sp-config
 
+echo "==> Single Player map tables (SinglePlayerZone, DailyDrop) if missing..."
+npm run fix:db-sp-zone
+
 echo "==> Idempotent schema SQL (no direct SinglePlayerZone alters — safe for minimal DBs)..."
 npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma
 npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma

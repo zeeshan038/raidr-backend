@@ -418,7 +418,7 @@
           "inviteCode": {
             "type": "string",
             "example": "AB7X9K",
-            "description": "6-character code or full URL e.g. https://raidr.app/invite/AB7X9K"
+            "description": "6-character code or full URL e.g. https://raidr.app/AB7X9K"
           },
           "invite_code": {
             "type": "string",
@@ -440,7 +440,7 @@
           },
           "shareUrl": {
             "type": "string",
-            "example": "https://raidr.app/invite/AB7X9K"
+            "example": "https://raidr.app/AB7X9K"
           },
           "rewardCoins": {
             "type": "integer",
@@ -482,7 +482,7 @@
           "shareUrl": {
             "type": "string",
             "nullable": true,
-            "example": "https://raidr.app/invite/AB7X9K"
+            "example": "https://raidr.app/AB7X9K"
           },
           "friendsInvited": {
             "type": "integer",
@@ -5113,7 +5113,7 @@
                 "fullUrl": {
                   "summary": "Full share URL",
                   "value": {
-                    "inviteCode": "https://raidr.app/invite/AB7X9K"
+                    "inviteCode": "https://raidr.app/AB7X9K"
                   }
                 }
               }
@@ -5264,7 +5264,7 @@
                   "status": true,
                   "data": {
                     "inviteCode": "AB7X9K",
-                    "shareUrl": "https://raidr.app/invite/AB7X9K",
+                    "shareUrl": "https://raidr.app/AB7X9K",
                     "rewardCoins": 100
                   }
                 }
@@ -5327,7 +5327,7 @@
                   "status": true,
                   "data": {
                     "inviteCode": "AB7X9K",
-                    "shareUrl": "https://raidr.app/invite/AB7X9K",
+                    "shareUrl": "https://raidr.app/AB7X9K",
                     "friendsInvited": 2,
                     "totalCoinsEarned": 200,
                     "rewardCoinsPerReferral": 100,

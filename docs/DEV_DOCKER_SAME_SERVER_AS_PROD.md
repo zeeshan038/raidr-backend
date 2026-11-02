@@ -103,8 +103,18 @@ If logs show a **failed** migration on **dev** DB:
 
 ```bash
 cd ~/raidr-backend
-docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api sh scripts/emergency-prod-db-fix.sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npm run fix:db-sp-config
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api sh scripts/baseline-prod-db.sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npm run fix:db-sp-zone
 ```
+
+`\dt "SinglePlayerZone"` on **`raidr_postgres_dev`** should list the table. If other models are still missing (Brand Month, vouchers), run once on dev:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npx prisma db push
+```
+
+Or: `docker compose … exec api sh scripts/emergency-prod-db-fix.sh` then `npm run fix:db-sp-zone`.
 
 ## Postman dev base URL
 

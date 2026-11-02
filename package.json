@@ -16,6 +16,7 @@
     "backfill:invite-codes": "node scripts/backfillUserInviteCodes.js",
     "fix:db-user-columns": "prisma db execute --file scripts/fix-user-model-columns.sql --schema prisma/schema.prisma",
     "fix:db-sp-config": "prisma db execute --file scripts/fix-single-player-game-config-table.sql --schema prisma/schema.prisma",
+    "fix:db-sp-zone": "prisma db execute --file scripts/fix-single-player-zone-table.sql --schema prisma/schema.prisma",
     "postinstall": "prisma generate"
   },
   "keywords": [],
