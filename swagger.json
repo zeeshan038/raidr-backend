@@ -110,6 +110,14 @@
         "properties": {
           "firebaseToken": {
             "type": "string"
+          },
+          "inviteCode": {
+            "type": "string",
+            "description": "Optional; applied only when creating a new user"
+          },
+          "invite_code": {
+            "type": "string",
+            "description": "Optional snake_case alias"
           }
         }
       },
@@ -121,6 +129,14 @@
         "properties": {
           "firebaseToken": {
             "type": "string"
+          },
+          "inviteCode": {
+            "type": "string",
+            "description": "Optional; applied only when creating a new user"
+          },
+          "invite_code": {
+            "type": "string",
+            "description": "Optional snake_case alias"
           }
         }
       },
@@ -392,6 +408,126 @@
           "msg": {
             "type": "string",
             "example": "Something went wrong"
+          }
+        }
+      },
+      "ReferralValidateRequest": {
+        "type": "object",
+        "description": "Provide inviteCode OR invite_code (not both required). Full share URLs are accepted.",
+        "properties": {
+          "inviteCode": {
+            "type": "string",
+            "example": "AB7X9K",
+            "description": "6-character code or full URL e.g. https://raidr.app/invite/AB7X9K"
+          },
+          "invite_code": {
+            "type": "string",
+            "example": "AB7X9K",
+            "description": "Snake_case alias of inviteCode"
+          }
+        },
+        "anyOf": [
+          { "required": ["inviteCode"] },
+          { "required": ["invite_code"] }
+        ]
+      },
+      "ReferralMyCodeData": {
+        "type": "object",
+        "properties": {
+          "inviteCode": {
+            "type": "string",
+            "example": "AB7X9K"
+          },
+          "shareUrl": {
+            "type": "string",
+            "example": "https://raidr.app/invite/AB7X9K"
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "example": 100,
+            "description": "Coins the inviter earns per successful referral"
+          }
+        }
+      },
+      "ReferralRecentRewardItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "example": 100
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-02T12:00:00.000Z"
+          },
+          "invitedUserName": {
+            "type": "string",
+            "example": "Sam"
+          }
+        }
+      },
+      "ReferralStatsData": {
+        "type": "object",
+        "properties": {
+          "inviteCode": {
+            "type": "string",
+            "nullable": true,
+            "example": "AB7X9K"
+          },
+          "shareUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://raidr.app/invite/AB7X9K"
+          },
+          "friendsInvited": {
+            "type": "integer",
+            "example": 3
+          },
+          "totalCoinsEarned": {
+            "type": "integer",
+            "example": 300
+          },
+          "rewardCoinsPerReferral": {
+            "type": "integer",
+            "example": 100
+          },
+          "recentRewards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReferralRecentRewardItem"
+            }
+          }
+        }
+      },
+      "ReferralRedeemData": {
+        "type": "object",
+        "properties": {
+          "redeemed": {
+            "type": "boolean",
+            "description": "True if payout completed on this request"
+          },
+          "alreadyRedeemed": {
+            "type": "boolean",
+            "description": "True if reward was already completed earlier"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "no_referrer",
+              "self_referral",
+              "inviter_not_found"
+            ],
+            "description": "Present when redeemed is false"
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "example": 100,
+            "description": "Inviter reward amount (coins go to inviter, not caller)"
           }
         }
       },
@@ -4959,20 +5095,25 @@
           "Referral"
         ],
         "summary": "Validate invite code",
-        "description": "Checks whether an invite code is valid before or during signup.",
+        "description": "Checks whether an invite code is valid before or during signup. Does not create users or transfer coins.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "inviteCode": {
-                    "type": "string",
-                    "example": "AB7X9K"
-                  },
-                  "invite_code": {
-                    "type": "string"
+                "$ref": "#/components/schemas/ReferralValidateRequest"
+              },
+              "examples": {
+                "codeOnly": {
+                  "summary": "Plain code",
+                  "value": {
+                    "inviteCode": "AB7X9K"
+                  }
+                },
+                "fullUrl": {
+                  "summary": "Full share URL",
+                  "value": {
+                    "inviteCode": "https://raidr.app/invite/AB7X9K"
                   }
                 }
               }
@@ -4981,7 +5122,111 @@
         },
         "responses": {
           "200": {
-            "description": "Validation result"
+            "description": "Validation result (invalid codes still return HTTP 200 with valid: false)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "valid"
+                          ],
+                          "properties": {
+                            "valid": {
+                              "type": "boolean",
+                              "example": true
+                            },
+                            "inviteCode": {
+                              "type": "string",
+                              "example": "AB7X9K"
+                            },
+                            "inviterName": {
+                              "type": "string",
+                              "example": "Alex"
+                            },
+                            "rewardCoins": {
+                              "type": "integer",
+                              "example": 100
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "valid",
+                            "msg"
+                          ],
+                          "properties": {
+                            "valid": {
+                              "type": "boolean",
+                              "example": false
+                            },
+                            "msg": {
+                              "type": "string",
+                              "example": "Invalid invite code"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "examples": {
+                  "valid": {
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "valid": true,
+                        "inviteCode": "AB7X9K",
+                        "inviterName": "Alex",
+                        "rewardCoins": 100
+                      }
+                    }
+                  },
+                  "invalid": {
+                    "value": {
+                      "status": true,
+                      "data": {
+                        "valid": false,
+                        "msg": "Invalid invite code"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing invite code in body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Invite code is required"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -4992,6 +5237,7 @@
           "Referral"
         ],
         "summary": "Get my invite code and share URL",
+        "description": "Creates a unique inviteCode for the user if they do not have one yet.",
         "security": [
           {
             "bearerAuth": []
@@ -4999,7 +5245,51 @@
         ],
         "responses": {
           "200": {
-            "description": "Invite code payload"
+            "description": "Invite code and share link for the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ReferralMyCodeData"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "inviteCode": "AB7X9K",
+                    "shareUrl": "https://raidr.app/invite/AB7X9K",
+                    "rewardCoins": 100
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -5010,6 +5300,7 @@
           "Referral"
         ],
         "summary": "Referral stats for current user",
+        "description": "Aggregate stats for the authenticated inviter. Ensures inviteCode exists.",
         "security": [
           {
             "bearerAuth": []
@@ -5017,7 +5308,61 @@
         ],
         "responses": {
           "200": {
-            "description": "Invite stats"
+            "description": "Referral statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ReferralStatsData"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "data": {
+                    "inviteCode": "AB7X9K",
+                    "shareUrl": "https://raidr.app/invite/AB7X9K",
+                    "friendsInvited": 2,
+                    "totalCoinsEarned": 200,
+                    "rewardCoinsPerReferral": 100,
+                    "recentRewards": [
+                      {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "rewardCoins": 100,
+                        "createdAt": "2026-11-02T12:00:00.000Z",
+                        "invitedUserName": "Sam"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -5028,15 +5373,104 @@
           "Referral"
         ],
         "summary": "Redeem referral reward (idempotent fallback)",
-        "description": "Completes referral payout for the authenticated user if they signed up with a referrer but payout did not run.",
+        "description": "Completes inviter payout if the authenticated user (invitee) has referredBy set but reward was not recorded. Coins are credited to the inviter, not the caller. Normal signup already pays the inviter; this endpoint is optional.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": false,
+          "description": "No body required",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Redeem result"
+            "description": "Redeem attempt result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Referral reward redeemed"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ReferralRedeemData"
+                    }
+                  }
+                },
+                "examples": {
+                  "redeemed": {
+                    "summary": "Payout completed on this call",
+                    "value": {
+                      "status": true,
+                      "msg": "Referral reward redeemed",
+                      "data": {
+                        "redeemed": true,
+                        "alreadyRedeemed": false,
+                        "rewardCoins": 100
+                      }
+                    }
+                  },
+                  "alreadyDone": {
+                    "summary": "Already paid at signup",
+                    "value": {
+                      "status": true,
+                      "msg": "Referral reward already redeemed",
+                      "data": {
+                        "redeemed": false,
+                        "alreadyRedeemed": true,
+                        "rewardCoins": 100
+                      }
+                    }
+                  },
+                  "nothingToRedeem": {
+                    "summary": "User was not referred",
+                    "value": {
+                      "status": true,
+                      "msg": "No referral reward to redeem",
+                      "data": {
+                        "redeemed": false,
+                        "reason": "no_referrer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
