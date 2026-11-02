@@ -17,6 +17,11 @@ import {
     buildCoinRushCheckpointsPayload,
     sanitizeCoinRushCheckpointForClient,
 } from '../utils/coinRushCheckpoints.js';
+import {
+    getEconomyConfig,
+    randomCoinRushCheckpointXp,
+} from '../utils/economyConfig.js';
+import { tryCompleteReferralQualifyingActivity } from '../utils/referralService.js';
 
 // Custom publisher function for Coin Rush to distinct from normal live event rooms
 const publishToCoinRushRoom = (eventId, payload) => {
@@ -527,8 +532,10 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             }
         }
 
-        // Record progress and update user stats (XP / Level)
-        const xpAmount = checkpoint.xp || Math.floor(Math.random() * (200 - 50 + 1)) + 50;
+        const economy = await getEconomyConfig(prisma);
+        const coinPerCheckpoint = economy.coinRushCheckpointCoins;
+        const xpAmount =
+            checkpoint.xp || randomCoinRushCheckpointXp(economy);
         let levelData = { level: 1, xp_progress: 0, leveledUp: false, bank: 0 };
 
         await prisma.$transaction(async (tx) => {
@@ -561,7 +568,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                         xp_earned: { increment: xpAmount },
                         xp_progress: bank,
                         level: lv,
-                        raidrCoins: { increment: 1 }
+                        raidrCoins: { increment: coinPerCheckpoint }
                     }
                 });
 
@@ -573,6 +580,10 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                 };
             }
         });
+
+        tryCompleteReferralQualifyingActivity(userId).catch((err) =>
+            console.error("Referral qualifying activity (coin rush):", err)
+        );
 
         // Check if all checkpoints completed
         const completedCount = await prisma.coinRushProgress.count({
@@ -601,7 +612,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
         publishToUser(userId, {
             type: 'user_stats_updated',
             xpAdded: xpAmount,
-            coinsAdded: 1,
+            coinsAdded: coinPerCheckpoint,
             newXpProgress: levelData.bank,
             newLevel: levelData.level,
             leveledUp: levelData.leveledUp

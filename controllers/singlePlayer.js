@@ -36,6 +36,13 @@ import {
 } from "../utils/singlePlayerNotify.js";
 import { awardUserXp } from "../utils/awardUserXp.js";
 import {
+  awardRaidrCoins,
+  economyForClient,
+  economyFromConfigRow,
+  getEconomyConfig,
+} from "../utils/economyConfig.js";
+import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.js";
+import {
   findActiveBrandMonthCampaign,
   getBrandMonthStateForUser,
 } from "../utils/brandMonth.js";
@@ -60,6 +67,7 @@ export const getGameConfigForUser = async (_req, res) => {
   try {
     const configRow = await getSpGameConfig(prisma);
     const config = gameplayFromConfig(configRow);
+    const economy = economyFromConfigRow(configRow);
     res.status(200).json({
       status: true,
       data: {
@@ -68,6 +76,7 @@ export const getGameConfigForUser = async (_req, res) => {
         allowedHoldDurationHours: parseJsonIntArray(configRow.allowedHoldDurationHours, [24, 48, 72]),
         dailyDropXpNormal: configRow.dailyDropXpNormal ?? 50,
         dailyDropXpRare: configRow.dailyDropXpRare ?? 150,
+        ...economyForClient(economy),
       },
     });
   } catch (error) {
@@ -745,7 +754,9 @@ export const getDailyDrop = async (req, res) => {
 
     const dropLocation = generateNearbyCoordinates(parseFloat(latitude), parseFloat(longitude), 50, 150);
     const isRare = Math.random() < 0.15; // 15% chance
+    const economy = await getEconomyConfig(prisma);
     const rewardType = isRare ? "2X_BOOST_24H" : "100_COINS";
+    const rewardAmount = isRare ? null : economy.dailyDropCoinsNormal;
 
     dailyDrop = await prisma.dailyDrop.create({
       data: {
@@ -753,7 +764,8 @@ export const getDailyDrop = async (req, res) => {
         latitude: dropLocation.latitude,
         longitude: dropLocation.longitude,
         isRare,
-        rewardType
+        rewardType,
+        rewardAmount,
       }
     });
 
@@ -815,18 +827,17 @@ export const collectDailyDrop = async (req, res) => {
       });
     }
 
-    let rewardMsg = "You found 100 Coins!";
+    const economy = await getEconomyConfig(prisma);
+    let rewardMsg = "You found coins!";
     let rewardData = null;
 
     if (drop.rewardType === "100_COINS") {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { raidrCoins: { increment: drop.rewardAmount || 100 } }
-      });
-      rewardMsg = `You found ${drop.rewardAmount || 100} Coins!`;
+      const coinAmount = drop.rewardAmount ?? economy.dailyDropCoinsNormal;
+      await awardRaidrCoins(prisma, userId, coinAmount, "daily_drop");
+      rewardMsg = `You found ${coinAmount} Coins!`;
       rewardData = {
         type: "COINS",
-        amount: drop.rewardAmount || 100
+        amount: coinAmount,
       };
     } else if (drop.rewardType === "2X_BOOST_24H") {
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -837,11 +848,15 @@ export const collectDailyDrop = async (req, res) => {
           coinBoostExpiresAt: expiresAt
         }
       });
+      if (economy.rareDropBonusCoins > 0) {
+        await awardRaidrCoins(prisma, userId, economy.rareDropBonusCoins, "daily_drop_rare");
+      }
       rewardMsg = "You found a Rare Drop! 2x Passive Coins for 24 hours.";
       rewardData = {
         type: "BOOST",
         multiplier: 2.0,
-        expiresAt: expiresAt
+        expiresAt: expiresAt,
+        bonusCoins: economy.rareDropBonusCoins,
       };
     } else if (drop.rewardType === "INSTANT_CAPTURE") {
       rewardMsg = "You found a Rare Drop! 1x Instant Capture added.";
@@ -882,6 +897,10 @@ export const collectDailyDrop = async (req, res) => {
       : configRow.dailyDropXpNormal ?? 50;
 
     const xpResult = await awardUserXp(prisma, userId, xpAmount);
+
+    tryCompleteReferralQualifyingActivity(userId).catch((err) =>
+      console.error("Referral qualifying activity (daily drop):", err)
+    );
 
     res.status(200).json({
       status: true,

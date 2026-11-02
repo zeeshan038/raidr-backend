@@ -10,6 +10,10 @@ import { CreateHybridCoinRushEventSchema, CreateCoinRushEventSchema } from '../.
 //Utils 
 import { generateRandomCoordinates, calculateRadiusForUserLiveEvent } from '../../utils/methods/methods.js';
 import { sendNotification } from '../../utils/Notification.js';
+import {
+    getEconomyConfig,
+    randomCoinRushCheckpointXp,
+} from '../../utils/economyConfig.js';
 
 
 
@@ -62,6 +66,9 @@ export const CreateCoinRushEvent = async (req, res) => {
     }
 
     try {
+        const economy = await getEconomyConfig(prisma);
+        const rollCheckpointXp = () => randomCoinRushCheckpointXp(economy);
+
         let createdCheckpoints = [];
 
         let finalCenterLat = centerLat ? parseFloat(centerLat) : null;
@@ -77,7 +84,7 @@ export const CreateCoinRushEvent = async (req, res) => {
                     checkpointCount
                 )).map(cp => ({
                     ...cp,
-                    xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
+                    xp: rollCheckpointXp()
                 }));
             } else if (Array.isArray(manualCheckpoints) && manualCheckpoints.length > 0) {
                 // Manual placement
@@ -92,7 +99,7 @@ export const CreateCoinRushEvent = async (req, res) => {
                     latitude: parseFloat(cp.latitude),
                     longitude: parseFloat(cp.longitude),
                     description: cp.description || `Checkpoint ${idx + 1}`,
-                    xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
+                    xp: rollCheckpointXp()
                 }));
 
                 // Auto-resolve center to first checkpoint for manual GPS events
@@ -112,7 +119,7 @@ export const CreateCoinRushEvent = async (req, res) => {
                     sequence: i,
                     qrCode: `cr_${crypto.randomBytes(12).toString('hex')}`,
                     description: `Checkpoint ${i}`,
-                    xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
+                    xp: rollCheckpointXp()
                 });
             }
         } else {
@@ -371,6 +378,7 @@ export const UpdateCoinRushEvent = async (req, res) => {
         }
 
         let updatedEvent;
+        const economy = await getEconomyConfig(prisma);
 
         if (Array.isArray(checkpoints)) {
             const mappedCheckpoints = checkpoints.map((cp, idx) => {
@@ -380,7 +388,7 @@ export const UpdateCoinRushEvent = async (req, res) => {
                     sequence: cp.sequence !== undefined ? parseInt(cp.sequence) : idx + 1,
                     type: cpType,
                     description: cp.description || `Checkpoint ${idx + 1}`,
-                    xp: cp.xp !== undefined ? parseInt(cp.xp) : Math.floor(Math.random() * (200 - 50 + 1)) + 50,
+                    xp: cp.xp !== undefined ? parseInt(cp.xp) : randomCoinRushCheckpointXp(economy),
                     latitude: cp.latitude !== undefined && cp.latitude !== null ? parseFloat(cp.latitude) : null,
                     longitude: cp.longitude !== undefined && cp.longitude !== null ? parseFloat(cp.longitude) : null,
                     qrCode: cp.qrCode || (cpType === 'QR' ? `cr_${crypto.randomBytes(12).toString('hex')}` : null),
@@ -536,12 +544,13 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
     }
 
     try {
+        const economy = await getEconomyConfig(prisma);
         const createdCheckpoints = sortedCheckpoints.map((cp, idx) => {
             let cpData = {
                 sequence: idx + 1,
                 type: cp.type || 'GPS',
                 description: cp.description || `Checkpoint ${idx + 1}`,
-                xp: Math.floor(Math.random() * (200 - 50 + 1)) + 50
+                xp: randomCoinRushCheckpointXp(economy),
             };
 
             if (cpData.type === 'GPS') {

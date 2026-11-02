@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db.js";
 import { CreateZoneSchema, UpdateZoneSchema } from "../../schema/Admin/SinglePlayer.js";
 import { generateBulkZones } from "../../utils/GeminiAi.js";
+import { getEconomyConfig } from "../../utils/economyConfig.js";
 
 /**
  * @Description Create a new Single Player Zone
@@ -41,6 +42,7 @@ export const createZone = async (req, res) => {
       }
     }
 
+    const economy = await getEconomyConfig(prisma);
     const zone = await prisma.singlePlayerZone.create({
       data: {
         name: payload.name,
@@ -48,7 +50,10 @@ export const createZone = async (req, res) => {
         longitude: parseFloat(payload.longitude),
         radius: payload.radius ? parseInt(payload.radius) : 50,
         isActive: payload.isActive !== undefined ? payload.isActive : true,
-        coinsPerHour: payload.coinsPerHour !== undefined ? parseInt(payload.coinsPerHour) : 60,
+        coinsPerHour:
+          payload.coinsPerHour !== undefined
+            ? parseInt(payload.coinsPerHour)
+            : economy.defaultZoneCoinsPerHour,
         city: payload.city || null,
         country: payload.country || null,
         imageUrl: imageUrl,
@@ -226,6 +231,7 @@ export const generateBulkZonesController = async (req, res) => {
       });
     }
 
+    const economy = await getEconomyConfig(prisma);
     const aiZones = await generateBulkZones(prompt, count);
 
     if (!aiZones || aiZones.length === 0) {
@@ -243,7 +249,8 @@ export const generateBulkZonesController = async (req, res) => {
       city: zone.city || null,
       country: zone.country || null,
       radius: radius ? parseInt(radius) : 50,
-      coinsPerHour: coinsPerHour !== undefined ? parseInt(coinsPerHour) : 60,
+      coinsPerHour:
+        coinsPerHour !== undefined ? parseInt(coinsPerHour) : economy.defaultZoneCoinsPerHour,
       isActive: true,
       imageUrl: null // Skipping Google Places image fetch for bulk inserts to avoid rate limits/latency
     }));

@@ -26,6 +26,9 @@ import {
 } from "../utils/tripUtils.js"
 import { haversineDistance, generateDynamicXP } from "../utils/methods/methods.js"
 import { publishToUser } from "../sockets/eventPublisher.js";
+import { getEconomyConfig } from "../utils/economyConfig.js";
+import { awardUserXp } from "../utils/awardUserXp.js";
+import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.js";
 
 
 /**
@@ -880,10 +883,24 @@ export const claimReward = async (req, res) => {
             throw txError;
         }
 
+        const economy = await getEconomyConfig(prisma);
+        let xpAwarded = 0;
+        if (economy.merchantAdInteractionXp > 0) {
+            const xpResult = await awardUserXp(prisma, userId, economy.merchantAdInteractionXp, {
+                skipBrandMonth: true,
+            });
+            xpAwarded = xpResult.xpAwarded;
+        }
+
+        tryCompleteReferralQualifyingActivity(userId).catch((err) =>
+            console.error("Referral qualifying activity (merchant ad):", err)
+        );
+
         return res.status(200).json({
             status: true,
             msg: "success",
-            code: assignedCode
+            code: assignedCode,
+            xpAwarded,
         });
 
     } catch (error) {

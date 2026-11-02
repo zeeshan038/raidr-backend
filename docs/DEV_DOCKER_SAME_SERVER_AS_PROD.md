@@ -12,7 +12,7 @@
 | | Public API | DB (inside Docker) |
 |--|------------|---------------------|
 | **Prod** | `https://backend.raidr-app.com/api` | `@postgres:5432/raidr_prod` (set in prod `docker-compose.yml`) |
-| **Dev** | `http://188.245.72.1:5002/api` | `@postgres:5432/raidr_db` (set in `docker-compose.dev.yml`) |
+| **Dev** | `http://188.245.72.1:5002/api` | `@postgres:5432/raidr_db` in **`~/raidr-backend/.env`** |
 
 Never point dev at `188.245.72.1:5432` in `.env` — that is **prod Postgres on the host**, not the dev container on **5433**.
 

@@ -67,6 +67,8 @@ model User {
 
   coinBoostMultiplier    Float?             @default(1.0)
   coinBoostExpiresAt     DateTime?
+  passiveCoinsAccruedToday Int              @default(0)
+  passiveCoinsAccrualDay   String?
   spGuardInventory       Int                @default(0)
   preferencesCompleted   Boolean            @default(false)
   inviteCode             String?            @unique
@@ -595,13 +597,28 @@ model SinglePlayerGameConfig {
   guardPurchaseCoinPrice    Int      @default(100)
   guardEliminationCoinPrice Int      @default(50)
   empireVipMinOwnedZones    Int      @default(5)
-  vipRewardMultiplier       Float    @default(1.0)
+  vipRewardMultiplier       Float    @default(1.25)
   rivalryMilestoneHours     Json     @default("[24, 48]")
   allowedHoldDurationHours  Json     @default("[24, 48, 72]")
   shieldWarningMinutesBefore Int     @default(15)
   maxOwnedZonesPerPlayer    Int?     @default(5)
   dailyDropXpNormal         Int      @default(50)
   dailyDropXpRare           Int      @default(150)
+  dailyDropCoinsNormal      Int      @default(10)
+  rareDropBonusCoins        Int      @default(25)
+  coinRushCheckpointXpMin   Int      @default(50)
+  coinRushCheckpointXpMax   Int      @default(100)
+  coinRushCheckpointCoins   Int      @default(1)
+  liveEventXpReward         Int      @default(200)
+  liveEventRedeemCoins      Int      @default(10)
+  brandMonthActionCoins     Int      @default(10)
+  b2bHoldCompleteXp         Int      @default(100)
+  b2bHoldCompleteCoins      Int      @default(20)
+  merchantAdInteractionXp   Int      @default(25)
+  referralRewardXp          Int      @default(100)
+  referralRewardCoins       Int      @default(25)
+  defaultZoneCoinsPerHour   Int      @default(10)
+  passiveCoinsDailyCapPerUser Int    @default(240)
   updatedAt                 DateTime @updatedAt
 }
 

@@ -1,7 +1,6 @@
 import { prisma } from "../config/db.js";
 import { ValidateReferralSchema } from "../schema/Referral.js";
 import {
-  REFERRAL_REWARD_COINS,
   buildInviteShareUrl,
   completeReferralReward,
   ensureUserInviteCode,
@@ -9,6 +8,7 @@ import {
   processReferralRewardAfterSignup,
   validateInviteCodeForClient,
 } from "../utils/referralService.js";
+import { getEconomyConfig } from "../utils/economyConfig.js";
 
 /**
  * @Description Validate invite code (signup UI)
@@ -32,13 +32,15 @@ export const validateReferralCode = async (req, res) => {
       });
     }
 
+    const economy = await getEconomyConfig(prisma);
     return res.status(200).json({
       status: true,
       data: {
         valid: true,
         inviteCode: validation.inviteCode,
         inviterName: validation.inviterName,
-        rewardCoins: REFERRAL_REWARD_COINS,
+        rewardCoins: economy.referralRewardCoins,
+        rewardXp: economy.referralRewardXp,
       },
     });
   } catch (error) {
@@ -59,13 +61,15 @@ export const getMyReferralCode = async (req, res) => {
 
   try {
     const inviteCode = await ensureUserInviteCode(userId);
+    const economy = await getEconomyConfig(prisma);
 
     return res.status(200).json({
       status: true,
       data: {
         inviteCode,
         shareUrl: buildInviteShareUrl(inviteCode),
-        rewardCoins: REFERRAL_REWARD_COINS,
+        rewardCoins: economy.referralRewardCoins,
+        rewardXp: economy.referralRewardXp,
       },
     });
   } catch (error) {
@@ -108,10 +112,13 @@ export const getReferralStats = async (req, res) => {
       }),
     ]);
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { inviteCode: true },
-    });
+    const [user, economy] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { inviteCode: true },
+      }),
+      getEconomyConfig(prisma),
+    ]);
 
     return res.status(200).json({
       status: true,
@@ -120,7 +127,8 @@ export const getReferralStats = async (req, res) => {
         shareUrl: user?.inviteCode ? buildInviteShareUrl(user.inviteCode) : null,
         friendsInvited: aggregate._count._all,
         totalCoinsEarned: aggregate._sum.rewardCoins ?? 0,
-        rewardCoinsPerReferral: REFERRAL_REWARD_COINS,
+        rewardCoinsPerReferral: economy.referralRewardCoins,
+        rewardXpPerReferral: economy.referralRewardXp,
         recentRewards: recentRewards.map((row) => ({
           id: row.id,
           rewardCoins: row.rewardCoins,

@@ -62,6 +62,21 @@ export const UpdateGameConfigSchema = (payload) => {
         maxOwnedZonesPerPlayer: Joi.number().integer().min(1).allow(null).optional(),
         dailyDropXpNormal: Joi.number().integer().min(0).optional(),
         dailyDropXpRare: Joi.number().integer().min(0).optional(),
+        dailyDropCoinsNormal: Joi.number().integer().min(0).optional(),
+        rareDropBonusCoins: Joi.number().integer().min(0).optional(),
+        coinRushCheckpointXpMin: Joi.number().integer().min(0).optional(),
+        coinRushCheckpointXpMax: Joi.number().integer().min(0).optional(),
+        coinRushCheckpointCoins: Joi.number().integer().min(0).optional(),
+        liveEventXpReward: Joi.number().integer().min(0).optional(),
+        liveEventRedeemCoins: Joi.number().integer().min(0).optional(),
+        brandMonthActionCoins: Joi.number().integer().min(0).optional(),
+        b2bHoldCompleteXp: Joi.number().integer().min(0).optional(),
+        b2bHoldCompleteCoins: Joi.number().integer().min(0).optional(),
+        merchantAdInteractionXp: Joi.number().integer().min(0).optional(),
+        referralRewardXp: Joi.number().integer().min(0).optional(),
+        referralRewardCoins: Joi.number().integer().min(0).optional(),
+        defaultZoneCoinsPerHour: Joi.number().integer().min(0).optional(),
+        passiveCoinsDailyCapPerUser: Joi.number().integer().min(0).optional(),
     }).unknown(false);
 
     return schema.validate(payload);

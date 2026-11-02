@@ -8,6 +8,11 @@ import {
     publishToUser
 } from "../sockets/eventPublisher.js";
 import {
+    getEconomyConfig,
+    awardRaidrCoins,
+} from "../utils/economyConfig.js";
+import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.js";
+import {
     generateDynamicXP,
     haversineDistance,
     applyDiscoveryLocationFilter,
@@ -735,6 +740,9 @@ export const redeemLiveEventClaim = async (req, res) => {
             lv += 1;
         }
 
+        const economy = await getEconomyConfig(prisma);
+        const redeemCoins = economy.liveEventRedeemCoins;
+
         const [updatedClaim] = await prisma.$transaction([
             prisma.liveEventClaim.update({
                 where: { id: claimId },
@@ -755,10 +763,18 @@ export const redeemLiveEventClaim = async (req, res) => {
                     xp_earned: { increment: xpAwarded },
                     xp_progress: bank,
                     level: lv,
-                    rewards_claimed: { increment: 1 }
+                    rewards_claimed: { increment: 1 },
                 }
             })
         ]);
+
+        if (redeemCoins > 0) {
+            await awardRaidrCoins(prisma, userId, redeemCoins, "live_event_redeem");
+        }
+
+        tryCompleteReferralQualifyingActivity(userId).catch((err) =>
+            console.error("Referral qualifying activity (live event):", err)
+        );
 
         // Fetch updated inventory count after the transaction
         const updatedEvent = await prisma.liveEvent.findUnique({

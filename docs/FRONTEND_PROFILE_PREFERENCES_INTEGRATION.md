@@ -10,8 +10,8 @@
 
 | Item | Value |
 |------|--------|
-| API prefix | `{HOST}/api` |
-| **Production** | `https://backend.raidr-app.com/api` or `https://backend-prod.raidr-app.com/api` (confirm with backend) |
+| API prefix | `{HOST}/api` — set **`VITE_API_BASE_URL`** (or your app’s env) per flavor; do not hardcode in code |
+| **Production** | e.g. `https://backend-prod.raidr-app.com/api` |
 | **Dev (Hetzner)** | `http://188.245.72.1:5002/api` |
 | **Local backend** | `http://localhost:5001/api` |
 | Auth | `Authorization: Bearer <JWT>` on all routes below |

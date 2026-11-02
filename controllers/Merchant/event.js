@@ -9,6 +9,7 @@ import {
     calculateRadiusForUserLiveEvent
 } from "../../utils/methods/methods.js";
 import { sendNotification } from "../../utils/Notification.js";
+import { getEconomyConfig } from "../../utils/economyConfig.js";
 
 const EVENT_COSTS = {
     small: 10,
@@ -113,6 +114,7 @@ export const createLiveEvent = async (req, res) => {
         const status = size === 'small' ? 'scheduled' : 'pending_approval';
 
         const qrCodeToken = `event-qr-${crypto.randomBytes(16).toString('hex')}`;
+        const economy = await getEconomyConfig(prisma);
 
         // 3. Perform database operations in transaction
         const [updatedMerchant, newEvent] = await prisma.$transaction([
@@ -140,7 +142,7 @@ export const createLiveEvent = async (req, res) => {
                     status,
                     size,
                     qrCode: qrCodeToken,
-                    xpReward: Math.floor(Math.random() * 201) + 100  // Random XP between 100–300
+                    xpReward: economy.liveEventXpReward,
                 }
             })
         ]);

@@ -8,6 +8,8 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { awardRaidrCoins, getEconomyConfig } from "../utils/economyConfig.js";
+import { awardUserXp } from "../utils/awardUserXp.js";
 
 /**
  * @Description Claim B2B hold-to-win reward after hold duration is complete
@@ -77,6 +79,23 @@ export const claimB2bReward = async (req, res) => {
       },
     });
 
+    const economy = await getEconomyConfig(prisma);
+    let xpAwarded = 0;
+    let coinsAwarded = 0;
+    if (economy.b2bHoldCompleteXp > 0) {
+      const xpResult = await awardUserXp(prisma, userId, economy.b2bHoldCompleteXp);
+      xpAwarded = xpResult.xpAwarded;
+    }
+    if (economy.b2bHoldCompleteCoins > 0) {
+      const coinResult = await awardRaidrCoins(
+        prisma,
+        userId,
+        economy.b2bHoldCompleteCoins,
+        "b2b_hold_complete"
+      );
+      coinsAwarded = coinResult.coinsAwarded;
+    }
+
     await notifyUserIfAllowed(
       prisma,
       userId,
@@ -89,6 +108,8 @@ export const claimB2bReward = async (req, res) => {
       status: true,
       msg: "B2B reward claimed successfully",
       data: claim,
+      xpAwarded,
+      coinsAwarded,
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
