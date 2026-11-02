@@ -5,3 +5,9 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "spGuardInventory" INTEGER NOT NULL 
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostMultiplier" DOUBLE PRECISION DEFAULT 1.0;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostExpiresAt" TIMESTAMP(3);
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferencesCompleted" BOOLEAN NOT NULL DEFAULT false;
+
+-- Referral module (fixes login/whoami: User.inviteCode)
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "inviteCode" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "referredByUserId" TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS "User_inviteCode_key" ON "User"("inviteCode");
+CREATE INDEX IF NOT EXISTS "User_referredByUserId_idx" ON "User"("referredByUserId");
