@@ -7,13 +7,11 @@ npx prisma db execute --file scripts/fix-user-model-columns.sql --schema prisma/
 echo "[entrypoint] Referral tables/columns (if missing)..."
 npx prisma db execute --file prisma/migrations/20261102140000_referral_invite_module/migration.sql --schema prisma/schema.prisma || true
 
+echo "[entrypoint] Profile preferences tables (login/onboarding)..."
+npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma || true
+
 echo "[entrypoint] Idempotent Single Player schema SQL..."
-if npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma \
-  && npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma; then
-  echo "[entrypoint] Schema SQL applied."
-else
-  echo "[entrypoint] WARN: schema SQL had errors (may be partial); continuing."
-fi
+npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma || true
 
 echo "[entrypoint] Prisma migrate deploy..."
 if npx prisma migrate deploy; then

@@ -53,6 +53,37 @@ docker logs raidr_api --tail 80
 docker compose logs api --tail 80
 ```
 
+## Missing tables on **dev** only (e.g. `ProfilePreferenceOption`)
+
+Work only in **`~/raidr-backend`**. Use **`raidr_postgres_dev`** + database **`raidr_db`** — not `raidr_postgres` / `raidr_prod`.
+
+```bash
+cd ~/raidr-backend
+git pull origin main
+
+# Confirm dev API + DB (must NOT be raidr_api / raidr_prod)
+docker exec raidr_api_dev printenv DATABASE_URL
+# expect: ...@postgres:5432/raidr_db...
+
+docker exec -i raidr_postgres_dev psql -U raidr_user -d raidr_db \
+  < scripts/fix-profile-preferences-schema.sql
+
+docker exec raidr_api_dev npx prisma db execute \
+  --file scripts/seed-profile-preference-options.sql --schema prisma/schema.prisma
+
+docker exec raidr_postgres_dev psql -U raidr_user -d raidr_db -c \
+  'SELECT COUNT(*) FROM "ProfilePreferenceOption";'
+```
+
+Test: `curl -s http://127.0.0.1:5002/check-server` and hit  
+`http://188.245.72.1:5002/api/user/profile-preferences` (with auth), **not** `backend.raidr-app.com`.
+
+After pull, rebuild dev API so entrypoint runs the same SQL on boot:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-deps --build api
+```
+
 ## Dev DB migration stuck (P3009)
 
 If logs show a **failed** migration on **dev** DB:
