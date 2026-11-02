@@ -19,7 +19,9 @@ export const RegisterSchema = (payload) => {
         agreedToTerms: Joi.boolean().valid(true).required().messages({
             'any.only': 'You must agree to the Terms & Conditions',
             'any.required': 'Agreement to Terms & Conditions is required'
-        })
+        }),
+        inviteCode: Joi.string().trim().max(128).optional(),
+        invite_code: Joi.string().trim().max(128).optional(),
     }).unknown(false);
 
     return schema.validate(payload);

@@ -47,6 +47,14 @@
           "agreedToTerms": {
             "type": "boolean",
             "description": "User confirmation of age and terms agreement"
+          },
+          "inviteCode": {
+            "type": "string",
+            "description": "Optional referral invite code or full invite URL"
+          },
+          "invite_code": {
+            "type": "string",
+            "description": "Optional referral invite code (snake_case alias)"
           }
         }
       },
@@ -4941,6 +4949,94 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/referral/validate": {
+      "post": {
+        "tags": [
+          "Referral"
+        ],
+        "summary": "Validate invite code",
+        "description": "Checks whether an invite code is valid before or during signup.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inviteCode": {
+                    "type": "string",
+                    "example": "AB7X9K"
+                  },
+                  "invite_code": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation result"
+          }
+        }
+      }
+    },
+    "/referral/my-code": {
+      "get": {
+        "tags": [
+          "Referral"
+        ],
+        "summary": "Get my invite code and share URL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite code payload"
+          }
+        }
+      }
+    },
+    "/referral/stats": {
+      "get": {
+        "tags": [
+          "Referral"
+        ],
+        "summary": "Referral stats for current user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite stats"
+          }
+        }
+      }
+    },
+    "/referral/redeem": {
+      "post": {
+        "tags": [
+          "Referral"
+        ],
+        "summary": "Redeem referral reward (idempotent fallback)",
+        "description": "Completes referral payout for the authenticated user if they signed up with a referrer but payout did not run.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Redeem result"
           }
         }
       }

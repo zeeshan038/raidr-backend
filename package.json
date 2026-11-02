@@ -12,6 +12,8 @@
     "coin-rush:test-create": "node scripts/coinRushTestEvent.js create --live",
     "test:guard-eliminate": "node scripts/testGuardEliminateFlow.js",
     "test:guard-eliminate:reset": "node scripts/testGuardEliminateFlow.js --cancel",
+    "test:referral": "node scripts/testReferralService.js",
+    "backfill:invite-codes": "node scripts/backfillUserInviteCodes.js",
     "postinstall": "prisma generate"
   },
   "keywords": [],

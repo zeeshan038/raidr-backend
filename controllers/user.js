@@ -35,6 +35,11 @@ import {
     sanitizeUserForClient,
     userLevelProgressFields,
 } from "../utils/userLevel.js";
+import {
+    createUserWithReferral,
+    extractInviteCodeFromRequestBody,
+    processReferralRewardAfterSignup,
+} from "../utils/referralService.js";
 
 
 /**
@@ -78,17 +83,20 @@ export const registerUser = async (req, res) => {
                 });
             }
         } else {
-            // New User
-            user = await prisma.user.create({
-                data: {
+            const rawInvite = extractInviteCodeFromRequestBody(payload);
+            const created = await createUserWithReferral(
+                {
                     name: payload.name,
                     email: payload.email,
                     password: hashedPassword,
                     isVerified: true,
                     signupMethod: "manual",
-                    agreedToTerms: payload.agreedToTerms
-                }
-            });
+                    agreedToTerms: payload.agreedToTerms,
+                },
+                rawInvite
+            );
+            user = created.user;
+            await processReferralRewardAfterSignup(created.referralResult);
         }
 
         const token = generateToken(user);
@@ -323,8 +331,9 @@ export const signInWithGoogle = async (req, res) => {
         let user = await prisma.user.findUnique({ where: { email: email } });
 
         if (!user) {
-            user = await prisma.user.create({
-                data: {
+            const rawInvite = extractInviteCodeFromRequestBody(req.body);
+            const created = await createUserWithReferral(
+                {
                     email: email,
                     name: name || "Google User",
                     authProvider: "google",
@@ -333,9 +342,12 @@ export const signInWithGoogle = async (req, res) => {
                     firebaseUid: uid,
                     photoUrl: picture || "",
                     isVerified: true,
-                    isNewUser: true
-                }
-            });
+                    isNewUser: true,
+                },
+                rawInvite
+            );
+            user = created.user;
+            await processReferralRewardAfterSignup(created.referralResult);
         } else {
             user = await prisma.user.update({
                 where: { id: user.id },
@@ -392,8 +404,9 @@ export const signInWithApple = async (req, res) => {
             : await prisma.user.findUnique({ where: { firebaseUid: uid } });
 
         if (!user) {
-            user = await prisma.user.create({
-                data: {
+            const rawInvite = extractInviteCodeFromRequestBody(req.body);
+            const created = await createUserWithReferral(
+                {
                     email: email,
                     name: name || "Apple User",
                     authProvider: "apple",
@@ -402,9 +415,12 @@ export const signInWithApple = async (req, res) => {
                     firebaseUid: uid,
                     photoUrl: picture || "",
                     isVerified: true,
-                    isNewUser: true
-                }
-            });
+                    isNewUser: true,
+                },
+                rawInvite
+            );
+            user = created.user;
+            await processReferralRewardAfterSignup(created.referralResult);
         } else {
             user = await prisma.user.update({
                 where: { id: user.id },
