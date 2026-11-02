@@ -69,6 +69,48 @@ model User {
   coinBoostExpiresAt     DateTime?
   spGuardInventory       Int                @default(0)
   preferencesCompleted   Boolean            @default(false)
+  inviteCode             String?            @unique
+  referredByUserId       String?
+  referredBy             User?              @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referrals              User[]             @relation("UserReferrals")
+  referralRewardsAsInviter ReferralReward[] @relation("ReferralInviter")
+  referralRewardAsInvitee  ReferralReward?  @relation("ReferralInvitee")
+  coinTransactions       CoinTransaction[]
+
+  @@index([referredByUserId])
+}
+
+model ReferralReward {
+  id              String   @id @default(uuid())
+  inviterId       String
+  invitedUserId   String   @unique
+  rewardCoins     Int
+  status          String   @default("completed")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  inviter         User     @relation("ReferralInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitedUser     User     @relation("ReferralInvitee", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  coinTransactions CoinTransaction[]
+
+  @@index([inviterId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model CoinTransaction {
+  id               String   @id @default(uuid())
+  userId           String
+  amount           Int
+  source           String
+  linkedReferralId String?
+  createdAt        DateTime @default(now())
+
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedReferral   ReferralReward? @relation(fields: [linkedReferralId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([source])
+  @@index([createdAt(sort: Desc)])
 }
 
 model BoxCollectionLog {
