@@ -1,6 +1,7 @@
 # Production — use ONLY in ~/raidr-backend-prod (backend.raidr-app.com :5001)
 # Do NOT add docker-compose.dev.yml here.
-name: raidr-prod
+# Project name must match existing server volumes/containers (do not change to raidr-prod).
+name: raidr-backend-prod
 
 services:
   api:
