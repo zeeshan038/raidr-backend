@@ -23,6 +23,7 @@ import {
     loadGroupedProfileOptions,
     validateProfileOptionIds,
     formatUserProfilePreferenceResponse,
+    resolveProfilePreferencesOptions,
 } from "../utils/profilePreferences.js";
 
 //Utils
@@ -993,37 +994,60 @@ export const saveProfilePreferences = async (req, res) => {
     }
 
     try {
-        const validation = await validateProfileOptionIds(prisma, value);
+        const resolved = await resolveProfilePreferencesOptions(prisma, value);
+        if (!resolved.ok) {
+            return res.status(400).json({ status: false, msg: resolved.msg });
+        }
+
+        const optionIds = {
+            genderOptionId: resolved.genderOptionId,
+            ageRangeOptionId: resolved.ageRangeOptionId,
+            raidCityOptionIds: resolved.raidCityOptionIds,
+            interestOptionIds: resolved.interestOptionIds,
+        };
+
+        const validation = await validateProfileOptionIds(prisma, optionIds, {
+            partial: true,
+        });
         if (!validation.ok) {
             return res.status(400).json({ status: false, msg: validation.msg });
         }
 
-        const raidCityOptionIds = [...new Set(value.raidCityOptionIds)];
-        const interestOptionIds = [...new Set(value.interestOptionIds)];
+        const createData = {
+            userId,
+            homeAddress: value.homeAddress,
+            homeCityLabel: value.homeCityLabel,
+            homeLatitude: value.homeLatitude ?? null,
+            homeLongitude: value.homeLongitude ?? null,
+            genderOptionId: optionIds.genderOptionId ?? null,
+            ageRangeOptionId: optionIds.ageRangeOptionId ?? null,
+            raidCityOptionIds: optionIds.raidCityOptionIds ?? [],
+            interestOptionIds: optionIds.interestOptionIds ?? [],
+        };
+
+        const updateData = {
+            homeAddress: value.homeAddress,
+            homeCityLabel: value.homeCityLabel,
+            homeLatitude: value.homeLatitude ?? null,
+            homeLongitude: value.homeLongitude ?? null,
+        };
+        if (optionIds.genderOptionId !== undefined) {
+            updateData.genderOptionId = optionIds.genderOptionId;
+        }
+        if (optionIds.ageRangeOptionId !== undefined) {
+            updateData.ageRangeOptionId = optionIds.ageRangeOptionId;
+        }
+        if (optionIds.raidCityOptionIds !== undefined) {
+            updateData.raidCityOptionIds = optionIds.raidCityOptionIds;
+        }
+        if (optionIds.interestOptionIds !== undefined) {
+            updateData.interestOptionIds = optionIds.interestOptionIds;
+        }
 
         const pref = await prisma.userProfilePreference.upsert({
             where: { userId },
-            create: {
-                userId,
-                homeAddress: value.homeAddress,
-                homeCityLabel: value.homeCityLabel,
-                homeLatitude: value.homeLatitude ?? null,
-                homeLongitude: value.homeLongitude ?? null,
-                genderOptionId: value.genderOptionId,
-                ageRangeOptionId: value.ageRangeOptionId,
-                raidCityOptionIds,
-                interestOptionIds,
-            },
-            update: {
-                homeAddress: value.homeAddress,
-                homeCityLabel: value.homeCityLabel,
-                homeLatitude: value.homeLatitude ?? null,
-                homeLongitude: value.homeLongitude ?? null,
-                genderOptionId: value.genderOptionId,
-                ageRangeOptionId: value.ageRangeOptionId,
-                raidCityOptionIds,
-                interestOptionIds,
-            },
+            create: createData,
+            update: updateData,
         });
 
         const user = await prisma.user.update({
@@ -1074,7 +1098,21 @@ export const updateProfilePreferences = async (req, res) => {
             });
         }
 
-        const validation = await validateProfileOptionIds(prisma, value, { partial: true });
+        const resolved = await resolveProfilePreferencesOptions(prisma, value);
+        if (!resolved.ok) {
+            return res.status(400).json({ status: false, msg: resolved.msg });
+        }
+
+        const optionIds = {
+            genderOptionId: resolved.genderOptionId,
+            ageRangeOptionId: resolved.ageRangeOptionId,
+            raidCityOptionIds: resolved.raidCityOptionIds,
+            interestOptionIds: resolved.interestOptionIds,
+        };
+
+        const validation = await validateProfileOptionIds(prisma, optionIds, {
+            partial: true,
+        });
         if (!validation.ok) {
             return res.status(400).json({ status: false, msg: validation.msg });
         }
@@ -1084,13 +1122,17 @@ export const updateProfilePreferences = async (req, res) => {
         if (value.homeCityLabel !== undefined) updateData.homeCityLabel = value.homeCityLabel;
         if (value.homeLatitude !== undefined) updateData.homeLatitude = value.homeLatitude;
         if (value.homeLongitude !== undefined) updateData.homeLongitude = value.homeLongitude;
-        if (value.genderOptionId !== undefined) updateData.genderOptionId = value.genderOptionId;
-        if (value.ageRangeOptionId !== undefined) updateData.ageRangeOptionId = value.ageRangeOptionId;
-        if (value.raidCityOptionIds !== undefined) {
-            updateData.raidCityOptionIds = [...new Set(value.raidCityOptionIds)];
+        if (optionIds.genderOptionId !== undefined) {
+            updateData.genderOptionId = optionIds.genderOptionId;
         }
-        if (value.interestOptionIds !== undefined) {
-            updateData.interestOptionIds = [...new Set(value.interestOptionIds)];
+        if (optionIds.ageRangeOptionId !== undefined) {
+            updateData.ageRangeOptionId = optionIds.ageRangeOptionId;
+        }
+        if (optionIds.raidCityOptionIds !== undefined) {
+            updateData.raidCityOptionIds = optionIds.raidCityOptionIds;
+        }
+        if (optionIds.interestOptionIds !== undefined) {
+            updateData.interestOptionIds = optionIds.interestOptionIds;
         }
 
         const pref = await prisma.userProfilePreference.update({
