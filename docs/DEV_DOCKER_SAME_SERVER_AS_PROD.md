@@ -23,7 +23,7 @@ Never point dev at `188.245.72.1:5432` in `.env` — that is **prod Postgres on 
 | Service  | Container           | Host port |
 |----------|---------------------|-----------|
 | API      | `raidr_api_dev`     | **5002**  |
-| WebSocket| (same)              | **3002**  |
+| WebSocket| (same)              | **3012** (host; 3002 often used by other stacks locally) |
 | Postgres | `raidr_postgres_dev`| **5433**  |
 | Redis    | `raidr_redis_dev`   | **6380**  |
 

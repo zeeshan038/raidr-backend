@@ -4,7 +4,7 @@ import { applyPassiveCoinsWithDailyCap, economyFromConfigRow } from '../utils/ec
 import {
   isSinglePlayerZoneTableReady,
   logSinglePlayerCronSkippedOnce,
-  markSinglePlayerZoneTableMissing,
+  handleSinglePlayerSchemaError,
 } from '../utils/singlePlayerSchemaReady.js';
 
 /**
@@ -97,11 +97,7 @@ export const startPassiveCoinsCron = () => {
 
             console.log(`[Cron] Passive coins awarded to ${awardedUsers} players.`);
         } catch (error) {
-            if (error?.code === 'P2021' && error?.meta?.modelName === 'SinglePlayerZone') {
-                markSinglePlayerZoneTableMissing();
-                logSinglePlayerCronSkippedOnce('Passive coins');
-                return;
-            }
+            if (handleSinglePlayerSchemaError(error, 'Passive coins')) return;
             console.error('[Cron] Error running passive coins job:', error);
         }
     };

@@ -3,7 +3,7 @@ import { getSpGameConfig } from "../utils/singlePlayerConfig.js";
 import {
   isSinglePlayerZoneTableReady,
   logSinglePlayerCronSkippedOnce,
-  markSinglePlayerZoneTableMissing,
+  handleSinglePlayerSchemaError,
 } from "../utils/singlePlayerSchemaReady.js";
 import { parseJsonIntArray } from "../utils/configJson.js";
 import { haversineDistance } from "../utils/methods/methods.js";
@@ -94,11 +94,7 @@ export const startSinglePlayerRivalryCron = () => {
         }
       }
     } catch (err) {
-      if (err?.code === "P2021" && err?.meta?.modelName === "SinglePlayerZone") {
-        markSinglePlayerZoneTableMissing();
-        logSinglePlayerCronSkippedOnce("Single Player rivalry");
-        return;
-      }
+      if (handleSinglePlayerSchemaError(err, "Single Player rivalry")) return;
       console.error("[Cron] Single Player rivalry:", err);
     }
   };

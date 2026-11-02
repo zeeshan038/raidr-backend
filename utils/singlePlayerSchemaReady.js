@@ -25,8 +25,21 @@ export const logSinglePlayerCronSkippedOnce = (jobName) => {
   if (skipLogged) return;
   skipLogged = true;
   console.log(
-    `[Cron] ${jobName}: skipped — SinglePlayerZone table not in this database (referral/coin-rush-only DB is OK).`
+    `[Cron] ${jobName}: skipped — Single Player tables missing on this database (referral-only local DB is OK).`
   );
+};
+
+/** Any missing Prisma table (P2021) for Single Player / economy config. */
+export const isSinglePlayerSchemaError = (err) =>
+  err?.code === "P2021" &&
+  (err?.meta?.modelName === "SinglePlayerZone" ||
+    err?.meta?.modelName === "SinglePlayerGameConfig");
+
+export const handleSinglePlayerSchemaError = (err, jobName) => {
+  if (!isSinglePlayerSchemaError(err)) return false;
+  markSinglePlayerZoneTableMissing();
+  logSinglePlayerCronSkippedOnce(jobName);
+  return true;
 };
 
 export const markSinglePlayerZoneTableMissing = () => {

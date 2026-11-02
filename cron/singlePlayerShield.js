@@ -3,7 +3,7 @@ import { getSpGameConfig } from "../utils/singlePlayerConfig.js";
 import {
   isSinglePlayerZoneTableReady,
   logSinglePlayerCronSkippedOnce,
-  markSinglePlayerZoneTableMissing,
+  handleSinglePlayerSchemaError,
 } from "../utils/singlePlayerSchemaReady.js";
 import {
   notifyUserIfAllowed,
@@ -51,11 +51,7 @@ export const startSinglePlayerShieldCron = () => {
         });
       }
     } catch (err) {
-      if (err?.code === "P2021" && err?.meta?.modelName === "SinglePlayerZone") {
-        markSinglePlayerZoneTableMissing();
-        logSinglePlayerCronSkippedOnce("Single Player shield warnings");
-        return;
-      }
+      if (handleSinglePlayerSchemaError(err, "Single Player shield warnings")) return;
       console.error("[Cron] Single Player shield warnings:", err);
     }
   };
