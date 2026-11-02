@@ -1,10 +1,35 @@
 # Production server — DB P3005 / login `spGuardInventory` fix
 
 ## Symptoms
+- Flutter **login 500**: column `User.coinBoostMultiplier` does not exist → run `fix-user-model-columns.sql` (below) on **production** DB
 - Flutter **whoami / login 500**: column `User.preferencesCompleted` does not exist → run profile preferences SQL below or `emergency-prod-db-fix.sh` after pull
 - Flutter login **500**: column `User.spGuardInventory` does not exist
 - `docker compose logs api`: **P3005** (database not empty, no migration baseline)
 - API container **Restarting** (old entrypoint exited on failed `migrate deploy`)
+
+## Quick fix — `coinBoostMultiplier` (production `backend.raidr-app.com`)
+
+Run against **prod** (`~/raidr-backend-prod`), not dev (`~/raidr-backend` on port 5002):
+
+```bash
+cd ~/raidr-backend-prod
+git pull origin main
+
+# Option A — via API container (uses prod DATABASE_URL from .env)
+docker compose exec api npx prisma db execute \
+  --file scripts/fix-user-model-columns.sql --schema prisma/schema.prisma
+
+# Option B — direct Postgres (if compose service is named postgres)
+docker compose exec postgres psql -U raidr_user -d raidr_db -c \
+'ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostMultiplier" DOUBLE PRECISION DEFAULT 1.0;
+ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostExpiresAt" TIMESTAMP(3);
+ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "spGuardInventory" INTEGER NOT NULL DEFAULT 0;
+ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferencesCompleted" BOOLEAN NOT NULL DEFAULT false;'
+
+docker compose restart api
+```
+
+Then retry login from the app.
 
 ## Quick fix (SSH on server)
 

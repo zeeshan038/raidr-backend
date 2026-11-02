@@ -1,6 +1,9 @@
 #!/bin/sh
 cd /app
 
+echo "[entrypoint] User model columns (login-safe)..."
+npx prisma db execute --file scripts/fix-user-model-columns.sql --schema prisma/schema.prisma || true
+
 echo "[entrypoint] Idempotent Single Player schema SQL..."
 if npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma \
   && npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma; then
