@@ -1,14 +1,14 @@
-# Development stack — safe to run on the same VPS as ~/raidr-backend-prod.
-# Uses unique container names, host ports, and Compose project name so prod is untouched.
-name: raidr-dev
+# Production — use ONLY in ~/raidr-backend-prod (backend.raidr-app.com :5001)
+# Do NOT add docker-compose.dev.yml here.
+name: raidr-prod
 
 services:
   api:
     build: .
-    container_name: raidr_api_dev
+    container_name: raidr_api
     ports:
-      - "5002:5001"
-      - "3002:3001"
+      - "5001:5001"
+      - "3001:3001"
     env_file:
       - .env
     environment:
@@ -23,13 +23,13 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: raidr_postgres_dev
+    container_name: raidr_postgres
     environment:
       POSTGRES_USER: raidr_user
       POSTGRES_PASSWORD: raidr_password
       POSTGRES_DB: raidr_db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -41,9 +41,9 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: raidr_redis_dev
+    container_name: raidr_redis
     ports:
-      - "6380:6379"
+      - "6379:6379"
     volumes:
       - redis_data:/data
     restart: always
