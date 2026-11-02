@@ -4,6 +4,9 @@ cd /app
 echo "[entrypoint] User model columns (login-safe)..."
 npx prisma db execute --file scripts/fix-user-model-columns.sql --schema prisma/schema.prisma || true
 
+echo "[entrypoint] Referral tables/columns (if missing)..."
+npx prisma db execute --file prisma/migrations/20261102140000_referral_invite_module/migration.sql --schema prisma/schema.prisma || true
+
 echo "[entrypoint] Idempotent Single Player schema SQL..."
 if npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma \
   && npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma; then
