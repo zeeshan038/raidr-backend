@@ -27,11 +27,22 @@ Never point dev at `188.245.72.1:5432` in `.env` — that is **prod Postgres on 
 
 Prod keeps: `raidr_api`, `raidr_postgres`, `raidr_redis` on **5001 / 5432 / 6379**.
 
+## Port conflicts (`Bind for 0.0.0.0:3001` / `5432 failed`)
+
+Compose **merges** `ports` from `docker-compose.yml` + dev overlay unless dev uses `ports: !override`.  
+Symptom: dev API tries **5001, 3001** (prod) **and** 5002, 3002 → clash with `raidr_api` / host Postgres.
+
+After pull, confirm merged config shows **only** dev ports for `api`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml config | grep -A8 'container_name: raidr_api_dev' -A6
+```
+
 ## Deploy dev
 
 ```bash
 cd ~/raidr-backend
-git pull origin main
+git pull origin zeeshan-dev   # or main after merge
 
 docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build

@@ -5,7 +5,8 @@ name: raidr-dev
 services:
   api:
     container_name: raidr_api_dev
-    ports:
+    # Override base ports (5001/3001) so dev does not bind prod host ports on same VPS.
+    ports: !override
       - "5002:5001"
       - "3002:3001"
     environment:
@@ -15,10 +16,10 @@ services:
 
   postgres:
     container_name: raidr_postgres_dev
-    ports:
+    ports: !override
       - "5433:5432"
 
   redis:
     container_name: raidr_redis_dev
-    ports:
+    ports: !override
       - "6380:6379"
