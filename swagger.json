@@ -14105,30 +14105,31 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "homeAddress",
-                  "homeCityLabel",
-                  "genderOptionId",
-                  "ageRangeOptionId",
-                  "raidCityOptionIds",
-                  "interestOptionIds"
-                ],
+                "required": ["homeAddress", "homeCityLabel"],
                 "properties": {
                   "homeAddress": { "type": "string", "example": "Ben Yehuda St 123" },
                   "homeCityLabel": { "type": "string", "example": "Tel Aviv" },
                   "homeLatitude": { "type": "number", "example": 32.0853 },
                   "homeLongitude": { "type": "number", "example": 34.7818 },
-                  "genderOptionId": { "type": "string", "format": "uuid" },
-                  "ageRangeOptionId": { "type": "string", "format": "uuid" },
+                  "genderOptionId": {
+                    "type": "string",
+                    "description": "Option UUID or slug (e.g. male, female)",
+                    "example": "male"
+                  },
+                  "ageRangeOptionId": {
+                    "type": "string",
+                    "description": "Option UUID or slug (e.g. 25_34)",
+                    "example": "25_34"
+                  },
                   "raidCityOptionIds": {
                     "type": "array",
-                    "items": { "type": "string", "format": "uuid" },
-                    "minItems": 1
+                    "items": { "type": "string", "description": "UUID or slug (e.g. tel_aviv)" },
+                    "example": ["tel_aviv"]
                   },
                   "interestOptionIds": {
                     "type": "array",
-                    "items": { "type": "string", "format": "uuid" },
-                    "minItems": 1
+                    "items": { "type": "string", "description": "UUID or slug (e.g. fashion)" },
+                    "example": ["fashion", "events"]
                   }
                 }
               }
@@ -14177,23 +14178,23 @@
                   "homeCityLabel": { "type": "string", "example": "Tel Aviv" },
                   "homeLatitude": { "type": "number", "example": 32.0853 },
                   "homeLongitude": { "type": "number", "example": 34.7818 },
-                  "genderOptionId": { "type": "string", "format": "uuid" },
-                  "ageRangeOptionId": { "type": "string", "format": "uuid" },
+                  "genderOptionId": { "type": "string", "example": "male" },
+                  "ageRangeOptionId": { "type": "string", "example": "25_34" },
                   "raidCityOptionIds": {
                     "type": "array",
-                    "items": { "type": "string", "format": "uuid" },
-                    "minItems": 1
+                    "items": { "type": "string" },
+                    "example": ["jerusalem"]
                   },
                   "interestOptionIds": {
                     "type": "array",
-                    "items": { "type": "string", "format": "uuid" },
-                    "minItems": 1
+                    "items": { "type": "string" },
+                    "example": ["fashion"]
                   }
                 }
               },
               "example": {
                 "homeCityLabel": "Jerusalem",
-                "raidCityOptionIds": ["3b0f718f-1f1b-4c6a-628a-3e727421a7e7"],
+                "raidCityOptionIds": ["jerusalem"],
                 "interestOptionIds": ["8c4e2a1b-9d0f-4e3a-b2c1-0f9e8d7c6b5a"]
               }
             }

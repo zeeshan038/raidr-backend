@@ -1,5 +1,8 @@
 import Joi from "joi";
 
+/** UUID or admin seed slug (e.g. male, 25_34, fashion). */
+const profileOptionRef = Joi.string().trim().min(1);
+
 export const SaveProfilePreferencesSchema = (payload) => {
   const schema = Joi.object({
     homeAddress: Joi.string().trim().min(1).required().messages({
@@ -12,10 +15,10 @@ export const SaveProfilePreferencesSchema = (payload) => {
     }),
     homeLatitude: Joi.number().optional(),
     homeLongitude: Joi.number().optional(),
-    genderOptionId: Joi.string().uuid().required(),
-    ageRangeOptionId: Joi.string().uuid().required(),
-    raidCityOptionIds: Joi.array().items(Joi.string().uuid()).min(1).required(),
-    interestOptionIds: Joi.array().items(Joi.string().uuid()).min(1).required(),
+    genderOptionId: profileOptionRef.optional(),
+    ageRangeOptionId: profileOptionRef.optional(),
+    raidCityOptionIds: Joi.array().items(profileOptionRef).optional(),
+    interestOptionIds: Joi.array().items(profileOptionRef).optional(),
   }).unknown(false);
 
   return schema.validate(payload);
@@ -27,10 +30,10 @@ export const UpdateProfilePreferencesSchema = (payload) => {
     homeCityLabel: Joi.string().trim().min(1).optional(),
     homeLatitude: Joi.number().optional(),
     homeLongitude: Joi.number().optional(),
-    genderOptionId: Joi.string().uuid().optional(),
-    ageRangeOptionId: Joi.string().uuid().optional(),
-    raidCityOptionIds: Joi.array().items(Joi.string().uuid()).min(1).optional(),
-    interestOptionIds: Joi.array().items(Joi.string().uuid()).min(1).optional(),
+    genderOptionId: profileOptionRef.optional(),
+    ageRangeOptionId: profileOptionRef.optional(),
+    raidCityOptionIds: Joi.array().items(profileOptionRef).optional(),
+    interestOptionIds: Joi.array().items(profileOptionRef).optional(),
   })
     .unknown(false)
     .min(1)
