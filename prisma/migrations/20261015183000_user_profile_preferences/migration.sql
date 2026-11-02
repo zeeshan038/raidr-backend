@@ -1,5 +1,4 @@
-docker ps -a --filter name=raidr_api
-curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:5001/check-server-- User onboarding profile preferences (admin-managed options + user selections)
+-- User onboarding profile preferences (admin-managed options + user selections)
 
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferencesCompleted" BOOLEAN NOT NULL DEFAULT false;
 
