@@ -5,7 +5,7 @@ This directory serves **https://backend.raidr-app.com** (port **5001**).
 ## Correct `docker-compose.yml` (must look like this)
 
 ```yaml
-name: raidr-prod
+name: raidr-backend-prod
 # container_name: raidr_api, raidr_postgres, raidr_redis
 # ports: 5001, 5432, 6379
 ```
@@ -27,7 +27,7 @@ grep -E "^name:|container_name" docker-compose.yml | head -5
 Expected:
 
 ```text
-name: raidr-prod
+name: raidr-backend-prod
     container_name: raidr_api
     container_name: raidr_postgres
     container_name: raidr_redis
@@ -43,7 +43,24 @@ docker compose up -d --build
 docker ps --filter name=raidr_api
 ```
 
-You must see **`raidr_api`** on **`0.0.0.0:5001->5001`**, image/project **`raidr-prod`**.
+You must see **`raidr_api`** on **`0.0.0.0:5001->5001`**.
+
+## `raidr_redis` already in use (name conflict)
+
+This happens when **`raidr_redis` / `raidr_postgres` are already running** and Compose tries to create them again (often after renaming the compose project).
+
+**Do not** `docker rm raidr_redis` if prod is live. Rebuild **API only**:
+
+```bash
+cd ~/raidr-backend-prod
+docker compose build api
+docker compose up -d --no-deps --build api
+docker ps --filter name=raidr_api
+```
+
+Or use `sh scripts/compose-prod-up.sh` (detects existing redis/postgres).
+
+Ensure compose project name is **`raidr-backend-prod`** (same as before), not `raidr-prod` or `raidr-dev`.
 
 Do **not** run:
 
