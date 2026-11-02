@@ -24,8 +24,8 @@ Never point dev at `188.245.72.1:5432` in `.env` — that is **prod Postgres on 
 |----------|---------------------|-----------|
 | API      | `raidr_api_dev`     | **5002**  |
 | WebSocket| (same)              | **3012** (host; 3002 often used by other stacks locally) |
-| Postgres | `raidr_postgres_dev`| **5433**  |
-| Redis    | `raidr_redis_dev`   | **6380**  |
+| Postgres | `raidr_postgres_dev`| **internal only** (`docker exec … psql`; no host **5433** in dev overlay) |
+| Redis    | `raidr_redis_dev`   | **internal only** (no host port; `docker exec raidr_redis_dev redis-cli`) |
 
 Prod keeps: `raidr_api`, `raidr_postgres`, `raidr_redis` on **5001 / 5432 / 6379**.
 

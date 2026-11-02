@@ -19,10 +19,11 @@ services:
 
   postgres:
     container_name: raidr_postgres_dev
-    ports: !override
-      - "5433:5432"
+    # No host port — avoids 5433 clashes on Mac (API uses @postgres:5432). psql via:
+    #   docker exec -it raidr_postgres_dev psql -U raidr_user -d raidr_db
+    ports: !override []
 
   redis:
     container_name: raidr_redis_dev
-    ports: !override
-      - "6380:6379"
+    # No host port — avoids clashing with other Redis on 6379/6380; API uses redis://redis:6379
+    ports: !override []
