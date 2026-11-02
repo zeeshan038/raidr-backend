@@ -16,6 +16,8 @@
 
 Never point dev at `188.245.72.1:5432` in `.env` — that is **prod Postgres on the host**, not the dev container on **5433**.
 
+**Same database name ≠ same database:** `raidr_db` on `@postgres` (dev container) is a **different volume** than `raidr_db` at `188.245.72.1:5432`. Local `npm` often uses host `:5432`; Docker dev must use `@postgres:5432/raidr_db` in `~/raidr-backend/.env`.
+
 ## Dev containers & ports
 
 | Service  | Container           | Host port |
