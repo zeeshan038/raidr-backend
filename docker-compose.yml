@@ -15,7 +15,8 @@ services:
     environment:
       # .env REDIS_URL is often localhost — must use the compose Redis service name.
       - REDIS_URL=redis://redis:6379
-      # DATABASE_URL comes from .env (e.g. raidr_prod). Do not hardcode raidr_db here.
+      # Prod API → prod compose Postgres only (@postgres), not host :5432 (shared with dev mistake).
+      - DATABASE_URL=postgresql://raidr_user:raidr_password@postgres:5432/raidr_prod?schema=public
     depends_on:
       postgres:
         condition: service_healthy

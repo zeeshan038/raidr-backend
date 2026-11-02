@@ -68,7 +68,8 @@ Call this when the user is physically within 20 meters of the event and taps "Cl
 
 You only need **ONE** WebSocket connection for the entire app's live tracking. 
 
-- **Endpoint (Dev):** `wss://backend.raidr-app.com/live-tracking?token=<jwt_token>`
+- **Endpoint (Prod):** `wss://backend.raidr-app.com/live-tracking?token=<jwt_token>`
+- **Endpoint (Dev, same VPS):** `ws://188.245.72.1:3002/live-tracking?token=<jwt_token>` (or your dev host; not the prod domain)
 - **Endpoint (Prod):** `wss://backend-prod.raidr-app.com/live-tracking?token=<jwt_token>`
 *(Note: If Nginx is not yet configured to reverse-proxy `/live-tracking` to the WebSocket port `3001`, you may need to ask DevOps/Backend to add the Nginx proxy rule, or fallback to `ws://<ip>:3001/live-tracking` temporarily).*
 

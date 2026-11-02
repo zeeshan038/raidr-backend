@@ -8,6 +8,10 @@ services:
     ports:
       - "5002:5001"
       - "3002:3001"
+    environment:
+      # Dev must NOT use prod Postgres (host :5432) or prod DB name from a copied .env.
+      - DATABASE_URL=postgresql://raidr_user:raidr_password@postgres:5432/raidr_db?schema=public
+      - REDIS_URL=redis://redis:6379
 
   postgres:
     container_name: raidr_postgres_dev

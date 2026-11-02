@@ -3,9 +3,18 @@
 | Folder | Compose command | API URL |
 |--------|-----------------|--------|
 | **`~/raidr-backend-prod`** | `docker compose up -d --build` | `https://backend.raidr-app.com` → **5001** |
-| **`~/raidr-backend`** (dev) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build` | **5002** |
+| **`~/raidr-backend`** (dev) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build` | **`http://188.245.72.1:5002/api`** (not `backend.raidr-app.com`) |
 
 **Do not** use the dev overlay in `raidr-backend-prod`. Prod uses root `docker-compose.yml` only.
+
+## URLs (not interchangeable)
+
+| | Public API | DB (inside Docker) |
+|--|------------|---------------------|
+| **Prod** | `https://backend.raidr-app.com/api` | `@postgres:5432/raidr_prod` (set in prod `docker-compose.yml`) |
+| **Dev** | `http://188.245.72.1:5002/api` | `@postgres:5432/raidr_db` (set in `docker-compose.dev.yml`) |
+
+Never point dev at `188.245.72.1:5432` in `.env` — that is **prod Postgres on the host**, not the dev container on **5433**.
 
 ## Dev containers & ports
 
