@@ -1,0 +1,20 @@
+# Dev overlay — run on ~/raidr-backend ONLY (same VPS as prod):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+name: raidr-dev
+
+services:
+  api:
+    container_name: raidr_api_dev
+    ports:
+      - "5002:5001"
+      - "3002:3001"
+
+  postgres:
+    container_name: raidr_postgres_dev
+    ports:
+      - "5433:5432"
+
+  redis:
+    container_name: raidr_redis_dev
+    ports:
+      - "6380:6379"

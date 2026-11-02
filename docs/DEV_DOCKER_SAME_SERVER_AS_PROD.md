@@ -1,49 +1,58 @@
 # Dev Docker on the same server as production
 
-Production lives in **`~/raidr-backend-prod`** (containers: `raidr_api`, `raidr_redis`, `raidr_postgres`, port **5001**).
+| Folder | Compose command | API URL |
+|--------|-----------------|--------|
+| **`~/raidr-backend-prod`** | `docker compose up -d --build` | `https://backend.raidr-app.com` → **5001** |
+| **`~/raidr-backend`** (dev) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build` | **5002** |
 
-Development lives in **`~/raidr-backend`** with a separate Compose project **`raidr-dev`**:
+**Do not** use the dev overlay in `raidr-backend-prod`. Prod uses root `docker-compose.yml` only.
 
-| Service  | Dev container name      | Host port → container |
-|----------|-------------------------|------------------------|
-| API      | `raidr_api_dev`         | **5002** → 5001        |
-| WebSocket| (same api container)    | **3002** → 3001        |
-| Postgres | `raidr_postgres_dev`    | **5433** → 5432        |
-| Redis    | `raidr_redis_dev`       | **6380** → 6379        |
+## Dev containers & ports
 
-Prod is **not** modified. Dev has its **own DB volume** (empty on first `up`; run migrations via entrypoint).
+| Service  | Container           | Host port |
+|----------|---------------------|-----------|
+| API      | `raidr_api_dev`     | **5002**  |
+| WebSocket| (same)              | **3002**  |
+| Postgres | `raidr_postgres_dev`| **5433**  |
+| Redis    | `raidr_redis_dev`   | **6380**  |
 
-## Deploy dev on the server
+Prod keeps: `raidr_api`, `raidr_postgres`, `raidr_redis` on **5001 / 5432 / 6379**.
+
+## Deploy dev
 
 ```bash
 cd ~/raidr-backend
-git pull origin zeeshan-dev   # or your dev branch
+git pull origin main
 
-docker compose down
-docker compose up -d --build
-docker compose ps
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
+curl -s http://127.0.0.1:5002/check-server
+```
+
+## View logs (correct container)
+
+```bash
+# Dev
+docker logs raidr_api_dev --tail 80
+# or
+docker compose -f docker-compose.yml -f docker-compose.dev.yml logs api --tail 80
+
+# Prod (from prod folder)
+cd ~/raidr-backend-prod
+docker logs raidr_api --tail 80
 docker compose logs api --tail 80
 ```
 
-## Test dev API
+## Dev DB migration stuck (P3009)
+
+If logs show a **failed** migration on **dev** DB:
 
 ```bash
-curl -s http://127.0.0.1:5002/check-server
-# Postman base URL: http://188.245.72.1:5002/api
+cd ~/raidr-backend
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api sh scripts/emergency-prod-db-fix.sh
 ```
 
-## Optional: backfill invite codes (dev DB)
+## Postman dev base URL
 
-```bash
-docker compose exec api npm run backfill:invite-codes
-```
-
-## If you still see name conflicts
-
-Old containers from before this split:
-
-```bash
-docker ps -a | grep raidr
-# Remove only *_dev* orphans, never prod names without confirming:
-# docker rm -f raidr_api_dev raidr_redis_dev raidr_postgres_dev
-```
+`http://188.245.72.1:5002/api`

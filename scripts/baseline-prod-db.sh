@@ -18,7 +18,12 @@ MIGRATIONS="
 20261014220000_brand_month_xp
 20261015010000_drop_brand_month_milestones
 20261015020000_brand_month_milestones_compat
+20261015183000_user_profile_preferences
+20261102140000_referral_invite_module
 "
+
+echo "Clearing failed migration flags (if any)..."
+npx prisma migrate resolve --rolled-back 20261010120000_single_player_phase2_ownership 2>/dev/null || true
 
 for name in $MIGRATIONS; do
   echo "resolve --applied $name"
