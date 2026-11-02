@@ -70,16 +70,40 @@ docker compose -f docker-compose.dev.yml ...
 
 Dev overlay is only for **`~/raidr-backend`**.
 
-## `.env` database
+## `.env` database (must match what exists in Postgres)
 
-Prod Postgres database name is **`raidr_db`** (created by compose).  
-There is **no** `raidr_prod` DB unless you create it manually.
+The API reads **`DATABASE_URL` from `.env`**. Compose no longer overrides it.
+
+Recommended for Docker on the same server (prod API container → prod Postgres container):
 
 ```env
-DATABASE_URL="postgresql://raidr_user:raidr_password@188.245.72.1:5432/raidr_db?schema=public"
+DATABASE_URL="postgresql://raidr_user:raidr_password@postgres:5432/raidr_prod?schema=public"
 ```
 
-Inside the API container, compose sets `DATABASE_URL=...@postgres:5432/raidr_db` (same DB, via Docker network).
+Using `@188.245.72.1:5432` also works from inside the container (host port **5432** → `raidr_postgres`).
+
+**Create the database if missing:**
+
+```bash
+docker exec raidr_postgres psql -U raidr_user -d postgres -c "CREATE DATABASE raidr_prod OWNER raidr_user;"
+```
+
+Then apply User column fixes on **`raidr_prod`**, not only `raidr_db`:
+
+```bash
+docker exec raidr_postgres psql -U raidr_user -d raidr_prod -c \
+'ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostMultiplier" DOUBLE PRECISION DEFAULT 1.0;
+ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostExpiresAt" TIMESTAMP(3);
+ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "spGuardInventory" INTEGER NOT NULL DEFAULT 0;
+ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferencesCompleted" BOOLEAN NOT NULL DEFAULT false;'
+```
+
+After changing `.env` or compose, recreate API:
+
+```bash
+docker compose up -d --no-deps --force-recreate api
+docker exec raidr_api printenv DATABASE_URL
+```
 
 ## If prod folder still had dev compose (one-time cleanup)
 

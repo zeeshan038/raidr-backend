@@ -13,8 +13,9 @@ services:
     env_file:
       - .env
     environment:
+      # .env REDIS_URL is often localhost — must use the compose Redis service name.
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://raidr_user:raidr_password@postgres:5432/raidr_db
+      # DATABASE_URL comes from .env (e.g. raidr_prod). Do not hardcode raidr_db here.
     depends_on:
       postgres:
         condition: service_healthy
