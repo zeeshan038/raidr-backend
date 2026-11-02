@@ -1,0 +1,58 @@
+# Use in ~/raidr-backend-prod when prod must attach the legacy Postgres volume
+# (133+ users on raidr-backend_postgres_data). Copy over docker-compose.yml:
+#   cp docker-compose.prod-restored-db.yml docker-compose.yml
+#
+# Do NOT run: docker compose down -v
+
+name: raidr-backend-prod
+
+services:
+  api:
+    build: .
+    container_name: raidr_api
+    ports:
+      - "5001:5001"
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: raidr_postgres
+    environment:
+      POSTGRES_USER: raidr_user
+      POSTGRES_PASSWORD: raidr_password
+      POSTGRES_DB: raidr_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raidr_user -d raidr_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:alpine
+    container_name: raidr_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+volumes:
+  postgres_data:
+    external: true
+    name: raidr-backend_postgres_data
+  redis_data:
