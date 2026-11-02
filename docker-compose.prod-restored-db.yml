@@ -16,6 +16,8 @@ services:
     env_file:
       - .env
     environment:
+      # Overrides .env — must match restored volume (raidr_db @ postgres service)
+      - DATABASE_URL=postgresql://raidr_user:raidr_password@postgres:5432/raidr_db?schema=public
       - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:
