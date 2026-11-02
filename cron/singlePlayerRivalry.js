@@ -1,5 +1,10 @@
 import { prisma } from "../config/db.js";
 import { getSpGameConfig } from "../utils/singlePlayerConfig.js";
+import {
+  isSinglePlayerZoneTableReady,
+  logSinglePlayerCronSkippedOnce,
+  markSinglePlayerZoneTableMissing,
+} from "../utils/singlePlayerSchemaReady.js";
 import { parseJsonIntArray } from "../utils/configJson.js";
 import { haversineDistance } from "../utils/methods/methods.js";
 import {
@@ -17,6 +22,11 @@ export const startSinglePlayerRivalryCron = () => {
 
   const run = async () => {
     try {
+      if (!(await isSinglePlayerZoneTableReady(prisma))) {
+        logSinglePlayerCronSkippedOnce("Single Player rivalry");
+        return;
+      }
+
       const configRow = await getSpGameConfig(prisma);
       const milestones = parseJsonIntArray(configRow.rivalryMilestoneHours, [24, 48]);
       if (milestones.length === 0) return;
@@ -84,6 +94,11 @@ export const startSinglePlayerRivalryCron = () => {
         }
       }
     } catch (err) {
+      if (err?.code === "P2021" && err?.meta?.modelName === "SinglePlayerZone") {
+        markSinglePlayerZoneTableMissing();
+        logSinglePlayerCronSkippedOnce("Single Player rivalry");
+        return;
+      }
       console.error("[Cron] Single Player rivalry:", err);
     }
   };

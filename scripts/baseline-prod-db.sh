@@ -19,6 +19,7 @@ MIGRATIONS="
 20261015010000_drop_brand_month_milestones
 20261015020000_brand_month_milestones_compat
 20261015183000_user_profile_preferences
+20261102120000_xp_coin_economy_config
 20261102140000_referral_invite_module
 "
 

@@ -9,23 +9,7 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "coinBoostExpiresAt" TIMESTAMP(3);
 -- Coin rush
 ALTER TABLE "CoinRushEvent" ADD COLUMN IF NOT EXISTS "winnersCount" INTEGER NOT NULL DEFAULT 1;
 
--- Single player zone ownership / guards
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "ownedAt" TIMESTAMP(3);
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "guardCount" INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "zoneType" TEXT NOT NULL DEFAULT 'NORMAL';
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "merchantId" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "approvalStatus" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "holdDurationHours" INTEGER;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "b2bRewardType" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "b2bRewardTitle" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "b2bRewardDescription" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "b2bRewardImageUrl" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "holdStartedAt" TIMESTAMP(3);
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "b2bRewardRedemptionCode" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "brandLogoUrl" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "eligibilityNote" TEXT;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "minOwnedZonesRequired" INTEGER;
-ALTER TABLE "SinglePlayerZone" ADD COLUMN IF NOT EXISTS "shieldWarningSentAt" TIMESTAMP(3);
+-- SinglePlayerZone patches: scripts/apply-single-player-zone-patch.sql (via psql; Prisma skips if table missing)
 
 -- Store guards
 ALTER TABLE "Store" ADD COLUMN IF NOT EXISTS "itemType" TEXT NOT NULL DEFAULT 'AVATAR';
@@ -143,13 +127,17 @@ CREATE INDEX IF NOT EXISTS "BrandMonthProgress_campaignId_campaignXp_idx" ON "Br
 CREATE INDEX IF NOT EXISTS "BrandMonthCampaign_isActive_startDate_endDate_idx" ON "BrandMonthCampaign"("isActive", "startDate", "endDate");
 
 DO $$ BEGIN
+  IF to_regclass('public."CommercialVoucher"') IS NOT NULL THEN
     ALTER TABLE "BrandMonthCampaign" ADD CONSTRAINT "BrandMonthCampaign_commercialVoucherId_fkey" FOREIGN KEY ("commercialVoucherId") REFERENCES "CommercialVoucher"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
+  IF to_regclass('public."SponsoredTheme"') IS NOT NULL THEN
     ALTER TABLE "BrandMonthCampaign" ADD CONSTRAINT "BrandMonthCampaign_sponsoredThemeId_fkey" FOREIGN KEY ("sponsoredThemeId") REFERENCES "SponsoredTheme"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -167,7 +155,9 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+  IF to_regclass('public."UserVoucher"') IS NOT NULL THEN
     ALTER TABLE "BrandMonthProgress" ADD CONSTRAINT "BrandMonthProgress_userVoucherId_fkey" FOREIGN KEY ("userVoucherId") REFERENCES "UserVoucher"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;

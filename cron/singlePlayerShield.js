@@ -1,6 +1,11 @@
 import { prisma } from "../config/db.js";
 import { getSpGameConfig } from "../utils/singlePlayerConfig.js";
 import {
+  isSinglePlayerZoneTableReady,
+  logSinglePlayerCronSkippedOnce,
+  markSinglePlayerZoneTableMissing,
+} from "../utils/singlePlayerSchemaReady.js";
+import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
@@ -13,6 +18,11 @@ export const startSinglePlayerShieldCron = () => {
 
   const run = async () => {
     try {
+      if (!(await isSinglePlayerZoneTableReady(prisma))) {
+        logSinglePlayerCronSkippedOnce("Single Player shield warnings");
+        return;
+      }
+
       const configRow = await getSpGameConfig(prisma);
       const minutesBefore = configRow.shieldWarningMinutesBefore ?? 15;
       const now = new Date();
@@ -41,6 +51,11 @@ export const startSinglePlayerShieldCron = () => {
         });
       }
     } catch (err) {
+      if (err?.code === "P2021" && err?.meta?.modelName === "SinglePlayerZone") {
+        markSinglePlayerZoneTableMissing();
+        logSinglePlayerCronSkippedOnce("Single Player shield warnings");
+        return;
+      }
       console.error("[Cron] Single Player shield warnings:", err);
     }
   };

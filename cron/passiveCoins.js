@@ -1,6 +1,11 @@
 import { prisma } from '../config/db.js';
 import { getSpGameConfig } from '../utils/singlePlayerConfig.js';
 import { applyPassiveCoinsWithDailyCap, economyFromConfigRow } from '../utils/economyConfig.js';
+import {
+  isSinglePlayerZoneTableReady,
+  logSinglePlayerCronSkippedOnce,
+  markSinglePlayerZoneTableMissing,
+} from '../utils/singlePlayerSchemaReady.js';
 
 /**
  * @Description Job that awards passive income to players who own a shielded Single Player Zone
@@ -12,6 +17,11 @@ export const startPassiveCoinsCron = () => {
 
     const runPassiveCoins = async () => {
         try {
+            if (!(await isSinglePlayerZoneTableReady(prisma))) {
+                logSinglePlayerCronSkippedOnce('Passive coins');
+                return;
+            }
+
             const now = new Date();
             
             // Passive income for all owned zones (Phase 2 — not limited to shield window)
@@ -87,6 +97,11 @@ export const startPassiveCoinsCron = () => {
 
             console.log(`[Cron] Passive coins awarded to ${awardedUsers} players.`);
         } catch (error) {
+            if (error?.code === 'P2021' && error?.meta?.modelName === 'SinglePlayerZone') {
+                markSinglePlayerZoneTableMissing();
+                logSinglePlayerCronSkippedOnce('Passive coins');
+                return;
+            }
             console.error('[Cron] Error running passive coins job:', error);
         }
     };

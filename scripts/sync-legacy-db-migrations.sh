@@ -5,9 +5,15 @@
 set -e
 cd "$(dirname "$0")/.."
 
-echo "==> Applying idempotent schema SQL (Single Player + Brand Month + profile preferences)..."
+echo "==> Economy / referral config (SinglePlayerGameConfig)..."
+npm run fix:db-sp-config
+
+echo "==> Idempotent schema SQL (no direct SinglePlayerZone alters — safe for minimal DBs)..."
 npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma
 npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma
+
+echo "==> SinglePlayerZone column patches (skipped if table missing)..."
+sh scripts/psql-from-env.sh scripts/apply-single-player-zone-patch.sql
 
 echo "==> Marking existing migrations as applied..."
 sh scripts/baseline-prod-db.sh
