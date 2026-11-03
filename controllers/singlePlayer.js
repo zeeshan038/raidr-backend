@@ -13,6 +13,7 @@ import {
   captureAttemptRedisKey,
   computeCaptureTimeBreakdown,
   computeRequiredCaptureSeconds,
+  computeNormalPassiveCoinProgress,
   formatSinglePlayerZoneForClient,
   isZoneAttackable,
   userOwnsSinglePlayerZone,
@@ -691,11 +692,22 @@ export const completeCapture = async (req, res) => {
       );
     }
 
+    const ownedZoneSnapshot = {
+      zoneType: zone.zoneType,
+      coinsPerHour: zone.coinsPerHour,
+      ownedAt,
+    };
+    const normalPassive =
+      zone.zoneType === "NORMAL"
+        ? { passiveEarning: computeNormalPassiveCoinProgress(ownedZoneSnapshot, now) }
+        : null;
+
     res.status(200).json({
       status: true,
       msg: previousOwnerId ? "Zone snatched successfully" : "Zone captured successfully",
       shieldExpiresAt,
       ownedAt,
+      normal: normalPassive,
     });
   } catch (error) {
     res.status(500).json({

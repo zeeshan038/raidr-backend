@@ -3,6 +3,7 @@ import { prisma } from "../config/db.js";
 import {
   captureAttemptRedisKey,
   computeCaptureTimeBreakdown,
+  computeNormalPassiveIncomePreview,
   computeRequiredCaptureSeconds,
   isZoneAttackable,
   SP_DEFAULTS,
@@ -244,22 +245,34 @@ export const applyCaptureSessionToZoneClientView = (
   zoneData.defenseBonusSec =
     captureTimeBreakdown.ownershipDefenseSec + captureTimeBreakdown.guardPenaltySec;
 
+  const passivePreview = computeNormalPassiveIncomePreview(zone);
+  if (passivePreview) {
+    zoneData.normal = { passiveIncomePreview: passivePreview };
+  }
+
   return zoneData;
 };
 
 export const formatActiveCaptureSessionFromAttempt = (attempt) => {
   if (!attempt?.startedAt) return null;
   const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
-  const remainingSec = Math.max(0, Math.ceil((attempt.captureTimeSec ?? 0) - elapsedSec));
+  const captureTimeSec = attempt.captureTimeSec ?? 0;
+  const remainingSec = Math.max(0, Math.ceil(captureTimeSec - elapsedSec));
+  const captureProgressPercent =
+    captureTimeSec > 0
+      ? Math.min(100, Math.round((Math.max(0, elapsedSec) / captureTimeSec) * 100))
+      : 0;
   return {
     initialGuardCount: attempt.initialGuardCount,
     sessionGuardsRemaining: attempt.sessionGuardsRemaining,
     guardsEliminatedInSession: attempt.guardsEliminatedInSession,
-    captureTimeSec: attempt.captureTimeSec,
+    captureTimeSec,
     startedAt: new Date(attempt.startedAt).toISOString(),
     remainingSec,
     /** Use for snatch timer after eliminate — matches Redis attempt, not zone DB estimate. */
     elapsedSec: Math.max(0, Math.floor(elapsedSec)),
+    /** 0–100 for snatch hold timer bar (same pattern as b2b.hold.progressPercent). */
+    captureProgressPercent,
   };
 };
 

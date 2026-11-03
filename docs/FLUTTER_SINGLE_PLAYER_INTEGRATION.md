@@ -28,6 +28,7 @@ Rules:
 
 | File | Purpose |
 |------|---------|
+| [FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md](./FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md) | NORMAL zone coin bar + snatch timer (`normal.*`, `captureProgressPercent`) |
 | `docs/FLUTTER_SINGLE_PLAYER_INTEGRATION.md` | This document — contract + flows |
 | `docs/POSTMAN_SINGLE_PLAYER_V2.md` | Postman sequences (admin/merchant/user) |
 | `docs/FRONTEND_SINGLE_PLAYER_V2.md` | Short screen → endpoint map |
@@ -148,6 +149,7 @@ Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZo
 | `eligibilityNote` | string? | Marketing copy |
 | `meetsEligibility` | bool? | null if unknown; false = cannot capture B2B yet |
 | `b2b` | object? | null unless B2B zone |
+| `normal` | object? | null unless NORMAL zone (owned or mid-snatch preview) |
 | `owner` | `{ id, name, photoUrl? }? | Enemy/your profile snippet |
 
 **Dashboard-only extra on each zone:** `isConquered` (bool) — same as you owning it.
@@ -183,6 +185,37 @@ Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZo
 | `holdStartedAt` | string | Starts when you **capture** B2B zone |
 | `progressPercent` | int | 0–100 for progress bar |
 | `holdRemainingSeconds` | int | Countdown |
+
+#### `normal` block (when `zoneType === NORMAL`)
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `passiveEarning` | object? | When **you own** the zone — coin progress bar (My Raids list, your zone detail) |
+| `passiveIncomePreview` | object? | During **active snatch** only — shows future `coinsPerHour` (bar starts at 0% after capture) |
+
+#### `normal.passiveEarning` (owned NORMAL zones)
+
+Same UX pattern as `b2b.hold`: bind the progress bar to **`progressPercent`** (0–100).
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `coinsPerHour` | int | Zone passive rate (before VIP / coin boost on payout) |
+| `coinsPerAccrualCycle` | int | Coins credited each 5‑minute server tick (`floor(coinsPerHour × 5/60)`) |
+| `accrualCycleMinutes` | int | Always **5** (matches passive cron) |
+| `coinsAccruedInCycle` | int | Display estimate within current 5‑min window |
+| `progressPercent` | int | **0–100** — fill the coin bar |
+| `accrualCycleRemainingSeconds` | int | Until next tick |
+| `estimatedCoinsSinceOwned` | int | Rough total from `ownedAt` (no daily cap / boost; label as estimate) |
+| `ownedAt` | string | When you captured the zone |
+
+#### `activeCaptureSession` (snatch timer bar)
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `captureProgressPercent` | int | **0–100** snatch hold timer (NORMAL + B2B) |
+| `remainingSec` | int | Countdown |
+
+**Screen 5 (NORMAL):** use **`captureProgressPercent`** for the hold timer; after capture, use **`normal.passiveEarning.progressPercent`** for coins from this zone. **`capture/complete`** also returns `normal.passiveEarning` for the success screen.
 
 ### 2.3 `DashboardStats`
 
@@ -1160,6 +1193,8 @@ Legacy alias: `avatarId` instead of `storeItemId`.
 - [ ] Location permission + continuous updates during capture
 - [ ] Guard shop: never call 410 purchase route
 - [ ] B2B: show hold bar from `b2b.hold.progressPercent`; claim button gated on `canClaim`
+- [ ] NORMAL owned: show coin bar from `normal.passiveEarning.progressPercent` (+ `coinsAccruedInCycle` / `coinsPerAccrualCycle` labels)
+- [ ] NORMAL snatch: timer bar from `activeCaptureSession.captureProgressPercent`; preview rate via `normal.passiveIncomePreview`
 - [ ] Cache `game-config`; respect `maxOwnedZonesPerPlayer` on CTA
 - [ ] Optional: `GET /theme` for seasonal map skin
 - [ ] Settings: notification prefs PATCH

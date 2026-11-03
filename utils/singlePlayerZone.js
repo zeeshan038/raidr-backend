@@ -14,6 +14,10 @@ export const SP_DEFAULTS = {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/** Must match `cron/passiveCoins.js` interval (5 minutes). */
+export const PASSIVE_COINS_CRON_INTERVAL_MS = 5 * 60 * 1000;
+export const PASSIVE_COINS_CRON_INTERVAL_HOURS = 5 / 60;
+
 export const isShieldActive = (zone, now = new Date()) => {
   if (!zone?.shieldExpiresAt) return false;
   return new Date(zone.shieldExpiresAt) > now;
@@ -60,6 +64,62 @@ export const deriveZonePlayerStatus = (zone, userId, now = new Date()) => {
     return "conquered_by_me";
   }
   return "conquered_by_others";
+};
+
+/**
+ * Passive coin accrual UI for NORMAL zones you own (mirrors B2B hold bar pattern).
+ * Progress fills each cron cycle; payouts run server-side with daily cap / VIP / boost.
+ */
+export const computeNormalPassiveCoinProgress = (zone, now = new Date()) => {
+  if (zone?.zoneType !== "NORMAL" || !zone.ownedAt) {
+    return null;
+  }
+
+  const coinsPerHour = zone.coinsPerHour ?? 0;
+  const nowMs = now.getTime();
+  const cycleStartMs =
+    Math.floor(nowMs / PASSIVE_COINS_CRON_INTERVAL_MS) * PASSIVE_COINS_CRON_INTERVAL_MS;
+  const elapsedInCycleMs = nowMs - cycleStartMs;
+  const progressPercent =
+    PASSIVE_COINS_CRON_INTERVAL_MS > 0
+      ? Math.min(
+          100,
+          Math.round((elapsedInCycleMs / PASSIVE_COINS_CRON_INTERVAL_MS) * 100)
+        )
+      : 0;
+
+  const coinsPerAccrualCycle = Math.floor(coinsPerHour * PASSIVE_COINS_CRON_INTERVAL_HOURS);
+  const coinsAccruedInCycle =
+    coinsPerAccrualCycle > 0
+      ? Math.floor(coinsPerAccrualCycle * (elapsedInCycleMs / PASSIVE_COINS_CRON_INTERVAL_MS))
+      : 0;
+
+  const ownedMs = Math.max(0, nowMs - new Date(zone.ownedAt).getTime());
+  const estimatedCoinsSinceOwned = Math.floor(coinsPerHour * (ownedMs / (60 * 60 * 1000)));
+
+  return {
+    coinsPerHour,
+    coinsPerAccrualCycle,
+    accrualCycleMinutes: PASSIVE_COINS_CRON_INTERVAL_MS / (60 * 1000),
+    coinsAccruedInCycle,
+    progressPercent,
+    accrualCycleRemainingSeconds: Math.ceil(
+      (PASSIVE_COINS_CRON_INTERVAL_MS - elapsedInCycleMs) / 1000
+    ),
+    estimatedCoinsSinceOwned,
+    ownedAt: zone.ownedAt instanceof Date ? zone.ownedAt.toISOString() : zone.ownedAt,
+  };
+};
+
+/** Shown during snatch on NORMAL zones — income starts after capture completes. */
+export const computeNormalPassiveIncomePreview = (zone) => {
+  if (zone?.zoneType !== "NORMAL") return null;
+  const coinsPerHour = zone.coinsPerHour ?? 0;
+  return {
+    coinsPerHour,
+    coinsPerAccrualCycle: Math.floor(coinsPerHour * PASSIVE_COINS_CRON_INTERVAL_HOURS),
+    accrualCycleMinutes: PASSIVE_COINS_CRON_INTERVAL_MS / (60 * 1000),
+  };
 };
 
 export const computeB2bHoldProgress = (zone, now = new Date()) => {
@@ -177,6 +237,15 @@ export const formatSinglePlayerZoneForClient = (
                 userId &&
                 zone.currentOwnerId === userId
             ),
+          }
+        : null,
+    normal:
+      zone.zoneType === "NORMAL" &&
+      userId &&
+      zone.currentOwnerId === userId &&
+      zone.ownedAt
+        ? {
+            passiveEarning: computeNormalPassiveCoinProgress(zone, now),
           }
         : null,
   };

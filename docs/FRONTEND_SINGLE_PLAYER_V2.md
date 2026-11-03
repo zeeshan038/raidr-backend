@@ -45,6 +45,8 @@ Returned on every formatted zone (list, dashboard, detail):
 - **Passive income:** `coinsPerHour`; map aggregate: `dashboard.passiveIncomePerHour`
 - **Ownership cap (map “2/5”):** `dashboard.ownedZonesCount` and `dashboard.maxOwnedZonesPerPlayer` (null = unlimited until admin sets cap)
 - **B2B hold:** `b2b.hold.progressPercent`, `holdRemainingSeconds`, `holdElapsedHours`, `holdDurationHours`, `holdComplete`, `canClaim`
+- **NORMAL passive coins (owned):** `normal.passiveEarning.progressPercent`, `coinsAccruedInCycle`, `coinsPerAccrualCycle`, `estimatedCoinsSinceOwned`
+- **NORMAL snatch:** `activeCaptureSession.captureProgressPercent`; preview `normal.passiveIncomePreview.coinsPerHour`
 
 ## Capture start (screen 5)
 

@@ -1346,6 +1346,44 @@
           }
         }
       },
+      "NormalPassiveCoinProgress": {
+        "type": "object",
+        "nullable": true,
+        "description": "NORMAL zone passive income bar (My Raids / your zone). Bind UI to progressPercent (0–100). Payouts run on server every 5 minutes with daily cap, VIP, and coin boost.",
+        "properties": {
+          "coinsPerHour": { "type": "integer", "example": 10 },
+          "coinsPerAccrualCycle": { "type": "integer", "example": 0 },
+          "accrualCycleMinutes": { "type": "integer", "example": 5 },
+          "coinsAccruedInCycle": { "type": "integer", "example": 0 },
+          "progressPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 42
+          },
+          "accrualCycleRemainingSeconds": { "type": "integer", "example": 174 },
+          "estimatedCoinsSinceOwned": { "type": "integer", "example": 15 },
+          "ownedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "NormalPassiveIncomePreview": {
+        "type": "object",
+        "description": "During active snatch on a NORMAL zone — rate after capture succeeds.",
+        "properties": {
+          "coinsPerHour": { "type": "integer", "example": 10 },
+          "coinsPerAccrualCycle": { "type": "integer", "example": 0 },
+          "accrualCycleMinutes": { "type": "integer", "example": 5 }
+        }
+      },
+      "SinglePlayerNormalBlock": {
+        "type": "object",
+        "nullable": true,
+        "description": "Present when zoneType is NORMAL. Owned: passiveEarning bar. Mid-snatch: passiveIncomePreview only.",
+        "properties": {
+          "passiveEarning": { "$ref": "#/components/schemas/NormalPassiveCoinProgress" },
+          "passiveIncomePreview": { "$ref": "#/components/schemas/NormalPassiveIncomePreview" }
+        }
+      },
       "B2bHoldProgress": {
         "type": "object",
         "nullable": true,
@@ -1414,6 +1452,18 @@
             "type": "integer",
             "description": "Seconds left until capture timer completes.",
             "example": 120
+          },
+          "elapsedSec": {
+            "type": "integer",
+            "description": "Seconds elapsed since capture start.",
+            "example": 50
+          },
+          "captureProgressPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Snatch hold timer progress 0–100 (same UX as b2b.hold.progressPercent).",
+            "example": 55
           }
         }
       },
@@ -1572,6 +1622,9 @@
           },
           "b2b": {
             "$ref": "#/components/schemas/SinglePlayerB2bBlock"
+          },
+          "normal": {
+            "$ref": "#/components/schemas/SinglePlayerNormalBlock"
           },
           "activeCaptureSession": {
             "$ref": "#/components/schemas/ActiveCaptureSession"
@@ -2650,7 +2703,7 @@
           "Single Player"
         ],
         "summary": "List single player zones (map / My Raid Zones)",
-        "description": "Each zone includes b2b.hold.progressPercent (0–100) for B2B captured zones — use it for My Raid Zones list progress bars. NORMAL zones have b2b: null.",
+        "description": "Each zone includes b2b.hold.progressPercent (0–100) for B2B captured zones and normal.passiveEarning.progressPercent (0–100) for owned NORMAL zones — use these for My Raid Zones list progress bars.",
         "security": [
           {
             "bearerAuth": []
@@ -3492,6 +3545,16 @@
                     "ownedAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "normal": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Present when zoneType is NORMAL — passive coin bar after capture.",
+                      "properties": {
+                        "passiveEarning": {
+                          "$ref": "#/components/schemas/NormalPassiveCoinProgress"
+                        }
+                      }
                     }
                   }
                 },
@@ -3499,7 +3562,19 @@
                   "status": true,
                   "msg": "Zone captured successfully",
                   "shieldExpiresAt": "2026-10-12T13:00:00.000Z",
-                  "ownedAt": "2026-10-12T12:00:00.000Z"
+                  "ownedAt": "2026-10-12T12:00:00.000Z",
+                  "normal": {
+                    "passiveEarning": {
+                      "coinsPerHour": 60,
+                      "coinsPerAccrualCycle": 5,
+                      "accrualCycleMinutes": 5,
+                      "coinsAccruedInCycle": 0,
+                      "progressPercent": 12,
+                      "accrualCycleRemainingSeconds": 264,
+                      "estimatedCoinsSinceOwned": 0,
+                      "ownedAt": "2026-10-12T12:00:00.000Z"
+                    }
+                  }
                 }
               }
             }
