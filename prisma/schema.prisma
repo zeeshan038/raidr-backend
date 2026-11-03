@@ -58,6 +58,7 @@ model User {
   coinRushAttempts       CoinRushAttempt[]
   reviews                Review[]
   ownedSinglePlayerZones SinglePlayerZone[] @relation("OwnedSinglePlayerZones")
+  singlePlayerZonePassiveLedgers SinglePlayerZonePassiveLedger[]
   dailyDrops             DailyDrop[]
   userVouchers           UserVoucher[]
   notificationPreference UserNotificationPreference?
@@ -707,11 +708,29 @@ model SinglePlayerZone {
   merchant          Merchant? @relation(fields: [merchantId], references: [id])
   b2bClaims         SinglePlayerB2bClaim[]
   rivalryAlerts     SinglePlayerRivalryAlert[]
+  passiveLedgers    SinglePlayerZonePassiveLedger[]
 
   @@index([isActive])
   @@index([merchantId])
   @@index([approvalStatus])
   @@index([zoneType])
+}
+
+/** Passive coins earned from a NORMAL zone (all owners); drives competitive progress bar. */
+model SinglePlayerZonePassiveLedger {
+  id          String   @id @default(uuid())
+  zoneId      String
+  userId      String
+  coinsEarned Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  zone SinglePlayerZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([zoneId, userId])
+  @@index([zoneId])
+  @@index([userId])
 }
 
 model DailyDrop {

@@ -6,6 +6,7 @@ import {
   logSinglePlayerCronSkippedOnce,
   handleSinglePlayerSchemaError,
 } from '../utils/singlePlayerSchemaReady.js';
+import { incrementZonePassiveLedger } from '../utils/singlePlayerZonePassiveLedger.js';
 
 /**
  * @Description Job that awards passive income to players who own a shielded Single Player Zone
@@ -52,17 +53,20 @@ export const startPassiveCoinsCron = () => {
             const dailyCap = economy.passiveCoinsDailyCapPerUser;
 
             const ownedCounts = {};
-            for (const z of shieldedZones) {
-                ownedCounts[z.currentOwnerId] = (ownedCounts[z.currentOwnerId] || 0) + 1;
-            }
+            /** @type {Record<string, { zoneId: string, base: number }[]>} */
+            const ownerZoneBases = {};
 
-            const ownerBaseCoins = {};
             for (const zone of shieldedZones) {
+                ownedCounts[zone.currentOwnerId] = (ownedCounts[zone.currentOwnerId] || 0) + 1;
                 const coinsToAward = Math.floor(zone.coinsPerHour * CRON_INTERVAL_HOURS);
-                if (coinsToAward > 0) {
-                    ownerBaseCoins[zone.currentOwnerId] =
-                        (ownerBaseCoins[zone.currentOwnerId] || 0) + coinsToAward;
+                if (coinsToAward <= 0) continue;
+                if (!ownerZoneBases[zone.currentOwnerId]) {
+                    ownerZoneBases[zone.currentOwnerId] = [];
                 }
+                ownerZoneBases[zone.currentOwnerId].push({
+                    zoneId: zone.id,
+                    base: coinsToAward,
+                });
             }
 
             const userMap = {};
@@ -71,9 +75,12 @@ export const startPassiveCoinsCron = () => {
             }
 
             let awardedUsers = 0;
-            for (const [ownerId, baseCoins] of Object.entries(ownerBaseCoins)) {
+            for (const [ownerId, zoneEntries] of Object.entries(ownerZoneBases)) {
+                const totalBase = zoneEntries.reduce((sum, z) => sum + z.base, 0);
+                if (totalBase <= 0) continue;
+
                 const user = userMap[ownerId];
-                let finalCoins = baseCoins;
+                let finalCoins = totalBase;
 
                 if (user && user.coinBoostExpiresAt && user.coinBoostExpiresAt > now) {
                     const multiplier = user.coinBoostMultiplier || 1.0;
@@ -92,7 +99,27 @@ export const startPassiveCoinsCron = () => {
                     finalCoins,
                     dailyCap
                 );
-                if (awarded > 0) awardedUsers += 1;
+                if (awarded <= 0) continue;
+
+                awardedUsers += 1;
+
+                let allocated = 0;
+                for (let i = 0; i < zoneEntries.length; i++) {
+                    const entry = zoneEntries[i];
+                    const share =
+                        i === zoneEntries.length - 1
+                            ? awarded - allocated
+                            : Math.floor((awarded * entry.base) / totalBase);
+                    allocated += share;
+                    if (share > 0) {
+                        await incrementZonePassiveLedger(
+                            prisma,
+                            entry.zoneId,
+                            ownerId,
+                            share
+                        );
+                    }
+                }
             }
 
             console.log(`[Cron] Passive coins awarded to ${awardedUsers} players.`);

@@ -1349,20 +1349,19 @@
       "NormalPassiveCoinProgress": {
         "type": "object",
         "nullable": true,
-        "description": "NORMAL zone passive income bar (My Raids / your zone). Bind UI to progressPercent (0–100). Payouts run on server every 5 minutes with daily cap, VIP, and coin boost.",
+        "description": "NORMAL zone competitive passive bar. progressPercent = yourCoinsFromZone / max(your, leader on this zone) × 100. Leader is the player who earned the most passive coins from this zone (all time). Wallet payout still every 5 minutes via cron.",
         "properties": {
-          "coinsPerHour": { "type": "integer", "example": 10 },
-          "coinsPerAccrualCycle": { "type": "integer", "example": 0 },
-          "accrualCycleMinutes": { "type": "integer", "example": 5 },
-          "coinsAccruedInCycle": { "type": "integer", "example": 0 },
+          "coinsPerHour": { "type": "integer", "example": 20 },
+          "yourCoinsFromZone": { "type": "integer", "example": 3 },
+          "leaderCoinsFromZone": { "type": "integer", "example": 10 },
           "progressPercent": {
             "type": "integer",
             "minimum": 0,
             "maximum": 100,
-            "example": 42
+            "example": 30
           },
-          "accrualCycleRemainingSeconds": { "type": "integer", "example": 174 },
-          "estimatedCoinsSinceOwned": { "type": "integer", "example": 15 },
+          "isLeader": { "type": "boolean", "example": false },
+          "leaderUserId": { "type": "string", "format": "uuid", "nullable": true },
           "ownedAt": { "type": "string", "format": "date-time" }
         }
       },
@@ -3565,13 +3564,12 @@
                   "ownedAt": "2026-10-12T12:00:00.000Z",
                   "normal": {
                     "passiveEarning": {
-                      "coinsPerHour": 60,
-                      "coinsPerAccrualCycle": 5,
-                      "accrualCycleMinutes": 5,
-                      "coinsAccruedInCycle": 0,
-                      "progressPercent": 12,
-                      "accrualCycleRemainingSeconds": 264,
-                      "estimatedCoinsSinceOwned": 0,
+                      "coinsPerHour": 20,
+                      "yourCoinsFromZone": 0,
+                      "leaderCoinsFromZone": 0,
+                      "progressPercent": 0,
+                      "isLeader": false,
+                      "leaderUserId": null,
                       "ownedAt": "2026-10-12T12:00:00.000Z"
                     }
                   }

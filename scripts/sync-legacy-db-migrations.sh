@@ -11,6 +11,9 @@ npm run fix:db-sp-config
 echo "==> Single Player map tables (SinglePlayerZone, DailyDrop) if missing..."
 npm run fix:db-sp-zone
 
+echo "==> NORMAL zone passive ledger (competitive coin bar)..."
+npm run fix:db-sp-passive-ledger
+
 echo "==> Idempotent schema SQL (no direct SinglePlayerZone alters — safe for minimal DBs)..."
 npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma
 npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema prisma/schema.prisma

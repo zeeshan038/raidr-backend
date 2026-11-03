@@ -206,3 +206,20 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
+
+-- NORMAL zone competitive passive ledger (20261103180000_normal_zone_passive_ledger)
+CREATE TABLE IF NOT EXISTS "SinglePlayerZonePassiveLedger" (
+    "id" TEXT NOT NULL,
+    "zoneId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "coinsEarned" INTEGER NOT NULL DEFAULT 0,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SinglePlayerZonePassiveLedger_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "SinglePlayerZonePassiveLedger_zoneId_userId_key"
+  ON "SinglePlayerZonePassiveLedger"("zoneId", "userId");
+CREATE INDEX IF NOT EXISTS "SinglePlayerZonePassiveLedger_zoneId_idx"
+  ON "SinglePlayerZonePassiveLedger"("zoneId");
+CREATE INDEX IF NOT EXISTS "SinglePlayerZonePassiveLedger_userId_idx"
+  ON "SinglePlayerZonePassiveLedger"("userId");

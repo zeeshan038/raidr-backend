@@ -18,11 +18,11 @@ Rules:
 - Base URL: {BASE}/api
 - Auth: Authorization: Bearer <user JWT>
 - Envelope: { status: true|false, msg?, data? } — zone detail uses data object
-- Do NOT compute coin bar % on client for owned zones — bind to normal.passiveEarning.progressPercent
+- Do NOT compute coin bar % on client — bind to normal.passiveEarning.progressPercent (competitive: you vs zone leader)
 - Do NOT compute snatch timer % on client — bind to activeCaptureSession.captureProgressPercent (or remainingSec label)
 - B2B zones: unchanged — use b2b.hold.progressPercent only (normal is null)
-- Coins are NOT granted at capture/complete; passive payout runs server-side every 5 minutes
-- estimatedCoinsSinceOwned is approximate (no daily cap / VIP in that number)
+- Coins are NOT granted at capture/complete; wallet payout runs server-side every 5 minutes
+- Coin bar counts are yourCoinsFromZone vs leaderCoinsFromZone (per-zone ledger), not wallet balance
 - Refresh zone via GET /single-player/zones/:id during snatch (ping loop) and after complete
 ```
 
@@ -34,7 +34,7 @@ Rules:
 |-----------|--------------|-----------|
 | **NORMAL — snatching** | Hold / snatch **timer** | `activeCaptureSession.captureProgressPercent` (0–100) |
 | **NORMAL — snatching** | Preview text (“earn X/hr”) | `normal.passiveIncomePreview` |
-| **NORMAL — you own it** | **Coin** bar (this zone) | `normal.passiveEarning.progressPercent` (0–100) |
+| **NORMAL — you own it** | **Coin** bar vs zone leader | `normal.passiveEarning.progressPercent` (0–100) |
 | **B2B — you own it** | Hold for reward | `b2b.hold.progressPercent` (unchanged) |
 
 Use the **same UI pattern** as B2B hold: one integer 0–100 drives the bar widget; optional subtitle from other fields.
@@ -95,29 +95,32 @@ Both are never required at once: **preview while snatching**, **passiveEarning a
 - **`coinsPerAccrualCycle`** = floor(`coinsPerHour` × 5/60) — coins credited each server tick (5 min).
 - Use for copy: “Earn **60** coins/hour from this zone after capture”.
 
-### `normal.passiveEarning` (you own the zone)
+### `normal.passiveEarning` (you own the zone) — **competitive bar**
+
+100% = whoever earned the **most passive coins from this zone** (all players, all time). Your fill = your share vs that leader.
 
 ```json
 {
-  "coinsPerHour": 60,
-  "coinsPerAccrualCycle": 5,
-  "accrualCycleMinutes": 5,
-  "coinsAccruedInCycle": 2,
-  "progressPercent": 42,
-  "accrualCycleRemainingSeconds": 174,
-  "estimatedCoinsSinceOwned": 15,
+  "coinsPerHour": 20,
+  "yourCoinsFromZone": 3,
+  "leaderCoinsFromZone": 10,
+  "progressPercent": 30,
+  "isLeader": false,
+  "leaderUserId": "uuid-of-top-earner",
   "ownedAt": "2026-11-03T10:12:00.000Z"
 }
 ```
 
 | Field | UI use |
 |-------|--------|
-| **`progressPercent`** | **Primary** — `LinearProgressIndicator(value: p / 100)` |
-| `coinsAccruedInCycle` / `coinsPerAccrualCycle` | Label: “2 / 5 coins” (this 5‑min window) |
-| `coinsPerHour` | Chip under bar |
-| `accrualCycleRemainingSeconds` | Optional countdown to next tick |
-| `estimatedCoinsSinceOwned` | Optional total line — mark as **estimate** in UI |
-| `ownedAt` | “Held since …” (you may still format locally) |
+| **`progressPercent`** | **Primary** — bar fill (`your / max(your, leader) × 100`) |
+| **`yourCoinsFromZone`** / **`leaderCoinsFromZone`** | Label: **“3 / 10 coins”** (you vs zone record) |
+| `coinsPerHour` | “20 coins / hour” row |
+| `isLeader` | Optional badge when you are top earner on this zone |
+| `leaderUserId` | Optional “catch {name}” if not leader |
+| `ownedAt` | Held duration card only |
+
+Wallet credits still run on server cron every 5 minutes; this block is **per-zone leaderboard**, not wallet balance.
 
 ### `activeCaptureSession` (during snatch)
 
@@ -153,12 +156,11 @@ Both are never required at once: **preview while snatching**, **passiveEarning a
   "normal": {
     "passiveEarning": {
       "coinsPerHour": 60,
-      "coinsPerAccrualCycle": 5,
-      "accrualCycleMinutes": 5,
-      "coinsAccruedInCycle": 0,
+      "yourCoinsFromZone": 0,
+      "leaderCoinsFromZone": 0,
       "progressPercent": 0,
-      "accrualCycleRemainingSeconds": 300,
-      "estimatedCoinsSinceOwned": 0,
+      "isLeader": false,
+      "leaderUserId": null,
       "ownedAt": "2026-11-03T10:12:00.000Z"
     }
   }
@@ -187,23 +189,21 @@ class NormalPassiveIncomePreview {
 
 class NormalPassiveEarning {
   final int coinsPerHour;
-  final int coinsPerAccrualCycle;
-  final int accrualCycleMinutes;
-  final int coinsAccruedInCycle;
+  final int yourCoinsFromZone;
+  final int leaderCoinsFromZone;
   final int progressPercent;
-  final int accrualCycleRemainingSeconds;
-  final int estimatedCoinsSinceOwned;
+  final bool isLeader;
+  final String? leaderUserId;
   final DateTime? ownedAt;
 
   factory NormalPassiveEarning.fromJson(Map<String, dynamic> j) =>
       NormalPassiveEarning(
         coinsPerHour: j['coinsPerHour'] as int? ?? 0,
-        coinsPerAccrualCycle: j['coinsPerAccrualCycle'] as int? ?? 0,
-        accrualCycleMinutes: j['accrualCycleMinutes'] as int? ?? 5,
-        coinsAccruedInCycle: j['coinsAccruedInCycle'] as int? ?? 0,
+        yourCoinsFromZone: j['yourCoinsFromZone'] as int? ?? 0,
+        leaderCoinsFromZone: j['leaderCoinsFromZone'] as int? ?? 0,
         progressPercent: j['progressPercent'] as int? ?? 0,
-        accrualCycleRemainingSeconds: j['accrualCycleRemainingSeconds'] as int? ?? 0,
-        estimatedCoinsSinceOwned: j['estimatedCoinsSinceOwned'] as int? ?? 0,
+        isLeader: j['isLeader'] as bool? ?? false,
+        leaderUserId: j['leaderUserId'] as String?,
         ownedAt: j['ownedAt'] != null ? DateTime.tryParse(j['ownedAt']) : null,
       );
 
@@ -265,7 +265,8 @@ if zone.activeCaptureSession != null:
 
 if zone.status == 'conquered_by_me' && zone.normal?.passiveEarning != null:
   show COIN bar = passiveEarning.progressPercent
-  label = "${coinsAccruedInCycle} / ${coinsPerAccrualCycle} coins"
+  label = "${yourCoinsFromZone} / ${leaderCoinsFromZone} coins"
+  optional badge if passiveEarning.isLeader
   return
 ```
 
@@ -276,10 +277,10 @@ if zone.status == 'conquered_by_me' && zone.normal?.passiveEarning != null:
 | Screen | Recommendation |
 |--------|------------------|
 | Snatch | `capture/ping` every 2–5s; optionally `GET zones/:id` after ping to refresh `captureProgressPercent` |
-| Your zone / My Raids | Poll `GET zones/:id` or list every **30–60s** so `progressPercent` moves (server-aligned 5‑min cycle) |
+| Your zone / My Raids | Poll `GET zones/:id` or list every **30–60s** (after passive cron, `yourCoinsFromZone` / `progressPercent` update) |
 | After complete | Use response `normal.passiveEarning` immediately; then GET zone to sync |
 
-You **may** animate the coin bar locally between polls using `accrualCycleRemainingSeconds`, but **reset** from server on each GET to avoid drift.
+Do **not** animate the competitive bar locally — always bind to server values.
 
 ---
 
@@ -302,7 +303,7 @@ You **may** animate the coin bar locally between polls using `accrualCycleRemain
 - [ ] Parse `captureProgressPercent` on `ActiveCaptureSession`
 - [ ] Snatch screen: timer bar + preview; complete when `remainingSec == 0`
 - [ ] Success screen: coin bar from `capture/complete` → `normal.passiveEarning`
-- [ ] Your zone + My Raids (NORMAL): coin bar from `passiveEarning.progressPercent`
+- [ ] Your zone + My Raids (NORMAL): coin bar from `progressPercent`; label `yourCoinsFromZone` / `leaderCoinsFromZone`
 - [ ] B2B screens unchanged (`b2b.hold`)
 - [ ] Do not show coin bar for zones owned by others
 - [ ] QA against staging/prod backend that includes this release

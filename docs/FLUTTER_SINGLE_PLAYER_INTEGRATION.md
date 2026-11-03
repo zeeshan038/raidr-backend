@@ -195,17 +195,16 @@ Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZo
 
 #### `normal.passiveEarning` (owned NORMAL zones)
 
-Same UX pattern as `b2b.hold`: bind the progress bar to **`progressPercent`** (0–100).
+Competitive bar: **`progressPercent`** = your passive coins from this zone vs the **top earner on this zone** (100% = leader). See [FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md](./FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md).
 
 | Field | Type | Meaning |
 |-------|------|---------|
-| `coinsPerHour` | int | Zone passive rate (before VIP / coin boost on payout) |
-| `coinsPerAccrualCycle` | int | Coins credited each 5‑minute server tick (`floor(coinsPerHour × 5/60)`) |
-| `accrualCycleMinutes` | int | Always **5** (matches passive cron) |
-| `coinsAccruedInCycle` | int | Display estimate within current 5‑min window |
-| `progressPercent` | int | **0–100** — fill the coin bar |
-| `accrualCycleRemainingSeconds` | int | Until next tick |
-| `estimatedCoinsSinceOwned` | int | Rough total from `ownedAt` (no daily cap / boost; label as estimate) |
+| `coinsPerHour` | int | Zone passive rate label |
+| `yourCoinsFromZone` | int | Your total passive coins earned from **this zone** |
+| `leaderCoinsFromZone` | int | Highest total any player earned from **this zone** |
+| `progressPercent` | int | **0–100** — `your / max(your, leader)` |
+| `isLeader` | bool | You are the top earner on this zone |
+| `leaderUserId` | string? | User id of top earner |
 | `ownedAt` | string | When you captured the zone |
 
 #### `activeCaptureSession` (snatch timer bar)
@@ -1193,7 +1192,7 @@ Legacy alias: `avatarId` instead of `storeItemId`.
 - [ ] Location permission + continuous updates during capture
 - [ ] Guard shop: never call 410 purchase route
 - [ ] B2B: show hold bar from `b2b.hold.progressPercent`; claim button gated on `canClaim`
-- [ ] NORMAL owned: show coin bar from `normal.passiveEarning.progressPercent` (+ `coinsAccruedInCycle` / `coinsPerAccrualCycle` labels)
+- [ ] NORMAL owned: coin bar from `progressPercent`; label `yourCoinsFromZone` / `leaderCoinsFromZone`
 - [ ] NORMAL snatch: timer bar from `activeCaptureSession.captureProgressPercent`; preview rate via `normal.passiveIncomePreview`
 - [ ] Cache `game-config`; respect `maxOwnedZonesPerPlayer` on CTA
 - [ ] Optional: `GET /theme` for seasonal map skin

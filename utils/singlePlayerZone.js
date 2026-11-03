@@ -67,46 +67,28 @@ export const deriveZonePlayerStatus = (zone, userId, now = new Date()) => {
 };
 
 /**
- * Passive coin accrual UI for NORMAL zones you own (mirrors B2B hold bar pattern).
- * Progress fills each cron cycle; payouts run server-side with daily cap / VIP / boost.
+ * NORMAL zone passive bar: progress vs top earner on this zone (100% = leader's coins from zone).
+ * @param {object} ledgerStats - { yourCoins, leaderCoins, leaderUserId? }
  */
-export const computeNormalPassiveCoinProgress = (zone, now = new Date()) => {
+export const computeNormalPassiveCoinProgress = (zone, ledgerStats = {}) => {
   if (zone?.zoneType !== "NORMAL" || !zone.ownedAt) {
     return null;
   }
 
   const coinsPerHour = zone.coinsPerHour ?? 0;
-  const nowMs = now.getTime();
-  const cycleStartMs =
-    Math.floor(nowMs / PASSIVE_COINS_CRON_INTERVAL_MS) * PASSIVE_COINS_CRON_INTERVAL_MS;
-  const elapsedInCycleMs = nowMs - cycleStartMs;
+  const yourCoins = Math.max(0, Math.floor(ledgerStats.yourCoins ?? 0));
+  const leaderCoins = Math.max(0, Math.floor(ledgerStats.leaderCoins ?? 0));
+  const barMax = Math.max(leaderCoins, yourCoins);
   const progressPercent =
-    PASSIVE_COINS_CRON_INTERVAL_MS > 0
-      ? Math.min(
-          100,
-          Math.round((elapsedInCycleMs / PASSIVE_COINS_CRON_INTERVAL_MS) * 100)
-        )
-      : 0;
-
-  const coinsPerAccrualCycle = Math.floor(coinsPerHour * PASSIVE_COINS_CRON_INTERVAL_HOURS);
-  const coinsAccruedInCycle =
-    coinsPerAccrualCycle > 0
-      ? Math.floor(coinsPerAccrualCycle * (elapsedInCycleMs / PASSIVE_COINS_CRON_INTERVAL_MS))
-      : 0;
-
-  const ownedMs = Math.max(0, nowMs - new Date(zone.ownedAt).getTime());
-  const estimatedCoinsSinceOwned = Math.floor(coinsPerHour * (ownedMs / (60 * 60 * 1000)));
+    barMax <= 0 ? 0 : Math.min(100, Math.round((yourCoins / barMax) * 100));
 
   return {
     coinsPerHour,
-    coinsPerAccrualCycle,
-    accrualCycleMinutes: PASSIVE_COINS_CRON_INTERVAL_MS / (60 * 1000),
-    coinsAccruedInCycle,
+    yourCoinsFromZone: yourCoins,
+    leaderCoinsFromZone: leaderCoins,
     progressPercent,
-    accrualCycleRemainingSeconds: Math.ceil(
-      (PASSIVE_COINS_CRON_INTERVAL_MS - elapsedInCycleMs) / 1000
-    ),
-    estimatedCoinsSinceOwned,
+    isLeader: yourCoins > 0 && yourCoins >= leaderCoins,
+    leaderUserId: ledgerStats.leaderUserId ?? null,
     ownedAt: zone.ownedAt instanceof Date ? zone.ownedAt.toISOString() : zone.ownedAt,
   };
 };
@@ -239,15 +221,7 @@ export const formatSinglePlayerZoneForClient = (
             ),
           }
         : null,
-    normal:
-      zone.zoneType === "NORMAL" &&
-      userId &&
-      zone.currentOwnerId === userId &&
-      zone.ownedAt
-        ? {
-            passiveEarning: computeNormalPassiveCoinProgress(zone, now),
-          }
-        : null,
+    normal: null,
   };
 };
 

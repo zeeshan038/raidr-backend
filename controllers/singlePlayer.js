@@ -13,12 +13,15 @@ import {
   captureAttemptRedisKey,
   computeCaptureTimeBreakdown,
   computeRequiredCaptureSeconds,
-  computeNormalPassiveCoinProgress,
   formatSinglePlayerZoneForClient,
   isZoneAttackable,
   userOwnsSinglePlayerZone,
   validateCaptureLocation,
 } from "../utils/singlePlayerZone.js";
+import {
+  buildNormalPassiveEarningForZone,
+  enrichNormalPassiveEarningOnFormattedZones,
+} from "../utils/singlePlayerZonePassiveLedger.js";
 import {
   getSpGameConfig,
   gameplayFromConfig,
@@ -182,6 +185,12 @@ export const getZones = async (req, res) => {
     const processedZones = zones.map((zone) =>
       formatSinglePlayerZoneForClient(zone, userId, now, gameplay, ownedZonesCount)
     );
+    await enrichNormalPassiveEarningOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
 
     res.status(200).json({
       status: totalZones > 0,
@@ -257,6 +266,8 @@ export const getZoneById = async (req, res) => {
       gameplay,
       ownedZonesCount
     );
+
+    await enrichNormalPassiveEarningOnFormattedZones(prisma, [data], [zone], userId);
 
     if (userId) {
       data.activeCaptureSession = await getActiveCaptureSessionForUser(
@@ -693,14 +704,15 @@ export const completeCapture = async (req, res) => {
     }
 
     const ownedZoneSnapshot = {
-      zoneType: zone.zoneType,
-      coinsPerHour: zone.coinsPerHour,
+      ...zone,
       ownedAt,
+      currentOwnerId: userId,
     };
-    const normalPassive =
+    const passiveEarning =
       zone.zoneType === "NORMAL"
-        ? { passiveEarning: computeNormalPassiveCoinProgress(ownedZoneSnapshot, now) }
+        ? await buildNormalPassiveEarningForZone(prisma, ownedZoneSnapshot, userId)
         : null;
+    const normalPassive = passiveEarning ? { passiveEarning } : null;
 
     res.status(200).json({
       status: true,
@@ -1199,6 +1211,12 @@ export const getSinglePlayerDashboard = async (req, res) => {
         isConquered: userOwnsSinglePlayerZone(zone, userId),
       };
     });
+    await enrichNormalPassiveEarningOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
 
     let processedDailyDrop = null;
     if (dailyDrop) {
