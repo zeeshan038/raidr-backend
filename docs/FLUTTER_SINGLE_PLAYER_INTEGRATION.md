@@ -183,8 +183,21 @@ Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZo
 | `holdElapsedHours` | number | Progress |
 | `holdComplete` | bool | Timer done |
 | `holdStartedAt` | string | Starts when you **capture** B2B zone |
-| `progressPercent` | int | 0–100 for progress bar |
+| `progressPercent` | int | 0–100 **hold timer** bar |
 | `holdRemainingSeconds` | int | Countdown |
+
+#### `b2b.passiveIncome` (owned B2B during hold)
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `coinsPerHour` | int | Zone passive rate |
+| `maxCoinsFromHold` | int | `holdDurationHours × coinsPerHour` |
+| `coinsEarnedInHold` | int | Your passive from this zone (ledger) |
+| `coinProgressPercent` | int | 0–100 coin bar vs max hold |
+
+#### `b2b.passiveIncomePreview` (snatch)
+
+Same fields as `normal.passiveIncomePreview` — rate after capture.
 
 #### `normal` block (when `zoneType === NORMAL`)
 
@@ -195,7 +208,7 @@ Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZo
 
 #### `normal.passiveEarning` (owned NORMAL zones)
 
-Competitive bar: **`progressPercent`** = your passive coins from this zone vs the **top earner on this zone** (100% = leader). See [FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md](./FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md).
+Competitive bar: **`progressPercent`** = your passive coins from this zone vs the **top earner on this zone** (100% = leader). See [FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md](./FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md). B2B bars: [FRONTEND_B2B_ZONE_PROGRESS.md](./FRONTEND_B2B_ZONE_PROGRESS.md).
 
 | Field | Type | Meaning |
 |-------|------|---------|
@@ -1124,6 +1137,9 @@ Legacy alias: `avatarId` instead of `storeItemId`.
 ---
 
 ### 4.14 Notification preferences
+
+Push notifications: [NOTIFICATIONS.md](./NOTIFICATIONS.md). Test API: [NOTIFICATION_TEST_API.md](./NOTIFICATION_TEST_API.md).  
+`dailyDropReminders` is honored **on device** (local reminders); the backend does not send daily-drop reminder pushes.
 
 #### `GET /user/notification-preferences`
 

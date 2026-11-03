@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "../config/db.js";
-import { sendNotification } from "./Notification.js";
+import { notifyUserIfMasterEnabled } from "./singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "./pushNotificationPayload.js";
 import { awardUserXp } from "./awardUserXp.js";
 import { awardRaidrCoins, ECONOMY_DEFAULTS, getEconomyConfig } from "./economyConfig.js";
 
@@ -269,16 +270,18 @@ export async function processReferralRewardAfterSignup(referralResult) {
   if (
     !referralResult?.completed ||
     referralResult.alreadyCompleted ||
-    !referralResult.inviterFcmToken
+    !referralResult.inviterId
   ) {
     return;
   }
 
   try {
-    await sendNotification(
-      referralResult.inviterFcmToken,
+    await notifyUserIfMasterEnabled(
+      prisma,
+      referralResult.inviterId,
       "Referral reward",
-      `You've earned ${referralResult.rewardCoins} coins${referralResult.rewardXp ? ` and ${referralResult.rewardXp} XP` : ""}!`
+      `You've earned ${referralResult.rewardCoins} coins${referralResult.rewardXp ? ` and ${referralResult.rewardXp} XP` : ""}!`,
+      buildPushData({ type: PUSH_TYPE.REFERRAL_REWARD })
     );
   } catch (error) {
     console.error("Referral push notification failed:", error?.message || error);

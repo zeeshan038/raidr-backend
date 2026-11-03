@@ -4,8 +4,10 @@
  *   node scripts/testNormalPassiveProgress.js
  */
 import {
+  computeB2bPassiveCoinProgress,
   computeNormalPassiveCoinProgress,
   computeNormalPassiveIncomePreview,
+  computeZonePassiveIncomePreview,
   formatSinglePlayerZoneForClient,
 } from "../utils/singlePlayerZone.js";
 import { formatActiveCaptureSessionFromAttempt } from "../utils/singlePlayerCapture.js";
@@ -75,7 +77,24 @@ function runUnitTests() {
   });
   assert(session.captureProgressPercent === 50, "captureProgressPercent should be 50 at 45/90s");
 
-  console.log("[OK] Unit tests passed (competitive passive + captureProgressPercent).");
+  const b2bZone = {
+    zoneType: "B2B",
+    coinsPerHour: 10,
+    holdDurationHours: 24,
+    holdStartedAt: new Date(),
+    currentOwnerId: "user-a",
+    id: "b2b-1",
+  };
+  const b2bPreview = computeZonePassiveIncomePreview(b2bZone);
+  assert(b2bPreview?.coinsPerHour === 10, "B2B zone passive preview");
+  assert(computeNormalPassiveIncomePreview(b2bZone) === null, "NORMAL-only preview null on B2B");
+
+  const b2bCoins = computeB2bPassiveCoinProgress(b2bZone, 24);
+  assert(b2bCoins.maxCoinsFromHold === 240, "24h * 10/h = 240 max");
+  assert(b2bCoins.coinProgressPercent === 10, "24/240 = 10%");
+  assert(b2bCoins.coinsEarnedInHold === 24, "coinsEarnedInHold");
+
+  console.log("[OK] Unit tests passed (NORMAL competitive + B2B passive + captureProgressPercent).");
 }
 
 const live = process.argv.includes("--live");

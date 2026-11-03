@@ -9,7 +9,11 @@ import { CreateHybridCoinRushEventSchema, CreateCoinRushEventSchema } from '../.
 
 //Utils 
 import { generateRandomCoordinates, calculateRadiusForUserLiveEvent } from '../../utils/methods/methods.js';
-import { sendNotification } from '../../utils/Notification.js';
+import {
+    notifyUserIfAllowed,
+    SP_NOTIFICATION_CATEGORIES,
+} from '../../utils/singlePlayerNotify.js';
+import { buildPushData, EVENT_KIND, PUSH_TYPE } from '../../utils/pushNotificationPayload.js';
 import {
     getEconomyConfig,
     randomCoinRushCheckpointXp,
@@ -177,10 +181,17 @@ export const CreateCoinRushEvent = async (req, res) => {
                 );
 
                 for (const user of nearbyUsers) {
-                    sendNotification(
-                        user.fcmToken,
+                    notifyUserIfAllowed(
+                        prisma,
+                        user.id,
+                        SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
                         "🪙 New Coin Rush Event Scheduled!",
-                        `"${newEvent.title}" has been scheduled near you. Join now and race to collect rewards!`
+                        `"${newEvent.title}" has been scheduled near you. Join now and race to collect rewards!`,
+                        buildPushData({
+                            type: PUSH_TYPE.COIN_RUSH_SCHEDULED_NEARBY,
+                            eventId: newEvent.id,
+                            eventKind: EVENT_KIND.COIN_RUSH,
+                        })
                     ).catch(err => console.error(`[CoinRush Create Notif] Failed to send to user ${user.id}:`, err));
                 }
             } catch (notifErr) {
@@ -647,10 +658,17 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
                 );
 
                 for (const user of nearbyUsers) {
-                    sendNotification(
-                        user.fcmToken,
+                    notifyUserIfAllowed(
+                        prisma,
+                        user.id,
+                        SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
                         "🪙 New Hybrid Coin Rush Event Scheduled!",
-                        `"${newEvent.title}" has been scheduled near you. Join now and race to collect rewards!`
+                        `"${newEvent.title}" has been scheduled near you. Join now and race to collect rewards!`,
+                        buildPushData({
+                            type: PUSH_TYPE.COIN_RUSH_SCHEDULED_NEARBY,
+                            eventId: newEvent.id,
+                            eventKind: EVENT_KIND.COIN_RUSH,
+                        })
                     ).catch(err => console.error(`[Hybrid CoinRush Create Notif] Failed to send to user ${user.id}:`, err));
                 }
             } catch (notifErr) {

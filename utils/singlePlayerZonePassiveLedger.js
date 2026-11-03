@@ -1,5 +1,8 @@
 import { randomUUID } from "crypto";
-import { computeNormalPassiveCoinProgress } from "./singlePlayerZone.js";
+import {
+  computeB2bPassiveCoinProgress,
+  computeNormalPassiveCoinProgress,
+} from "./singlePlayerZone.js";
 
 /**
  * Increment passive coins attributed to a user for a specific zone (after cron payout split).
@@ -117,6 +120,73 @@ export const enrichNormalPassiveEarningOnFormattedZones = async (
       ...(formattedZones[index].normal ?? {}),
       passiveEarning,
     };
+  }
+};
+
+/** Attach b2b.passiveIncome for owned B2B zones during an active hold. */
+export const enrichB2bPassiveIncomeOnFormattedZones = async (
+  prisma,
+  formattedZones,
+  rawZones,
+  userId
+) => {
+  if (!userId || !formattedZones?.length) return;
+
+  const ownedB2b = [];
+  for (let i = 0; i < formattedZones.length; i++) {
+    const raw = rawZones[i];
+    if (
+      raw?.zoneType === "B2B" &&
+      raw.currentOwnerId === userId &&
+      raw.holdStartedAt &&
+      raw.holdDurationHours
+    ) {
+      ownedB2b.push({ index: i, zoneId: raw.id, zone: raw });
+    }
+  }
+  if (ownedB2b.length === 0) return;
+
+  const zoneIds = ownedB2b.map((z) => z.zoneId);
+  let yoursByZone;
+  try {
+    yoursByZone = await fetchYourPassiveLedgerByZoneIds(prisma, zoneIds, userId);
+  } catch (err) {
+    if (err?.code === "P2021") return;
+    throw err;
+  }
+
+  for (const { index, zoneId, zone } of ownedB2b) {
+    const passiveIncome = computeB2bPassiveCoinProgress(
+      zone,
+      yoursByZone[zoneId] ?? 0
+    );
+    if (!passiveIncome) continue;
+    formattedZones[index].b2b = {
+      ...(formattedZones[index].b2b ?? {}),
+      passiveIncome,
+    };
+  }
+};
+
+export const buildB2bPassiveIncomeForZone = async (prisma, zone, userId) => {
+  if (
+    zone?.zoneType !== "B2B" ||
+    !userId ||
+    zone.currentOwnerId !== userId ||
+    !zone.holdStartedAt ||
+    !zone.holdDurationHours
+  ) {
+    return null;
+  }
+
+  try {
+    const yoursByZone = await fetchYourPassiveLedgerByZoneIds(prisma, [zone.id], userId);
+    return computeB2bPassiveCoinProgress(zone, yoursByZone[zone.id] ?? 0);
+  } catch (err) {
+    if (err?.code === "P2021") {
+      return computeB2bPassiveCoinProgress(zone, 0);
+    }
+    throw err;
   }
 };
 

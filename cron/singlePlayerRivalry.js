@@ -11,6 +11,7 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "../utils/pushNotificationPayload.js";
 
 const RIVALRY_RADIUS_M = 5000;
 
@@ -84,7 +85,12 @@ export const startSinglePlayerRivalryCron = () => {
               u.id,
               SP_NOTIFICATION_CATEGORIES.B2B_RIVALRY,
               "Nearby B2B streak",
-              `${zone.name}: a rival has held for ${milestone}h. Visit and break the streak!`
+              `${zone.name}: a rival has held for ${milestone}h. Visit and break the streak!`,
+              buildPushData({
+                type: PUSH_TYPE.B2B_RIVALRY_MILESTONE,
+                zoneId: zone.id,
+                milestoneHours: milestone,
+              })
             );
           }
 

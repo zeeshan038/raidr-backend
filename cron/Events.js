@@ -1,12 +1,27 @@
 import { prisma } from '../config/db.js';
 import { publishEventStatusChanged, publishCommanderMessage } from '../sockets/eventPublisher.js';
 import { publishToCoinRush } from '../sockets/coinRushPublisher.js';
-import { sendNotification } from '../utils/Notification.js';
 import {
     notifyUserIfAllowed,
+    notifyUserIfMasterEnabled,
     SP_NOTIFICATION_CATEGORIES,
 } from '../utils/singlePlayerNotify.js';
+import { buildPushData, EVENT_KIND, PUSH_TYPE } from '../utils/pushNotificationPayload.js';
 import { calculateRadiusForUserLiveEvent } from '../utils/methods/methods.js';
+
+const liveRaidData = (type, eventId) =>
+    buildPushData({
+        type,
+        eventId,
+        eventKind: EVENT_KIND.LIVE_RAID,
+    });
+
+const coinRushData = (type, eventId) =>
+    buildPushData({
+        type,
+        eventId,
+        eventKind: EVENT_KIND.COIN_RUSH,
+    });
 
 export const startEventStatusCron = () => {
     setInterval(async () => {
@@ -29,10 +44,13 @@ export const startEventStatusCron = () => {
 
             for (const event of events20Mins) {
                 for (const part of event.participants) {
-                    if (part.user.fcmToken) {
-                        sendNotification(part.user.fcmToken, "⏳ Your Raid Starts Soon!", `"${event.title}" begins in 20 minutes. Get ready and be there from the start to maximize your rewards!`)
-                            .catch(err => console.error(`Cron Notif Err for user ${part.user.id}:`, err));
-                    }
+                    await notifyUserIfMasterEnabled(
+                        prisma,
+                        part.userId,
+                        "⏳ Your Raid Starts Soon!",
+                        `"${event.title}" begins in 20 minutes. Get ready and be there from the start to maximize your rewards!`,
+                        liveRaidData(PUSH_TYPE.LIVE_RAID_STARTS_20M, event.id)
+                    );
                 }
             }
 
@@ -56,8 +74,14 @@ export const startEventStatusCron = () => {
                     
                     for (const user of nearbyUsers) {
                         if (!participantIds.includes(user.id)) {
-                            sendNotification(user.fcmToken, "🚨 Raid Begins in 10 Minutes!", `Just 10 minutes until "${event.title}" goes live. Get ready to jump into the adventure!`)
-                                .catch(err => console.error(`Cron Notif Err for user ${user.id}:`, err));
+                            await notifyUserIfAllowed(
+                                prisma,
+                                user.id,
+                                SP_NOTIFICATION_CATEGORIES.PROMO,
+                                "🚨 Raid Begins in 10 Minutes!",
+                                `Just 10 minutes until "${event.title}" goes live. Get ready to jump into the adventure!`,
+                                liveRaidData(PUSH_TYPE.LIVE_RAID_STARTS_10M, event.id)
+                            );
                         }
                     }
                 }
@@ -87,8 +111,14 @@ export const startEventStatusCron = () => {
 
                     const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.latitude, event.longitude, 20);
                     for (const user of nearbyUsers) {
-                        sendNotification(user.fcmToken, "🚀 The Raid Is Live!", `"${event.title}" has officially started. Head there now and secure your rewards before others do!`)
-                            .catch(err => console.error(`Cron Notif Err for user ${user.id}:`, err));
+                        await notifyUserIfAllowed(
+                            prisma,
+                            user.id,
+                            SP_NOTIFICATION_CATEGORIES.PROMO,
+                            "🚀 The Raid Is Live!",
+                            `"${event.title}" has officially started. Head there now and secure your rewards before others do!`,
+                            liveRaidData(PUSH_TYPE.LIVE_RAID_LIVE, event.id)
+                        );
                     }
                 }
             }
@@ -134,9 +164,14 @@ export const startEventStatusCron = () => {
                     publishCommanderMessage(event.id, '🛑 The event has ended! Thank you for participating! 🎉', 'system');
 
                     for (const part of event.participants) {
-                        if (part.user && part.user.fcmToken) {
-                            sendNotification(part.user.fcmToken, "✅ Raid Completed!", `"${event.title}" has officially ended. Thanks for joining us, and we'll see you at the next adventure!`)
-                                .catch(err => console.error(`Cron Notif Err for user ${part.user.id}:`, err));
+                        if (part.user) {
+                            await notifyUserIfMasterEnabled(
+                                prisma,
+                                part.userId,
+                                "✅ Raid Completed!",
+                                `"${event.title}" has officially ended. Thanks for joining us, and we'll see you at the next adventure!`,
+                                liveRaidData(PUSH_TYPE.LIVE_RAID_COMPLETED, event.id)
+                            );
                         }
                     }
                 }
@@ -158,7 +193,8 @@ export const startEventStatusCron = () => {
                         part.userId,
                         SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
                         "⏳ Coin Rush Starts Soon!",
-                        `"${event.title}" begins in 20 minutes. Warm up and get ready to collect coins!`
+                        `"${event.title}" begins in 20 minutes. Warm up and get ready to collect coins!`,
+                        coinRushData(PUSH_TYPE.COIN_RUSH_STARTS_20M, event.id)
                     );
                 }
             }
@@ -189,7 +225,8 @@ export const startEventStatusCron = () => {
                                 user.id,
                                 SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
                                 "🪙 Coin Rush in 10 Minutes!",
-                                `"${event.title}" is starting soon. Join now and race to collect coins!`
+                                `"${event.title}" is starting soon. Join now and race to collect coins!`,
+                                coinRushData(PUSH_TYPE.COIN_RUSH_STARTS_10M, event.id)
                             );
                         }
                     }
@@ -217,7 +254,6 @@ export const startEventStatusCron = () => {
                     });
                     console.log(`[CoinRush Cron] CoinRush event ${event.id} (${event.eventType}) is now LIVE`);
 
-                    // Broadcast event_status_changed to all subscribers of coinrush:<eventId>
                     publishToCoinRush(event.id, {
                         type: 'event_status_changed',
                         status: 'live'
@@ -231,7 +267,8 @@ export const startEventStatusCron = () => {
                                 user.id,
                                 SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
                                 "🪙 Coin Rush Is Live!",
-                                `"${event.title}" has started! Race to hit checkpoints and grab the reward before anyone else!`
+                                `"${event.title}" has started! Race to hit checkpoints and grab the reward before anyone else!`,
+                                coinRushData(PUSH_TYPE.COIN_RUSH_LIVE, event.id)
                             );
                         }
                     }
@@ -264,16 +301,21 @@ export const startEventStatusCron = () => {
                     });
                     console.log(`[CoinRush Cron] CoinRush event ${event.id} (${event.eventType}) is now COMPLETED`);
 
-                    // Broadcast event_status_changed to all subscribers of coinrush:<eventId>
                     publishToCoinRush(event.id, {
                         type: 'event_status_changed',
                         status: 'completed'
                     });
 
                     for (const part of event.participants) {
-                        if (part.user && part.user.fcmToken) {
-                            sendNotification(part.user.fcmToken, "✅ Coin Rush Completed!", `"${event.title}" has ended. See if you made it to the top and claimed a reward!`)
-                                .catch(err => console.error(`[CoinRush Cron] Notif Err for user ${part.user.id}:`, err));
+                        if (part.user) {
+                            await notifyUserIfAllowed(
+                                prisma,
+                                part.userId,
+                                SP_NOTIFICATION_CATEGORIES.COIN_RUSH,
+                                "✅ Coin Rush Completed!",
+                                `"${event.title}" has ended. See if you made it to the top and claimed a reward!`,
+                                coinRushData(PUSH_TYPE.COIN_RUSH_COMPLETED, event.id)
+                            );
                         }
                     }
                 }
@@ -284,5 +326,3 @@ export const startEventStatusCron = () => {
         }
     }, 60000); // Check every minute
 };
-
- 

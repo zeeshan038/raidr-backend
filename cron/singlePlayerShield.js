@@ -9,6 +9,7 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "../utils/pushNotificationPayload.js";
 
 /**
  * @Description Shield expiring soon alerts for zone owners
@@ -42,7 +43,11 @@ export const startSinglePlayerShieldCron = () => {
           zone.currentOwnerId,
           SP_NOTIFICATION_CATEGORIES.SHIELD,
           "Shield expiring soon",
-          `Your shield on "${zone.name}" expires soon. Your zone will become attackable.`
+          `Your shield on "${zone.name}" expires soon. Your zone will become attackable.`,
+          buildPushData({
+            type: PUSH_TYPE.SHIELD_EXPIRING,
+            zoneId: zone.id,
+          })
         );
 
         await prisma.singlePlayerZone.update({

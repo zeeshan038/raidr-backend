@@ -8,6 +8,7 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "../utils/pushNotificationPayload.js";
 import { awardRaidrCoins, getEconomyConfig } from "../utils/economyConfig.js";
 import { awardUserXp } from "../utils/awardUserXp.js";
 
@@ -101,7 +102,12 @@ export const claimB2bReward = async (req, res) => {
       userId,
       SP_NOTIFICATION_CATEGORIES.REWARDS,
       "B2B reward ready",
-      `You claimed: ${zone.b2bRewardTitle}`
+      `You claimed: ${zone.b2bRewardTitle}`,
+      buildPushData({
+        type: PUSH_TYPE.B2B_REWARD_CLAIMED,
+        claimId: claim.id,
+        zoneId,
+      })
     );
 
     res.status(200).json({

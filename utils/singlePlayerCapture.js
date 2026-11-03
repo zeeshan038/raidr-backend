@@ -3,7 +3,7 @@ import { prisma } from "../config/db.js";
 import {
   captureAttemptRedisKey,
   computeCaptureTimeBreakdown,
-  computeNormalPassiveIncomePreview,
+  computeZonePassiveIncomePreview,
   computeRequiredCaptureSeconds,
   isZoneAttackable,
   SP_DEFAULTS,
@@ -245,9 +245,16 @@ export const applyCaptureSessionToZoneClientView = (
   zoneData.defenseBonusSec =
     captureTimeBreakdown.ownershipDefenseSec + captureTimeBreakdown.guardPenaltySec;
 
-  const passivePreview = computeNormalPassiveIncomePreview(zone);
+  const passivePreview = computeZonePassiveIncomePreview(zone);
   if (passivePreview) {
-    zoneData.normal = { passiveIncomePreview: passivePreview };
+    if (zone.zoneType === "B2B") {
+      zoneData.b2b = {
+        ...(zoneData.b2b ?? {}),
+        passiveIncomePreview: passivePreview,
+      };
+    } else {
+      zoneData.normal = { passiveIncomePreview: passivePreview };
+    }
   }
 
   return zoneData;

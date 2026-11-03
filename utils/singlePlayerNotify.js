@@ -24,12 +24,25 @@ export const getOrCreateNotificationPrefs = async (prisma, userId) => {
   return prefs;
 };
 
+const deliverPush = async (fcmToken, title, body, data) => {
+  try {
+    await sendNotification(fcmToken, title, body, data);
+  } catch (err) {
+    console.error("[Push]", err?.message || err);
+  }
+};
+
+/**
+ * Respects master + category preference toggles.
+ * @param {Record<string, string>} [data] FCM data; should include `category` matching categoryKey.
+ */
 export const notifyUserIfAllowed = async (
   prisma,
   userId,
   categoryKey,
   title,
-  body
+  body,
+  data
 ) => {
   if (!userId || !categoryKey) return;
 
@@ -44,9 +57,33 @@ export const notifyUserIfAllowed = async (
 
   if (!user?.fcmToken) return;
 
-  try {
-    await sendNotification(user.fcmToken, title, body);
-  } catch (err) {
-    console.error("[SP Notify]", categoryKey, userId, err?.message || err);
-  }
+  const payload = {
+    ...data,
+    category: data?.category ?? categoryKey,
+  };
+
+  await deliverPush(user.fcmToken, title, body, payload);
+};
+
+/** Master toggle only (no category pref). Used for live-raid participant alerts, referrals, etc. */
+export const notifyUserIfMasterEnabled = async (
+  prisma,
+  userId,
+  title,
+  body,
+  data
+) => {
+  if (!userId) return;
+
+  const prefs = await getOrCreateNotificationPrefs(prisma, userId);
+  if (!prefs.masterEnabled) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { fcmToken: true },
+  });
+
+  if (!user?.fcmToken) return;
+
+  await deliverPush(user.fcmToken, title, body, data);
 };

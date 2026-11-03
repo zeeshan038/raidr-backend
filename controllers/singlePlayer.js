@@ -19,7 +19,9 @@ import {
   validateCaptureLocation,
 } from "../utils/singlePlayerZone.js";
 import {
+  buildB2bPassiveIncomeForZone,
   buildNormalPassiveEarningForZone,
+  enrichB2bPassiveIncomeOnFormattedZones,
   enrichNormalPassiveEarningOnFormattedZones,
 } from "../utils/singlePlayerZonePassiveLedger.js";
 import {
@@ -38,6 +40,7 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "../utils/pushNotificationPayload.js";
 import { awardUserXp } from "../utils/awardUserXp.js";
 import {
   awardRaidrCoins,
@@ -191,6 +194,12 @@ export const getZones = async (req, res) => {
       zones,
       userId
     );
+    await enrichB2bPassiveIncomeOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
 
     res.status(200).json({
       status: totalZones > 0,
@@ -268,6 +277,7 @@ export const getZoneById = async (req, res) => {
     );
 
     await enrichNormalPassiveEarningOnFormattedZones(prisma, [data], [zone], userId);
+    await enrichB2bPassiveIncomeOnFormattedZones(prisma, [data], [zone], userId);
 
     if (userId) {
       data.activeCaptureSession = await getActiveCaptureSessionForUser(
@@ -446,7 +456,11 @@ export const startCapture = async (req, res) => {
         previousOwnerId,
         SP_NOTIFICATION_CATEGORIES.ATTACK_SNATCH,
         "Your zone is under attack",
-        `Someone started capturing "${zone.name}".`
+        `Someone started capturing "${zone.name}".`,
+        buildPushData({
+          type: PUSH_TYPE.ZONE_UNDER_ATTACK,
+          zoneId: zone.id,
+        })
       );
 
       const attacker = await prisma.user.findUnique({
@@ -699,7 +713,11 @@ export const completeCapture = async (req, res) => {
         previousOwnerId,
         SP_NOTIFICATION_CATEGORIES.ATTACK_SNATCH,
         "Zone snatched",
-        `You lost "${zone.name}" to another player.`
+        `You lost "${zone.name}" to another player.`,
+        buildPushData({
+          type: PUSH_TYPE.ZONE_SNATCHED,
+          zoneId: zone.id,
+        })
       );
     }
 
@@ -707,12 +725,18 @@ export const completeCapture = async (req, res) => {
       ...zone,
       ownedAt,
       currentOwnerId: userId,
+      holdStartedAt: holdStartedAt ?? zone.holdStartedAt,
     };
     const passiveEarning =
       zone.zoneType === "NORMAL"
         ? await buildNormalPassiveEarningForZone(prisma, ownedZoneSnapshot, userId)
         : null;
     const normalPassive = passiveEarning ? { passiveEarning } : null;
+    const b2bPassiveIncome =
+      zone.zoneType === "B2B"
+        ? await buildB2bPassiveIncomeForZone(prisma, ownedZoneSnapshot, userId)
+        : null;
+    const b2bBlock = b2bPassiveIncome ? { passiveIncome: b2bPassiveIncome } : null;
 
     res.status(200).json({
       status: true,
@@ -720,6 +744,7 @@ export const completeCapture = async (req, res) => {
       shieldExpiresAt,
       ownedAt,
       normal: normalPassive,
+      b2b: b2bBlock,
     });
   } catch (error) {
     res.status(500).json({
@@ -799,7 +824,11 @@ export const getDailyDrop = async (req, res) => {
         userId,
         SP_NOTIFICATION_CATEGORIES.RARE_DROP,
         "Rare drop spawned!",
-        "A rare daily drop appeared nearby. Open the map to collect it before it's gone."
+        "A rare daily drop appeared nearby. Open the map to collect it before it's gone.",
+        buildPushData({
+          type: PUSH_TYPE.RARE_DROP_SPAWNED,
+          dropId: dailyDrop.id,
+        })
       );
     }
 
@@ -1190,7 +1219,11 @@ export const getSinglePlayerDashboard = async (req, res) => {
           userId,
           SP_NOTIFICATION_CATEGORIES.RARE_DROP,
           "Rare drop spawned!",
-          "A rare daily drop appeared nearby. Open the map to collect it before it's gone."
+          "A rare daily drop appeared nearby. Open the map to collect it before it's gone.",
+          buildPushData({
+            type: PUSH_TYPE.RARE_DROP_SPAWNED,
+            dropId: dailyDrop.id,
+          })
         );
       }
     }
@@ -1212,6 +1245,12 @@ export const getSinglePlayerDashboard = async (req, res) => {
       };
     });
     await enrichNormalPassiveEarningOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
+    await enrichB2bPassiveIncomeOnFormattedZones(
       prisma,
       processedZones,
       zones,

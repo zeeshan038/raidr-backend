@@ -93,14 +93,43 @@ export const computeNormalPassiveCoinProgress = (zone, ledgerStats = {}) => {
   };
 };
 
-/** Shown during snatch on NORMAL zones — income starts after capture completes. */
-export const computeNormalPassiveIncomePreview = (zone) => {
-  if (zone?.zoneType !== "NORMAL") return null;
+/** Shown during snatch — passive rate after capture completes (NORMAL + B2B). */
+export const computeZonePassiveIncomePreview = (zone) => {
+  if (zone?.zoneType !== "NORMAL" && zone?.zoneType !== "B2B") return null;
   const coinsPerHour = zone.coinsPerHour ?? 0;
   return {
     coinsPerHour,
     coinsPerAccrualCycle: Math.floor(coinsPerHour * PASSIVE_COINS_CRON_INTERVAL_HOURS),
     accrualCycleMinutes: PASSIVE_COINS_CRON_INTERVAL_MS / (60 * 1000),
+  };
+};
+
+/** NORMAL snatch preview only (legacy callers). */
+export const computeNormalPassiveIncomePreview = (zone) =>
+  zone?.zoneType === "NORMAL" ? computeZonePassiveIncomePreview(zone) : null;
+
+/**
+ * B2B owned during hold: coin bar vs max for this hold window.
+ * maxCoinsFromHold = holdDurationHours × coinsPerHour.
+ * coinsEarnedInHold = passive ledger total for this user+zone (cron increments).
+ */
+export const computeB2bPassiveCoinProgress = (zone, coinsEarnedFromZone = 0) => {
+  if (zone?.zoneType !== "B2B" || !zone.holdDurationHours || !zone.holdStartedAt) {
+    return null;
+  }
+  const coinsPerHour = zone.coinsPerHour ?? 0;
+  const maxCoinsFromHold = Math.floor(zone.holdDurationHours * coinsPerHour);
+  const coinsEarnedInHold = Math.max(0, Math.floor(coinsEarnedFromZone ?? 0));
+  const coinProgressPercent =
+    maxCoinsFromHold <= 0
+      ? 0
+      : Math.min(100, Math.round((coinsEarnedInHold / maxCoinsFromHold) * 100));
+
+  return {
+    coinsPerHour,
+    maxCoinsFromHold,
+    coinsEarnedInHold,
+    coinProgressPercent,
   };
 };
 
