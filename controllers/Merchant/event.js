@@ -8,7 +8,12 @@ import {
     haversineDistance,
     calculateRadiusForUserLiveEvent
 } from "../../utils/methods/methods.js";
-import { sendNotification } from "../../utils/Notification.js";
+import {
+    notifyUserIfAllowed,
+    SP_NOTIFICATION_CATEGORIES,
+} from "../../utils/singlePlayerNotify.js";
+import { buildPushData, EVENT_KIND, PUSH_TYPE } from "../../utils/pushNotificationPayload.js";
+import { getEconomyConfig } from "../../utils/economyConfig.js";
 
 const EVENT_COSTS = {
     small: 10,
@@ -113,6 +118,7 @@ export const createLiveEvent = async (req, res) => {
         const status = size === 'small' ? 'scheduled' : 'pending_approval';
 
         const qrCodeToken = `event-qr-${crypto.randomBytes(16).toString('hex')}`;
+        const economy = await getEconomyConfig(prisma);
 
         // 3. Perform database operations in transaction
         const [updatedMerchant, newEvent] = await prisma.$transaction([
@@ -140,7 +146,7 @@ export const createLiveEvent = async (req, res) => {
                     status,
                     size,
                     qrCode: qrCodeToken,
-                    xpReward: Math.floor(Math.random() * 201) + 100  // Random XP between 100–300
+                    xpReward: economy.liveEventXpReward,
                 }
             })
         ]);
@@ -168,8 +174,18 @@ export const createLiveEvent = async (req, res) => {
             const nearbyUsers = calculateRadiusForUserLiveEvent(usersWithTokens, newEvent.latitude, newEvent.longitude, 20);
 
             for (const user of nearbyUsers) {
-                sendNotification(user.fcmToken, "⚡ A New Raid Has Appeared!", `"${title}" is now live near you. Be among the first to join and claim exclusive rewards!`)
-                    .catch(err => console.error(`Failed to send notification to user ${user.id}:`, err));
+                notifyUserIfAllowed(
+                    prisma,
+                    user.id,
+                    SP_NOTIFICATION_CATEGORIES.PROMO,
+                    "⚡ A New Raid Has Appeared!",
+                    `"${title}" is now live near you. Be among the first to join and claim exclusive rewards!`,
+                    buildPushData({
+                        type: PUSH_TYPE.LIVE_RAID_NEW_NEARBY,
+                        eventId: newEvent.id,
+                        eventKind: EVENT_KIND.LIVE_RAID,
+                    })
+                ).catch(err => console.error(`Failed to send notification to user ${user.id}:`, err));
             }
         } catch (notifErr) {
             console.error("Error sending notifications on event creation:", notifErr);

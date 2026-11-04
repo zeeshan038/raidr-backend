@@ -55,7 +55,7 @@ export const gameplayFromConfig = (row) => ({
   guardPurchaseCoinPrice: row?.guardPurchaseCoinPrice ?? 100,
   guardEliminationCoinPrice: row?.guardEliminationCoinPrice ?? 50,
   empireVipMinOwnedZones: row?.empireVipMinOwnedZones ?? 5,
-  vipRewardMultiplier: row?.vipRewardMultiplier ?? 1.0,
+  vipRewardMultiplier: row?.vipRewardMultiplier ?? 1.25,
   rivalryMilestoneHours: row?.rivalryMilestoneHours,
   allowedHoldDurationHours: row?.allowedHoldDurationHours,
   shieldWarningMinutesBefore: row?.shieldWarningMinutesBefore ?? 15,

@@ -1,8 +1,12 @@
 import crypto from "crypto";
 import { prisma } from "../config/db.js";
-import { sendNotification } from "./Notification.js";
+import { notifyUserIfMasterEnabled } from "./singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "./pushNotificationPayload.js";
+import { awardUserXp } from "./awardUserXp.js";
+import { awardRaidrCoins, ECONOMY_DEFAULTS, getEconomyConfig } from "./economyConfig.js";
 
-export const REFERRAL_REWARD_COINS = 100;
+/** @deprecated Use getEconomyConfig().referralRewardCoins */
+export const REFERRAL_REWARD_COINS = ECONOMY_DEFAULTS.referralRewardCoins;
 const INVITE_CODE_LENGTH = 6;
 const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const MAX_CODE_GENERATION_ATTEMPTS = 12;
@@ -13,17 +17,24 @@ export function normalizeInviteCodeInput(raw) {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  const pathMatch = trimmed.match(/\/invite\/([A-Za-z0-9]+)\/?$/i);
-  if (pathMatch) {
-    return pathMatch[1].toUpperCase();
+  const legacyInvitePath = trimmed.match(/\/invite\/([A-Za-z0-9]+)\/?$/i);
+  if (legacyInvitePath) {
+    return legacyInvitePath[1].toUpperCase();
+  }
+
+  // https://raidr.app/EDX6YR or https://raidr.app/EDX6YR/
+  const shortLinkPath = trimmed.match(/^https?:\/\/[^/?#]+\/([A-Za-z0-9]{4,32})\/?(?:[?#].*)?$/i);
+  if (shortLinkPath) {
+    return shortLinkPath[1].toUpperCase();
   }
 
   return trimmed.toUpperCase();
 }
 
 export function buildInviteShareUrl(inviteCode) {
-  const base = (process.env.RAIDR_INVITE_BASE_URL || "https://raidr.app/invite").replace(/\/$/, "");
-  return `${base}/${inviteCode}`;
+  const base = (process.env.RAIDR_INVITE_BASE_URL || "https://raidr.app").replace(/\/$/, "");
+  const code = String(inviteCode || "").trim();
+  return `${base}/${code}`;
 }
 
 function generateInviteCodeCandidate() {
@@ -179,7 +190,9 @@ export async function completeReferralReward(invitedUserId, db = prisma) {
     return { completed: false, reason: "inviter_not_found" };
   }
 
-  const rewardCoins = REFERRAL_REWARD_COINS;
+  const economy = await getEconomyConfig(db);
+  const rewardCoins = economy.referralRewardCoins;
+  const rewardXp = economy.referralRewardXp;
 
   try {
     const reward = await db.referralReward.create({
@@ -191,19 +204,13 @@ export async function completeReferralReward(invitedUserId, db = prisma) {
       },
     });
 
-    await db.user.update({
-      where: { id: inviterId },
-      data: { raidrCoins: { increment: rewardCoins } },
+    await awardRaidrCoins(db, inviterId, rewardCoins, "referral", {
+      linkedReferralId: reward.id,
     });
 
-    await db.coinTransaction.create({
-      data: {
-        userId: inviterId,
-        amount: rewardCoins,
-        source: "referral",
-        linkedReferralId: reward.id,
-      },
-    });
+    if (rewardXp > 0) {
+      await awardUserXp(db, inviterId, rewardXp, { skipBrandMonth: true });
+    }
 
     return {
       completed: true,
@@ -211,6 +218,7 @@ export async function completeReferralReward(invitedUserId, db = prisma) {
       inviterId,
       inviterFcmToken: inviter.fcmToken,
       rewardCoins,
+      rewardXp,
     };
   } catch (error) {
     if (error?.code === "P2002") {
@@ -243,33 +251,37 @@ export async function createUserWithReferral(userCreateData, rawInviteCode, db =
   return db.$transaction(async (tx) => {
     const user = await tx.user.create({ data });
     await ensureUserInviteCode(user.id, tx);
-    let referralResult = null;
-    if (referredByUserId) {
-      referralResult = await completeReferralReward(user.id, tx);
-      if (!referralResult?.completed) {
-        throw new Error(
-          `Referral reward could not be completed (${referralResult?.reason || "unknown"})`
-        );
-      }
-    }
-    return { user, referralResult, referredByUserId };
+    return { user, referralResult: null, referredByUserId };
   });
+}
+
+/**
+ * Inviter reward after invitee completes a qualifying in-app action (not at signup).
+ */
+export async function tryCompleteReferralQualifyingActivity(invitedUserId, db = prisma) {
+  const referralResult = await completeReferralReward(invitedUserId, db);
+  if (referralResult?.completed && !referralResult.alreadyCompleted) {
+    await processReferralRewardAfterSignup(referralResult);
+  }
+  return referralResult;
 }
 
 export async function processReferralRewardAfterSignup(referralResult) {
   if (
     !referralResult?.completed ||
     referralResult.alreadyCompleted ||
-    !referralResult.inviterFcmToken
+    !referralResult.inviterId
   ) {
     return;
   }
 
   try {
-    await sendNotification(
-      referralResult.inviterFcmToken,
+    await notifyUserIfMasterEnabled(
+      prisma,
+      referralResult.inviterId,
       "Referral reward",
-      `You've earned ${referralResult.rewardCoins} coins!`
+      `You've earned ${referralResult.rewardCoins} coins${referralResult.rewardXp ? ` and ${referralResult.rewardXp} XP` : ""}!`,
+      buildPushData({ type: PUSH_TYPE.REFERRAL_REWARD })
     );
   } catch (error) {
     console.error("Referral push notification failed:", error?.message || error);

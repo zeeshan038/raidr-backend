@@ -12,26 +12,39 @@
 | | Public API | DB (inside Docker) |
 |--|------------|---------------------|
 | **Prod** | `https://backend.raidr-app.com/api` | `@postgres:5432/raidr_prod` (set in prod `docker-compose.yml`) |
-| **Dev** | `http://188.245.72.1:5002/api` | `@postgres:5432/raidr_db` (set in `docker-compose.dev.yml`) |
+| **Dev** | `http://188.245.72.1:5002/api` | `@postgres:5432/raidr_db` in **`~/raidr-backend/.env`** |
 
 Never point dev at `188.245.72.1:5432` in `.env` — that is **prod Postgres on the host**, not the dev container on **5433**.
+
+**Same database name ≠ same database:** `raidr_db` on `@postgres` (dev container) is a **different volume** than `raidr_db` at `188.245.72.1:5432`. Local `npm` often uses host `:5432`; Docker dev must use `@postgres:5432/raidr_db` in `~/raidr-backend/.env`.
 
 ## Dev containers & ports
 
 | Service  | Container           | Host port |
 |----------|---------------------|-----------|
 | API      | `raidr_api_dev`     | **5002**  |
-| WebSocket| (same)              | **3002**  |
-| Postgres | `raidr_postgres_dev`| **5433**  |
-| Redis    | `raidr_redis_dev`   | **6380**  |
+| WebSocket| (same)              | **3012** (host; 3002 often used by other stacks locally) |
+| Postgres | `raidr_postgres_dev`| **internal only** (`docker exec … psql`; no host **5433** in dev overlay) |
+| Redis    | `raidr_redis_dev`   | **internal only** (no host port; `docker exec raidr_redis_dev redis-cli`) |
 
 Prod keeps: `raidr_api`, `raidr_postgres`, `raidr_redis` on **5001 / 5432 / 6379**.
+
+## Port conflicts (`Bind for 0.0.0.0:3001` / `5432 failed`)
+
+Compose **merges** `ports` from `docker-compose.yml` + dev overlay unless dev uses `ports: !override`.  
+Symptom: dev API tries **5001, 3001** (prod) **and** 5002, 3002 → clash with `raidr_api` / host Postgres.
+
+After pull, confirm merged config shows **only** dev ports for `api`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml config | grep -A8 'container_name: raidr_api_dev' -A6
+```
 
 ## Deploy dev
 
 ```bash
 cd ~/raidr-backend
-git pull origin main
+git pull origin zeeshan-dev   # or main after merge
 
 docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
@@ -90,8 +103,18 @@ If logs show a **failed** migration on **dev** DB:
 
 ```bash
 cd ~/raidr-backend
-docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api sh scripts/emergency-prod-db-fix.sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npm run fix:db-sp-config
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api sh scripts/baseline-prod-db.sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npm run fix:db-sp-zone
 ```
+
+`\dt "SinglePlayerZone"` on **`raidr_postgres_dev`** should list the table. If other models are still missing (Brand Month, vouchers), run once on dev:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npx prisma db push
+```
+
+Or: `docker compose … exec api sh scripts/emergency-prod-db-fix.sh` then `npm run fix:db-sp-zone`.
 
 ## Postman dev base URL
 

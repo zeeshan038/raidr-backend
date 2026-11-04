@@ -1,31 +1,40 @@
 import { getMessaging } from "firebase-admin/messaging";
 
-export const sendNotification = async (fcm, title, body) => {
+/**
+ * @param {Record<string, string>} [data] FCM data payload (deep link); values must be strings.
+ */
+export const sendNotification = async (fcm, title, body, data) => {
   if (!fcm || typeof fcm !== "string") {
     console.error("Invalid FCM token");
     throw new Error("Invalid FCM token");
   }
 
-  try {
-    const response = await getMessaging().sendEachForMulticast({
-      tokens: [fcm],
-      notification: {
-        title,
-        body,   
+  const message = {
+    tokens: [fcm],
+    notification: {
+      title,
+      body,
+    },
+    apns: {
+      headers: {
+        "apns-push-type": "alert",
       },
-      apns: {
-        headers: {
-          "apns-push-type": "alert",
+      payload: {
+        aps: {
+          badge: 1,
+          sound: "default",
         },
-        payload: {
-          aps: {
-            badge: 1,
-            sound: "default",
-          },
-        },
-      }
-    });
-    
+      },
+    },
+  };
+
+  if (data && Object.keys(data).length > 0) {
+    message.data = data;
+  }
+
+  try {
+    const response = await getMessaging().sendEachForMulticast(message);
+
     if (response.failureCount > 0) {
       console.error("Notification failed:", response.responses[0].error);
       throw new Error(`Notification failed: ${response.responses[0].error.message}`);

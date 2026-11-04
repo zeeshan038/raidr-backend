@@ -418,7 +418,7 @@
           "inviteCode": {
             "type": "string",
             "example": "AB7X9K",
-            "description": "6-character code or full URL e.g. https://raidr.app/invite/AB7X9K"
+            "description": "6-character code or full URL e.g. https://raidr.app/AB7X9K"
           },
           "invite_code": {
             "type": "string",
@@ -427,8 +427,16 @@
           }
         },
         "anyOf": [
-          { "required": ["inviteCode"] },
-          { "required": ["invite_code"] }
+          {
+            "required": [
+              "inviteCode"
+            ]
+          },
+          {
+            "required": [
+              "invite_code"
+            ]
+          }
         ]
       },
       "ReferralMyCodeData": {
@@ -440,7 +448,7 @@
           },
           "shareUrl": {
             "type": "string",
-            "example": "https://raidr.app/invite/AB7X9K"
+            "example": "https://raidr.app/AB7X9K"
           },
           "rewardCoins": {
             "type": "integer",
@@ -482,7 +490,7 @@
           "shareUrl": {
             "type": "string",
             "nullable": true,
-            "example": "https://raidr.app/invite/AB7X9K"
+            "example": "https://raidr.app/AB7X9K"
           },
           "friendsInvited": {
             "type": "integer",
@@ -1346,19 +1354,85 @@
           }
         }
       },
+      "NormalPassiveCoinProgress": {
+        "type": "object",
+        "nullable": true,
+        "description": "NORMAL zone competitive passive bar. progressPercent = yourCoinsFromZone / max(your, leader on this zone) × 100. Leader is the player who earned the most passive coins from this zone (all time). Wallet payout still every 5 minutes via cron.",
+        "properties": {
+          "coinsPerHour": {
+            "type": "integer",
+            "example": 20
+          },
+          "yourCoinsFromZone": {
+            "type": "integer",
+            "example": 3
+          },
+          "leaderCoinsFromZone": {
+            "type": "integer",
+            "example": 10
+          },
+          "progressPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 30
+          },
+          "isLeader": {
+            "type": "boolean",
+            "example": false
+          },
+          "leaderUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "ownedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NormalPassiveIncomePreview": {
+        "type": "object",
+        "description": "During active snatch on a NORMAL zone — rate after capture succeeds.",
+        "properties": {
+          "coinsPerHour": {
+            "type": "integer",
+            "example": 10
+          },
+          "coinsPerAccrualCycle": {
+            "type": "integer",
+            "example": 0
+          },
+          "accrualCycleMinutes": {
+            "type": "integer",
+            "example": 5
+          }
+        }
+      },
+      "SinglePlayerNormalBlock": {
+        "type": "object",
+        "nullable": true,
+        "description": "Present when zoneType is NORMAL. Owned: passiveEarning bar. Mid-snatch: passiveIncomePreview only.",
+        "properties": {
+          "passiveEarning": {
+            "$ref": "#/components/schemas/NormalPassiveCoinProgress"
+          },
+          "passiveIncomePreview": {
+            "$ref": "#/components/schemas/NormalPassiveIncomePreview"
+          }
+        }
+      },
       "B2bHoldProgress": {
         "type": "object",
         "nullable": true,
-        "description": "B2B reward hold timer. Use progressPercent (0–100) directly for list/detail progress bars and \"NN%\" labels.",
         "properties": {
           "holdDurationHours": {
             "type": "number",
-            "description": "Total hold required (hours), e.g. 72 for \"… / 72h\" labels.",
             "example": 72
           },
           "holdElapsedHours": {
             "type": "number",
-            "description": "Elapsed hold time in hours for \"Xd Yh / …\" labels.",
             "example": 32
           },
           "holdComplete": {
@@ -1367,19 +1441,14 @@
           },
           "holdStartedAt": {
             "type": "string",
-            "format": "date-time",
-            "description": "Set when the player captures a B2B zone."
+            "format": "date-time"
           },
           "progressPercent": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 100,
-            "description": "Hold progress 0–100. Bind UI progress bar to this value (e.g. divide by 100 for 0.0–1.0 widgets). Do not recalculate from hours on the client unless this field is null.",
             "example": 44
           },
           "holdRemainingSeconds": {
             "type": "integer",
-            "description": "Countdown until hold completes; format on client for \"Time remaining\".",
             "example": 144000
           }
         }
@@ -1414,13 +1483,49 @@
             "type": "integer",
             "description": "Seconds left until capture timer completes.",
             "example": 120
+          },
+          "elapsedSec": {
+            "type": "integer",
+            "description": "Seconds elapsed since capture start.",
+            "example": 50
+          },
+          "captureProgressPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Snatch hold timer progress 0–100 (same UX as b2b.hold.progressPercent).",
+            "example": 55
+          }
+        }
+      },
+      "B2bPassiveCoinProgress": {
+        "type": "object",
+        "nullable": true,
+        "description": "B2B passive coin bar during hold. coinProgressPercent = coinsEarnedInHold / maxCoinsFromHold × 100. maxCoinsFromHold = holdDurationHours × coinsPerHour. Wallet payout every 5 min via cron; counts from zone passive ledger.",
+        "properties": {
+          "coinsPerHour": {
+            "type": "integer",
+            "example": 10
+          },
+          "maxCoinsFromHold": {
+            "type": "integer",
+            "example": 240
+          },
+          "coinsEarnedInHold": {
+            "type": "integer",
+            "example": 24
+          },
+          "coinProgressPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 10
           }
         }
       },
       "SinglePlayerB2bBlock": {
         "type": "object",
         "nullable": true,
-        "description": "Present when zoneType is B2B. Progress bar: hold.progressPercent (integer 0–100).",
         "properties": {
           "rewardType": {
             "type": "string",
@@ -1573,9 +1678,6 @@
           "b2b": {
             "$ref": "#/components/schemas/SinglePlayerB2bBlock"
           },
-          "activeCaptureSession": {
-            "$ref": "#/components/schemas/ActiveCaptureSession"
-          },
           "owner": {
             "$ref": "#/components/schemas/ZoneOwnerSummary"
           }
@@ -1649,16 +1751,6 @@
               48,
               72
             ]
-          },
-          "dailyDropXpNormal": {
-            "type": "integer",
-            "example": 50,
-            "description": "Campaign + lifetime XP awarded on normal daily drop collect."
-          },
-          "dailyDropXpRare": {
-            "type": "integer",
-            "example": 150,
-            "description": "Campaign + lifetime XP awarded on rare daily drop collect."
           }
         }
       },
@@ -1746,17 +1838,41 @@
       "ProfilePreferenceOptionDto": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "format": "uuid" },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
           "type": {
             "type": "string",
-            "enum": ["RAID_CITY", "INTEREST", "GENDER", "AGE_RANGE"]
+            "enum": [
+              "RAID_CITY",
+              "INTEREST",
+              "GENDER",
+              "AGE_RANGE"
+            ]
           },
-          "label": { "type": "string" },
-          "subtitle": { "type": "string", "nullable": true },
-          "iconKey": { "type": "string", "nullable": true },
-          "accentColor": { "type": "string", "nullable": true },
-          "slug": { "type": "string", "nullable": true },
-          "sortOrder": { "type": "integer" }
+          "label": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "accentColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer"
+          }
         }
       },
       "ProfilePreferenceOptionsGroupedDto": {
@@ -1764,38 +1880,64 @@
         "properties": {
           "raidCities": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+            "items": {
+              "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+            }
           },
           "interests": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+            "items": {
+              "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+            }
           },
           "genders": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+            "items": {
+              "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+            }
           },
           "ageRanges": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+            "items": {
+              "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+            }
           }
         }
       },
       "UserProfilePreferenceSavedDto": {
         "type": "object",
         "properties": {
-          "homeAddress": { "type": "string" },
-          "homeCityLabel": { "type": "string" },
-          "homeLatitude": { "type": "number", "nullable": true },
-          "homeLongitude": { "type": "number", "nullable": true },
-          "gender": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" },
-          "ageRange": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" },
+          "homeAddress": {
+            "type": "string"
+          },
+          "homeCityLabel": {
+            "type": "string"
+          },
+          "homeLatitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "homeLongitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "gender": {
+            "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+          },
+          "ageRange": {
+            "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+          },
           "raidCities": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+            "items": {
+              "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+            }
           },
           "interests": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ProfilePreferenceOptionDto" }
+            "items": {
+              "$ref": "#/components/schemas/ProfilePreferenceOptionDto"
+            }
           }
         }
       },
@@ -2312,36 +2454,51 @@
       },
       "UserNotificationPreference": {
         "type": "object",
+        "description": "In-app notification toggles. Server push honors masterEnabled + each category (except dailyDropReminders — client-local reminders only). FCM data.category uses these keys.",
         "properties": {
           "userId": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "masterEnabled": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Global push master switch."
           },
           "dailyDropReminders": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Client-only: schedule local daily-drop reminders when true. Backend does not send this category via FCM."
           },
           "rareDropAlerts": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Rare daily drop spawned (FCM includes dropId)."
           },
           "raidZoneShield": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Shield expiring soon on owned zone (zoneId)."
           },
           "zoneAttackSnatch": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Zone under attack / snatched (zoneId)."
           },
           "b2bRivalryNearby": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Nearby B2B hold milestone (zoneId, milestoneHours)."
           },
           "rewardsVoucher": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "B2B claim and Brand Month voucher (claimId / userVoucherId)."
           },
           "eventsCoinRush": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Coin Rush scheduled, reminders, live, completed (eventId)."
           },
           "promotionalSponsored": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Live raid geo alerts and merchant new-raid nearby (eventId, eventKind live_raid)."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -2424,21 +2581,6 @@
           "redemptionCode": {
             "type": "string",
             "nullable": true
-          },
-          "quantity": {
-            "type": "integer",
-            "description": "Catalog pool size (rare drops / reference stock)."
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -2640,6 +2782,229 @@
             }
           }
         }
+      },
+      "PushNotificationFcmData": {
+        "type": "object",
+        "description": "FCM `data` map on server-sent pushes (all values strings). Sent alongside notification title/body. See docs/NOTIFICATIONS.md and docs/NOTIFICATION_TEST_API.md.",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Matches a UserNotificationPreference toggle key when the push is category-gated.",
+            "enum": [
+              "dailyDropReminders",
+              "rareDropAlerts",
+              "raidZoneShield",
+              "zoneAttackSnatch",
+              "b2bRivalryNearby",
+              "rewardsVoucher",
+              "eventsCoinRush",
+              "promotionalSponsored"
+            ],
+            "example": "rareDropAlerts"
+          },
+          "type": {
+            "type": "string",
+            "description": "Deep-link routing action (snake_case).",
+            "enum": [
+              "rare_drop_spawned",
+              "shield_expiring",
+              "zone_under_attack",
+              "zone_snatched",
+              "b2b_rivalry_milestone",
+              "b2b_reward_claimed",
+              "brand_month_reward",
+              "coin_rush_starts_20m",
+              "coin_rush_starts_10m",
+              "coin_rush_live",
+              "coin_rush_completed",
+              "coin_rush_scheduled_nearby",
+              "live_raid_new_nearby",
+              "live_raid_starts_20m",
+              "live_raid_starts_10m",
+              "live_raid_live",
+              "live_raid_completed",
+              "referral_reward",
+              "test"
+            ],
+            "example": "rare_drop_spawned"
+          },
+          "zoneId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "SinglePlayerZone.id"
+          },
+          "dropId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "DailyDrop.id"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "LiveEvent.id or CoinRushEvent.id (use with eventKind)."
+          },
+          "eventKind": {
+            "type": "string",
+            "enum": [
+              "live_raid",
+              "coin_rush"
+            ],
+            "example": "coin_rush"
+          },
+          "claimId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "SinglePlayerB2bClaim.id"
+          },
+          "userVoucherId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UserVoucher.id"
+          },
+          "campaignId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "BrandMonthCampaign.id"
+          },
+          "milestoneHours": {
+            "type": "string",
+            "example": "24",
+            "description": "B2B rivalry milestone hours."
+          }
+        },
+        "example": {
+          "category": "rareDropAlerts",
+          "type": "rare_drop_spawned",
+          "dropId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7"
+        }
+      },
+      "PushNavigationTestRequest": {
+        "type": "object",
+        "required": [
+          "fcmToken",
+          "type"
+        ],
+        "description": "POST /test/push-navigation — send a device push with production FCM `data` for navigation QA.",
+        "properties": {
+          "fcmToken": {
+            "type": "string",
+            "description": "Device FCM token from the mobile app.",
+            "example": "YOUR_DEVICE_FCM_TOKEN"
+          },
+          "type": {
+            "type": "string",
+            "description": "Deep-link routing action. Use GET /test/push-navigation/types for the full list.",
+            "enum": [
+              "rare_drop_spawned",
+              "shield_expiring",
+              "zone_under_attack",
+              "zone_snatched",
+              "b2b_rivalry_milestone",
+              "b2b_reward_claimed",
+              "brand_month_reward",
+              "coin_rush_starts_20m",
+              "coin_rush_starts_10m",
+              "coin_rush_live",
+              "coin_rush_completed",
+              "coin_rush_scheduled_nearby",
+              "live_raid_new_nearby",
+              "live_raid_starts_20m",
+              "live_raid_starts_10m",
+              "live_raid_live",
+              "live_raid_completed",
+              "referral_reward",
+              "test"
+            ],
+            "example": "zone_under_attack"
+          },
+          "title": {
+            "type": "string",
+            "description": "Optional notification title override."
+          },
+          "body": {
+            "type": "string",
+            "description": "Optional notification body override."
+          },
+          "secret": {
+            "type": "string",
+            "description": "Required when server env PUSH_NAV_TEST_SECRET is set."
+          },
+          "zoneId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "SinglePlayerZone.id"
+          },
+          "dropId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "DailyDrop.id"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "LiveEvent or CoinRushEvent id"
+          },
+          "eventKind": {
+            "type": "string",
+            "enum": [
+              "live_raid",
+              "coin_rush"
+            ]
+          },
+          "claimId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userVoucherId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "milestoneHours": {
+            "type": "string",
+            "example": "24"
+          },
+          "category": {
+            "type": "string",
+            "description": "Override FCM data.category (preference key)."
+          }
+        },
+        "example": {
+          "fcmToken": "YOUR_DEVICE_FCM_TOKEN",
+          "type": "zone_under_attack",
+          "zoneId": "real-zone-uuid-optional"
+        }
+      },
+      "PushNavigationTestResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Navigation test push sent"
+          },
+          "sent": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "example": "[Test] Your zone is under attack"
+              },
+              "body": {
+                "type": "string"
+              },
+              "data": {
+                "$ref": "#/components/schemas/PushNotificationFcmData"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -2650,7 +3015,6 @@
           "Single Player"
         ],
         "summary": "List single player zones (map / My Raid Zones)",
-        "description": "Each zone includes b2b.hold.progressPercent (0–100) for B2B captured zones — use it for My Raid Zones list progress bars. NORMAL zones have b2b: null.",
         "security": [
           {
             "bearerAuth": []
@@ -2778,48 +3142,10 @@
                         "guardCount": 2
                       },
                       "b2b": null
-                    },
-                    {
-                      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                      "name": "McDonald's Raid",
-                      "latitude": "40.7580",
-                      "longitude": "-73.9855",
-                      "radius": 80,
-                      "coinsPerHour": 50,
-                      "zoneType": "B2B",
-                      "guardCount": 0,
-                      "maxGuardsPerZone": 5,
-                      "status": "conquered_by_me",
-                      "mapPinType": "B2B",
-                      "isShieldActive": false,
-                      "isAttackable": false,
-                      "captureTimeSec": 30,
-                      "defenseBonusSec": 0,
-                      "captureTimeBreakdown": {
-                        "baseSec": 30,
-                        "ownershipDefenseSec": 0,
-                        "guardPenaltySec": 0,
-                        "guardCount": 0
-                      },
-                      "b2b": {
-                        "rewardType": "DIGITAL_COUPON",
-                        "rewardTitle": "Free meal combo",
-                        "rewardDescription": "Redeem in app after hold completes",
-                        "rewardImageUrl": "https://example.com/meal.png",
-                        "hold": {
-                          "holdDurationHours": 72,
-                          "holdElapsedHours": 32,
-                          "holdComplete": false,
-                          "holdStartedAt": "2026-10-09T10:00:00.000Z",
-                          "progressPercent": 44,
-                          "holdRemainingSeconds": 144000
-                        },
-                        "canClaim": false
-                      }
                     }
                   ],
                   "pagination": {
-                    "total": 2,
+                    "total": 1,
                     "page": 1,
                     "limit": 10,
                     "totalPages": 1
@@ -2893,7 +3219,6 @@
           "Single Player"
         ],
         "summary": "Get one zone (detail refresh)",
-        "description": "Zone detail / hold progress screen. B2B: use data.b2b.hold.progressPercent for the hold progress bar. When the user has an active capture, data.activeCaptureSession is set (AR guard state); otherwise null or omitted.",
         "security": [
           {
             "bearerAuth": []
@@ -2944,43 +3269,28 @@
                 "example": {
                   "status": true,
                   "data": {
-                    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                    "name": "McDonald's Raid",
-                    "latitude": "40.7580",
-                    "longitude": "-73.9855",
+                    "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+                    "name": "Postman Test Zone",
+                    "latitude": "40.7829",
+                    "longitude": "-73.9654",
                     "radius": 80,
-                    "coinsPerHour": 50,
-                    "zoneType": "B2B",
-                    "guardCount": 0,
+                    "coinsPerHour": 30,
+                    "zoneType": "NORMAL",
+                    "guardCount": 2,
                     "maxGuardsPerZone": 5,
-                    "status": "conquered_by_me",
-                    "mapPinType": "B2B",
-                    "isShieldActive": false,
-                    "isAttackable": false,
-                    "captureTimeSec": 30,
-                    "defenseBonusSec": 0,
+                    "status": "conquered_by_others",
+                    "mapPinType": "VULNERABLE",
+                    "isShieldActive": true,
+                    "isAttackable": true,
+                    "captureTimeSec": 110,
+                    "defenseBonusSec": 80,
                     "captureTimeBreakdown": {
                       "baseSec": 30,
-                      "ownershipDefenseSec": 0,
-                      "guardPenaltySec": 0,
-                      "guardCount": 0
+                      "ownershipDefenseSec": 20,
+                      "guardPenaltySec": 60,
+                      "guardCount": 2
                     },
-                    "b2b": {
-                      "rewardType": "DIGITAL_COUPON",
-                      "rewardTitle": "Free meal combo",
-                      "rewardDescription": "Redeem in app after hold completes",
-                      "rewardImageUrl": "https://example.com/meal.png",
-                      "hold": {
-                        "holdDurationHours": 72,
-                        "holdElapsedHours": 32,
-                        "holdComplete": false,
-                        "holdStartedAt": "2026-10-09T10:00:00.000Z",
-                        "progressPercent": 44,
-                        "holdRemainingSeconds": 144000
-                      },
-                      "canClaim": false
-                    },
-                    "activeCaptureSession": null
+                    "b2b": null
                   }
                 }
               }
@@ -3141,17 +3451,6 @@
                     "completesAfter": {
                       "type": "string",
                       "format": "date-time"
-                    },
-                    "initialGuardCount": {
-                      "type": "integer",
-                      "description": "Guards snapshot at capture start (zone guardCount)."
-                    },
-                    "sessionGuardsRemaining": {
-                      "type": "integer",
-                      "description": "Guards left in this capture attempt; use for AR UI."
-                    },
-                    "guardsEliminatedInSession": {
-                      "type": "integer"
                     }
                   }
                 },
@@ -3167,10 +3466,7 @@
                   },
                   "distanceMeters": 18,
                   "startedAt": "2026-10-12T12:00:00.000Z",
-                  "completesAfter": "2026-10-12T12:03:20.000Z",
-                  "initialGuardCount": 5,
-                  "sessionGuardsRemaining": 5,
-                  "guardsEliminatedInSession": 0
+                  "completesAfter": "2026-10-12T12:03:20.000Z"
                 }
               }
             }
@@ -3815,7 +4111,6 @@
           "Single Player"
         ],
         "summary": "Collect daily drop within range",
-        "description": "Awards drop reward plus lifetime and Brand Month campaign XP (brandMonth in response). Does not claim the Brand Month grand prize — when eligibleToClaim is true, call POST /single-player/brand-month/{campaignId}/claim.",
         "security": [
           {
             "bearerAuth": []
@@ -3870,21 +4165,6 @@
                     },
                     "rewardData": {
                       "$ref": "#/components/schemas/DailyDropCollectReward"
-                    },
-                    "xpAwarded": {
-                      "type": "integer",
-                      "example": 50
-                    },
-                    "lifetimeXp": {
-                      "$ref": "#/components/schemas/UserLifetimeXpProgressDto"
-                    },
-                    "brandMonth": {
-                      "allOf": [
-                        {
-                          "$ref": "#/components/schemas/BrandMonthClientStateDto"
-                        }
-                      ],
-                      "nullable": true
                     }
                   }
                 },
@@ -3894,26 +4174,6 @@
                   "rewardData": {
                     "type": "COINS",
                     "amount": 100
-                  },
-                  "xpAwarded": 50,
-                  "lifetimeXp": {
-                    "level": 6,
-                    "xp_earned": 2450,
-                    "xp_progress": 450,
-                    "nextLevel": 7,
-                    "levelProgressPercent": 13,
-                    "xpRequiredForNextLevel": 3600,
-                    "xpRemainingForNextLevel": 3150
-                  },
-                  "brandMonth": {
-                    "campaignId": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
-                    "name": "McDonald's Month",
-                    "xpTarget": 2000,
-                    "campaignXp": 50,
-                    "inventoryRemaining": 48,
-                    "inventoryTotal": 50,
-                    "prizeStatus": "NONE",
-                    "canStillWinPrize": true
                   }
                 }
               }
@@ -4352,7 +4612,6 @@
           "Single Player"
         ],
         "summary": "Map dashboard (stats, zones, daily drop)",
-        "description": "data.zones uses SinglePlayerZoneFormatted — B2B entries include b2b.hold.progressPercent (0–100) for hold progress UI.",
         "security": [
           {
             "bearerAuth": []
@@ -4400,15 +4659,6 @@
                       "properties": {
                         "dashboard": {
                           "$ref": "#/components/schemas/SinglePlayerDashboardBlock"
-                        },
-                        "brandMonth": {
-                          "allOf": [
-                            {
-                              "$ref": "#/components/schemas/BrandMonthClientStateDto"
-                            }
-                          ],
-                          "nullable": true,
-                          "description": "Active Brand Month progression; null if no campaign in date range."
                         },
                         "dailyDrop": {
                           "allOf": [
@@ -4465,42 +4715,6 @@
                           "guardCount": 2
                         },
                         "b2b": null
-                      },
-                      {
-                        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                        "name": "McDonald's Raid",
-                        "latitude": "40.7580",
-                        "longitude": "-73.9855",
-                        "radius": 80,
-                        "coinsPerHour": 50,
-                        "zoneType": "B2B",
-                        "guardCount": 0,
-                        "maxGuardsPerZone": 5,
-                        "status": "conquered_by_me",
-                        "mapPinType": "B2B",
-                        "isShieldActive": false,
-                        "isAttackable": false,
-                        "captureTimeSec": 30,
-                        "defenseBonusSec": 0,
-                        "captureTimeBreakdown": {
-                          "baseSec": 30,
-                          "ownershipDefenseSec": 0,
-                          "guardPenaltySec": 0,
-                          "guardCount": 0
-                        },
-                        "b2b": {
-                          "rewardType": "DIGITAL_COUPON",
-                          "rewardTitle": "Free meal combo",
-                          "hold": {
-                            "holdDurationHours": 72,
-                            "holdElapsedHours": 32,
-                            "holdComplete": false,
-                            "holdStartedAt": "2026-10-09T10:00:00.000Z",
-                            "progressPercent": 44,
-                            "holdRemainingSeconds": 144000
-                          },
-                          "canClaim": false
-                        }
                       }
                     ]
                   }
@@ -5049,6 +5263,10 @@
                       "example": "Brand Month campaign not found"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Brand Month campaign not found"
                 }
               }
             }
@@ -5072,6 +5290,10 @@
                       "$ref": "#/components/schemas/BrandMonthClientStateDto"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Brand Month reward already claimed"
                 }
               }
             }
@@ -5113,7 +5335,7 @@
                 "fullUrl": {
                   "summary": "Full share URL",
                   "value": {
-                    "inviteCode": "https://raidr.app/invite/AB7X9K"
+                    "inviteCode": "https://raidr.app/AB7X9K"
                   }
                 }
               }
@@ -5264,7 +5486,7 @@
                   "status": true,
                   "data": {
                     "inviteCode": "AB7X9K",
-                    "shareUrl": "https://raidr.app/invite/AB7X9K",
+                    "shareUrl": "https://raidr.app/AB7X9K",
                     "rewardCoins": 100
                   }
                 }
@@ -5327,7 +5549,7 @@
                   "status": true,
                   "data": {
                     "inviteCode": "AB7X9K",
-                    "shareUrl": "https://raidr.app/invite/AB7X9K",
+                    "shareUrl": "https://raidr.app/AB7X9K",
                     "friendsInvited": 2,
                     "totalCoinsEarned": 200,
                     "rewardCoinsPerReferral": 100,
@@ -6238,20 +6460,6 @@
               }
             }
           },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                },
-                "example": {
-                  "status": false,
-                  "msg": "User not found"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -6262,6 +6470,20 @@
                 "example": {
                   "status": false,
                   "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "User not found"
                 }
               }
             }
@@ -6574,7 +6796,7 @@
           "User Profile"
         ],
         "summary": "Update user's FCM token",
-        "description": "Updates the Firebase Cloud Messaging (FCM) token for the authenticated user to enable push notifications.",
+        "description": "Register the device FCM token for server push. Outbound messages include notification title/body plus FCM `data` (schema PushNotificationFcmData) for deep linking.",
         "security": [
           {
             "bearerAuth": []
@@ -11093,39 +11315,151 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "title": { "type": "string", "example": "Downtown Treasure Hunt" },
-                  "description": { "type": "string", "example": "Explore the downtown area and claim rewards" },
-                  "duration": { "type": "integer", "example": 180 },
-                  "checkpointCount": { "type": "integer", "example": 3 },
-                  "startTime": { "type": "string", "format": "date-time", "example": "2026-10-17T15:00:00.000Z" },
-                  "endTime": { "type": "string", "format": "date-time", "example": "2026-10-17T18:00:00.000Z" },
-                  "centerLat": { "type": "number", "format": "float", "example": 37.7749 },
-                  "centerLng": { "type": "number", "format": "float", "example": -122.4194 },
-                  "radiusMeter": { "type": "number", "format": "float", "example": 500 },
-                  "rewardType": { "type": "string", "enum": ["CASH", "PHYSICAL", "DIGITAL_COUPON"], "example": "CASH" },
-                  "rewardTitle": { "type": "string", "example": "500 Dollars" },
-                  "rewardValue": { "type": "number", "format": "float", "example": 500 },
-                  "rewardImageUrl": { "type": "string", "example": "" },
-                  "rewardDescription": { "type": "string", "example": "Grand cash prize" },
-                  "rewardClaimInstructions": { "type": "string", "example": "Show claim ticket at store counter" },
-                  "winnersCount": { "type": "integer", "example": 1 },
+                  "title": {
+                    "type": "string",
+                    "example": "Downtown Treasure Hunt"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Explore the downtown area and claim rewards"
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "example": 180
+                  },
+                  "checkpointCount": {
+                    "type": "integer",
+                    "example": 3
+                  },
+                  "startTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-10-17T15:00:00.000Z"
+                  },
+                  "endTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-10-17T18:00:00.000Z"
+                  },
+                  "centerLat": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 37.7749
+                  },
+                  "centerLng": {
+                    "type": "number",
+                    "format": "float",
+                    "example": -122.4194
+                  },
+                  "radiusMeter": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 500
+                  },
+                  "rewardType": {
+                    "type": "string",
+                    "enum": [
+                      "CASH",
+                      "PHYSICAL",
+                      "DIGITAL_COUPON"
+                    ],
+                    "example": "CASH"
+                  },
+                  "rewardTitle": {
+                    "type": "string",
+                    "example": "500 Dollars"
+                  },
+                  "rewardValue": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 500
+                  },
+                  "rewardImageUrl": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "rewardDescription": {
+                    "type": "string",
+                    "example": "Grand cash prize"
+                  },
+                  "rewardClaimInstructions": {
+                    "type": "string",
+                    "example": "Show claim ticket at store counter"
+                  },
+                  "winnersCount": {
+                    "type": "integer",
+                    "example": 1
+                  },
                   "checkpoints": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
-                        "sequence": { "type": "integer", "example": 1 },
-                        "type": { "type": "string", "enum": ["GPS", "QR", "PHOTO", "QNA", "SECRET_CODE"], "example": "QR" },
-                        "latitude": { "type": "number", "format": "float", "nullable": true, "example": null },
-                        "longitude": { "type": "number", "format": "float", "nullable": true, "example": null },
-                        "qrCode": { "type": "string", "nullable": true, "example": "cr_d1c3c8fe161487213f1f0fb9" },
-                        "question": { "type": "string", "nullable": true, "example": null },
-                        "answer": { "type": "string", "nullable": true, "example": null },
-                        "secretCode": { "type": "string", "nullable": true, "example": null },
-                        "photoRequirements": { "type": "string", "nullable": true, "example": null },
-                        "referencePhotoUrl": { "type": "string", "nullable": true, "example": null },
-                        "description": { "type": "string", "example": "Scan code at entrance" },
-                        "xp": { "type": "integer", "example": 150 }
+                        "sequence": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "GPS",
+                            "QR",
+                            "PHOTO",
+                            "QNA",
+                            "SECRET_CODE"
+                          ],
+                          "example": "QR"
+                        },
+                        "latitude": {
+                          "type": "number",
+                          "format": "float",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "format": "float",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "qrCode": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": "cr_d1c3c8fe161487213f1f0fb9"
+                        },
+                        "question": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "answer": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "secretCode": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "photoRequirements": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "referencePhotoUrl": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "Scan code at entrance"
+                        },
+                        "xp": {
+                          "type": "integer",
+                          "example": 150
+                        }
                       }
                     }
                   }
@@ -11142,53 +11476,192 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": true },
-                    "msg": { "type": "string", "example": "Event updated successfully" },
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Event updated successfully"
+                    },
                     "event": {
                       "type": "object",
                       "properties": {
-                        "id": { "type": "string", "example": "91844232-7eb4-479b-9045-8968685b2321" },
-                        "title": { "type": "string", "example": "TTTTTT" },
-                        "description": { "type": "string", "example": "Event description" },
-                        "merchantId": { "type": "string", "example": "merchant_uuid" },
-                        "eventType": { "type": "string", "example": "HYBRID" },
-                        "status": { "type": "string", "example": "scheduled" },
-                        "checkpointCount": { "type": "integer", "example": 3 },
-                        "duration": { "type": "integer", "example": 180 },
-                        "startTime": { "type": "string", "format": "date-time", "example": "2026-10-17T15:00:00.000Z" },
-                        "endTime": { "type": "string", "format": "date-time", "example": "2026-10-17T18:00:00.000Z" },
-                        "centerLat": { "type": "number", "format": "float", "nullable": true, "example": null },
-                        "centerLng": { "type": "number", "format": "float", "nullable": true, "example": null },
-                        "radiusMeter": { "type": "number", "format": "float", "nullable": true, "example": 500 },
-                        "rewardType": { "type": "string", "example": "CASH" },
-                        "rewardTitle": { "type": "string", "example": "500 Dollars" },
-                        "rewardImageUrl": { "type": "string", "example": "" },
-                        "rewardDescription": { "type": "string", "example": "asdfasdfasd" },
-                        "rewardClaimInstructions": { "type": "string", "example": "adsfsasdf" },
-                        "rewardValue": { "type": "number", "format": "float", "example": 500 },
-                        "winnersCount": { "type": "integer", "example": 1 },
-                        "createdAt": { "type": "string", "format": "date-time", "example": "2026-10-17T14:00:00.000Z" },
-                        "updatedAt": { "type": "string", "format": "date-time", "example": "2026-10-17T14:30:00.000Z" },
+                        "id": {
+                          "type": "string",
+                          "example": "91844232-7eb4-479b-9045-8968685b2321"
+                        },
+                        "title": {
+                          "type": "string",
+                          "example": "TTTTTT"
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "Event description"
+                        },
+                        "merchantId": {
+                          "type": "string",
+                          "example": "merchant_uuid"
+                        },
+                        "eventType": {
+                          "type": "string",
+                          "example": "HYBRID"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "scheduled"
+                        },
+                        "checkpointCount": {
+                          "type": "integer",
+                          "example": 3
+                        },
+                        "duration": {
+                          "type": "integer",
+                          "example": 180
+                        },
+                        "startTime": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-10-17T15:00:00.000Z"
+                        },
+                        "endTime": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-10-17T18:00:00.000Z"
+                        },
+                        "centerLat": {
+                          "type": "number",
+                          "format": "float",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "centerLng": {
+                          "type": "number",
+                          "format": "float",
+                          "nullable": true,
+                          "example": null
+                        },
+                        "radiusMeter": {
+                          "type": "number",
+                          "format": "float",
+                          "nullable": true,
+                          "example": 500
+                        },
+                        "rewardType": {
+                          "type": "string",
+                          "example": "CASH"
+                        },
+                        "rewardTitle": {
+                          "type": "string",
+                          "example": "500 Dollars"
+                        },
+                        "rewardImageUrl": {
+                          "type": "string",
+                          "example": ""
+                        },
+                        "rewardDescription": {
+                          "type": "string",
+                          "example": "asdfasdfasd"
+                        },
+                        "rewardClaimInstructions": {
+                          "type": "string",
+                          "example": "adsfsasdf"
+                        },
+                        "rewardValue": {
+                          "type": "number",
+                          "format": "float",
+                          "example": 500
+                        },
+                        "winnersCount": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-10-17T14:00:00.000Z"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-10-17T14:30:00.000Z"
+                        },
                         "checkpoints": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
-                              "id": { "type": "string", "example": "cp_uuid" },
-                              "eventId": { "type": "string", "example": "91844232-7eb4-479b-9045-8968685b2321" },
-                              "sequence": { "type": "integer", "example": 1 },
-                              "type": { "type": "string", "example": "QR" },
-                              "latitude": { "type": "number", "format": "float", "nullable": true, "example": null },
-                              "longitude": { "type": "number", "format": "float", "nullable": true, "example": null },
-                              "qrCode": { "type": "string", "nullable": true, "example": "cr_d1c3c8fe161487213f1f0fb9" },
-                              "question": { "type": "string", "nullable": true, "example": null },
-                              "answer": { "type": "string", "nullable": true, "example": null },
-                              "secretCode": { "type": "string", "nullable": true, "example": null },
-                              "photoRequirements": { "type": "string", "nullable": true, "example": null },
-                              "referencePhotoUrl": { "type": "string", "nullable": true, "example": null },
-                              "description": { "type": "string", "example": "One" },
-                              "xp": { "type": "integer", "example": 189 },
-                              "createdAt": { "type": "string", "format": "date-time", "example": "2026-10-17T14:04:58.797Z" }
+                              "id": {
+                                "type": "string",
+                                "example": "cp_uuid"
+                              },
+                              "eventId": {
+                                "type": "string",
+                                "example": "91844232-7eb4-479b-9045-8968685b2321"
+                              },
+                              "sequence": {
+                                "type": "integer",
+                                "example": 1
+                              },
+                              "type": {
+                                "type": "string",
+                                "example": "QR"
+                              },
+                              "latitude": {
+                                "type": "number",
+                                "format": "float",
+                                "nullable": true,
+                                "example": null
+                              },
+                              "longitude": {
+                                "type": "number",
+                                "format": "float",
+                                "nullable": true,
+                                "example": null
+                              },
+                              "qrCode": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": "cr_d1c3c8fe161487213f1f0fb9"
+                              },
+                              "question": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                              },
+                              "answer": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                              },
+                              "secretCode": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                              },
+                              "photoRequirements": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                              },
+                              "referencePhotoUrl": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                              },
+                              "description": {
+                                "type": "string",
+                                "example": "One"
+                              },
+                              "xp": {
+                                "type": "integer",
+                                "example": 189
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2026-10-17T14:04:58.797Z"
+                              }
                             }
                           }
                         }
@@ -11206,8 +11679,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": false },
-                    "msg": { "type": "string", "example": "Cannot update event configuration while the raid is currently live." }
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Cannot update event configuration while the raid is currently live."
+                    }
                   }
                 }
               }
@@ -11220,8 +11699,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": false },
-                    "msg": { "type": "string", "example": "Forbidden" }
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    }
                   }
                 }
               }
@@ -11234,8 +11719,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": false },
-                    "msg": { "type": "string", "example": "Event not found" }
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Event not found"
+                    }
                   }
                 }
               }
@@ -11248,8 +11739,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": false },
-                    "msg": { "type": "string", "example": "Internal server error" }
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
                   }
                 }
               }
@@ -12047,9 +12544,7 @@
                       24,
                       48,
                       72
-                    ],
-                    "dailyDropXpNormal": 50,
-                    "dailyDropXpRare": 150
+                    ]
                   }
                 }
               }
@@ -12943,26 +13438,13 @@
                     },
                     "remainingSec": {
                       "type": "integer"
-                    },
-                    "sessionGuardsRemaining": {
-                      "type": "integer",
-                      "description": "Guards left in this capture attempt."
-                    },
-                    "initialGuardCount": {
-                      "type": "integer"
-                    },
-                    "guardsEliminatedInSession": {
-                      "type": "integer"
                     }
                   }
                 },
                 "example": {
                   "status": true,
                   "inRadius": true,
-                  "remainingSec": 45,
-                  "sessionGuardsRemaining": 3,
-                  "initialGuardCount": 5,
-                  "guardsEliminatedInSession": 2
+                  "remainingSec": 45
                 }
               }
             }
@@ -13125,17 +13607,6 @@
                           "type": "integer"
                         },
                         "zoneGuardCount": {
-                          "type": "integer",
-                          "description": "Owner-assigned guards on the zone (DB). Does not decrease during AR elimination."
-                        },
-                        "initialGuardCount": {
-                          "type": "integer"
-                        },
-                        "sessionGuardsRemaining": {
-                          "type": "integer",
-                          "description": "Use for AR guard count after elimination."
-                        },
-                        "guardsEliminatedInSession": {
                           "type": "integer"
                         },
                         "captureTimeSec": {
@@ -13154,10 +13625,7 @@
                   "data": {
                     "guardsEliminated": 1,
                     "coinsSpent": 50,
-                    "initialGuardCount": 5,
-                    "sessionGuardsRemaining": 4,
-                    "guardsEliminatedInSession": 1,
-                    "zoneGuardCount": 5,
+                    "zoneGuardCount": 4,
                     "captureTimeSec": 170,
                     "raidrCoins": 2400
                   }
@@ -13801,6 +14269,7 @@
           "User"
         ],
         "summary": "Get notification preferences",
+        "description": "Returns master + per-category toggles. Server FCM payloads include `data.category` matching these keys (see components.schemas.PushNotificationFcmData). `dailyDropReminders` is for on-device scheduling only.",
         "security": [
           {
             "bearerAuth": []
@@ -13828,7 +14297,15 @@
                   "data": {
                     "userId": "uuid",
                     "masterEnabled": true,
-                    "zoneAttackSnatch": true
+                    "dailyDropReminders": true,
+                    "rareDropAlerts": true,
+                    "raidZoneShield": true,
+                    "zoneAttackSnatch": true,
+                    "b2bRivalryNearby": true,
+                    "rewardsVoucher": true,
+                    "eventsCoinRush": true,
+                    "promotionalSponsored": true,
+                    "updatedAt": "2026-11-03T12:00:00.000Z"
                   }
                 }
               }
@@ -13897,6 +14374,7 @@
           "User"
         ],
         "summary": "Update notification preferences",
+        "description": "Patch any subset of boolean fields (unknown keys rejected). Does not affect FCM token — use PATCH /user/update-fcm.",
         "security": [
           {
             "bearerAuth": []
@@ -13912,7 +14390,8 @@
                     "type": "boolean"
                   },
                   "dailyDropReminders": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Client-local daily drop reminders (not server push)."
                   },
                   "rareDropAlerts": {
                     "type": "boolean"
@@ -14060,10 +14539,16 @@
     },
     "/user/profile-preferences/options": {
       "get": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Get onboarding preference options (admin-managed)",
         "description": "Lists active raid cities, interests, genders, and age ranges for the post-register onboarding flow.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Grouped option lists",
@@ -14072,45 +14557,122 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": true },
-                    "data": { "$ref": "#/components/schemas/ProfilePreferenceOptionsGroupedDto" }
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProfilePreferenceOptionsGroupedDto"
+                    }
                   }
                 },
                 "example": {
                   "status": true,
                   "data": {
-                    "raidCities": [{ "id": "uuid", "type": "RAID_CITY", "label": "Tel Aviv", "sortOrder": 1 }],
-                    "interests": [{ "id": "uuid", "type": "INTEREST", "label": "Fashion", "subtitle": "Clothes & Accessories", "iconKey": "fashion", "accentColor": "#3B82F6", "sortOrder": 2 }],
-                    "genders": [{ "id": "uuid", "type": "GENDER", "label": "Male", "slug": "male", "sortOrder": 1 }],
-                    "ageRanges": [{ "id": "uuid", "type": "AGE_RANGE", "label": "25 - 34", "slug": "25_34", "sortOrder": 3 }]
+                    "raidCities": [
+                      {
+                        "id": "uuid",
+                        "type": "RAID_CITY",
+                        "label": "Tel Aviv",
+                        "sortOrder": 1
+                      }
+                    ],
+                    "interests": [
+                      {
+                        "id": "uuid",
+                        "type": "INTEREST",
+                        "label": "Fashion",
+                        "subtitle": "Clothes & Accessories",
+                        "iconKey": "fashion",
+                        "accentColor": "#3B82F6",
+                        "sortOrder": 2
+                      }
+                    ],
+                    "genders": [
+                      {
+                        "id": "uuid",
+                        "type": "GENDER",
+                        "label": "Male",
+                        "slug": "male",
+                        "sortOrder": 1
+                      }
+                    ],
+                    "ageRanges": [
+                      {
+                        "id": "uuid",
+                        "type": "AGE_RANGE",
+                        "label": "25 - 34",
+                        "slug": "25_34",
+                        "sortOrder": 3
+                      }
+                    ]
                   }
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/profile-preferences": {
       "post": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Save onboarding profile preferences",
         "description": "Completes the 5-step onboarding. Sets user.preferences to true (also returned on GET /user/whoami).",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["homeAddress", "homeCityLabel"],
+                "required": [
+                  "homeAddress",
+                  "homeCityLabel"
+                ],
                 "properties": {
-                  "homeAddress": { "type": "string", "example": "Ben Yehuda St 123" },
-                  "homeCityLabel": { "type": "string", "example": "Tel Aviv" },
-                  "homeLatitude": { "type": "number", "example": 32.0853 },
-                  "homeLongitude": { "type": "number", "example": 34.7818 },
+                  "homeAddress": {
+                    "type": "string",
+                    "example": "Ben Yehuda St 123"
+                  },
+                  "homeCityLabel": {
+                    "type": "string",
+                    "example": "Tel Aviv"
+                  },
+                  "homeLatitude": {
+                    "type": "number",
+                    "example": 32.0853
+                  },
+                  "homeLongitude": {
+                    "type": "number",
+                    "example": 34.7818
+                  },
                   "genderOptionId": {
                     "type": "string",
                     "description": "Option UUID or slug (e.g. male, female)",
@@ -14123,13 +14685,24 @@
                   },
                   "raidCityOptionIds": {
                     "type": "array",
-                    "items": { "type": "string", "description": "UUID or slug (e.g. tel_aviv)" },
-                    "example": ["tel_aviv"]
+                    "items": {
+                      "type": "string",
+                      "description": "UUID or slug (e.g. tel_aviv)"
+                    },
+                    "example": [
+                      "tel_aviv"
+                    ]
                   },
                   "interestOptionIds": {
                     "type": "array",
-                    "items": { "type": "string", "description": "UUID or slug (e.g. fashion)" },
-                    "example": ["fashion", "events"]
+                    "items": {
+                      "type": "string",
+                      "description": "UUID or slug (e.g. fashion)"
+                    },
+                    "example": [
+                      "fashion",
+                      "events"
+                    ]
                   }
                 }
               }
@@ -14144,28 +14717,53 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": true },
-                    "msg": { "type": "string", "example": "Profile preferences saved" },
-                    "preferences": { "type": "boolean", "example": true },
-                    "data": { "$ref": "#/components/schemas/UserProfilePreferenceSavedDto" },
-                    "user": { "$ref": "#/components/schemas/UserDto" }
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Profile preferences saved"
+                    },
+                    "preferences": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserProfilePreferenceSavedDto"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/UserDto"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Validation or invalid option ids" },
-          "401": { "description": "Unauthorized" },
-          "500": { "description": "Server error" }
+          "400": {
+            "description": "Validation or invalid option ids"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error"
+          }
         }
       }
     },
     "/user/update-profile-preferences": {
       "post": {
-        "tags": ["User Profile"],
+        "tags": [
+          "User Profile"
+        ],
         "summary": "Update profile preferences (settings / edit flow)",
         "description": "Partial update after onboarding. Requires an existing row from POST /user/profile-preferences. Send only fields to change (at least one). Option ids must match active admin options.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -14174,28 +14772,58 @@
                 "type": "object",
                 "minProperties": 1,
                 "properties": {
-                  "homeAddress": { "type": "string", "example": "Ben Yehuda St 123" },
-                  "homeCityLabel": { "type": "string", "example": "Tel Aviv" },
-                  "homeLatitude": { "type": "number", "example": 32.0853 },
-                  "homeLongitude": { "type": "number", "example": 34.7818 },
-                  "genderOptionId": { "type": "string", "example": "male" },
-                  "ageRangeOptionId": { "type": "string", "example": "25_34" },
+                  "homeAddress": {
+                    "type": "string",
+                    "example": "Ben Yehuda St 123"
+                  },
+                  "homeCityLabel": {
+                    "type": "string",
+                    "example": "Tel Aviv"
+                  },
+                  "homeLatitude": {
+                    "type": "number",
+                    "example": 32.0853
+                  },
+                  "homeLongitude": {
+                    "type": "number",
+                    "example": 34.7818
+                  },
+                  "genderOptionId": {
+                    "type": "string",
+                    "example": "male"
+                  },
+                  "ageRangeOptionId": {
+                    "type": "string",
+                    "example": "25_34"
+                  },
                   "raidCityOptionIds": {
                     "type": "array",
-                    "items": { "type": "string" },
-                    "example": ["jerusalem"]
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "jerusalem"
+                    ]
                   },
                   "interestOptionIds": {
                     "type": "array",
-                    "items": { "type": "string" },
-                    "example": ["fashion"]
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "fashion"
+                    ]
                   }
                 }
               },
               "example": {
                 "homeCityLabel": "Jerusalem",
-                "raidCityOptionIds": ["jerusalem"],
-                "interestOptionIds": ["8c4e2a1b-9d0f-4e3a-b2c1-0f9e8d7c6b5a"]
+                "raidCityOptionIds": [
+                  "jerusalem"
+                ],
+                "interestOptionIds": [
+                  "8c4e2a1b-9d0f-4e3a-b2c1-0f9e8d7c6b5a"
+                ]
               }
             }
           }
@@ -14208,11 +14836,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": true },
-                    "msg": { "type": "string", "example": "Profile preferences updated" },
-                    "preferences": { "type": "boolean", "example": true },
-                    "data": { "$ref": "#/components/schemas/UserProfilePreferenceSavedDto" },
-                    "user": { "$ref": "#/components/schemas/UserDto" }
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Profile preferences updated"
+                    },
+                    "preferences": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserProfilePreferenceSavedDto"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/UserDto"
+                    }
                   }
                 },
                 "example": {
@@ -14222,10 +14863,30 @@
                   "data": {
                     "homeAddress": "Ben Yehuda St 123",
                     "homeCityLabel": "Jerusalem",
-                    "gender": { "id": "uuid", "type": "GENDER", "label": "Male" },
-                    "ageRange": { "id": "uuid", "type": "AGE_RANGE", "label": "25 - 34" },
-                    "raidCities": [{ "id": "uuid", "type": "RAID_CITY", "label": "Jerusalem" }],
-                    "interests": [{ "id": "uuid", "type": "INTEREST", "label": "Fashion" }]
+                    "gender": {
+                      "id": "uuid",
+                      "type": "GENDER",
+                      "label": "Male"
+                    },
+                    "ageRange": {
+                      "id": "uuid",
+                      "type": "AGE_RANGE",
+                      "label": "25 - 34"
+                    },
+                    "raidCities": [
+                      {
+                        "id": "uuid",
+                        "type": "RAID_CITY",
+                        "label": "Jerusalem"
+                      }
+                    ],
+                    "interests": [
+                      {
+                        "id": "uuid",
+                        "type": "INTEREST",
+                        "label": "Fashion"
+                      }
+                    ]
                   }
                 }
               }
@@ -14235,8 +14896,23 @@
             "description": "Validation error, empty body, or invalid option ids",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
-                "example": { "status": false, "msg": "At least one field is required to update" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "status": false,
+                  "msg": "At least one field is required to update"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
               }
             }
           },
@@ -14244,7 +14920,9 @@
             "description": "No saved preferences yet",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "example": {
                   "status": false,
                   "msg": "Profile preferences not found. Complete onboarding with POST /profile-preferences first."
@@ -14252,8 +14930,16 @@
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-          "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -14464,9 +15150,17 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "boolean", "example": true },
-                    "msg": { "type": "string", "example": "Game configuration updated" },
-                    "data": { "type": "object" }
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Game configuration updated"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
                   }
                 }
               }
@@ -14474,7 +15168,13 @@
           },
           "400": {
             "description": "Validation error",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -14650,6 +15350,288 @@
         "responses": {
           "200": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/test/push-navigation/types": {
+      "get": {
+        "tags": [
+          "Test"
+        ],
+        "summary": "List push navigation test cases",
+        "description": "Returns every FCM `data.type` value with default title/body, category, and ID fields. Optional: set env PUSH_NAV_TEST_SECRET and pass `?secret=` or header x-push-test-secret.",
+        "parameters": [
+          {
+            "name": "secret",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required when PUSH_NAV_TEST_SECRET is set on the server."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "rare_drop_spawned"
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "eventKind": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "idFields": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "placeholderIds": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "placeholderIds": {
+                      "type": "object"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "type": "rare_drop_spawned",
+                      "category": "rareDropAlerts",
+                      "idFields": [
+                        "dropId"
+                      ]
+                    }
+                  ],
+                  "hint": "POST /api/test/push-navigation with fcmToken + type"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Push navigation test is disabled"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Push navigation test is disabled"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test/push-navigation": {
+      "post": {
+        "tags": [
+          "Test"
+        ],
+        "summary": "Send push navigation test (FCM data)",
+        "description": "Sends a real FCM notification with the same `data` shape as production (`PushNotificationFcmData`). **No auth.** Body schema: `PushNavigationTestRequest`. List types: `GET /test/push-navigation/types`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushNavigationTestRequest"
+              },
+              "example": {
+                "fcmToken": "YOUR_DEVICE_FCM_TOKEN",
+                "type": "zone_under_attack",
+                "zoneId": "real-zone-uuid-optional"
+              },
+              "examples": {
+                "zoneUnderAttack": {
+                  "summary": "Zone under attack (deep link to zone)",
+                  "value": {
+                    "fcmToken": "YOUR_DEVICE_FCM_TOKEN",
+                    "type": "zone_under_attack",
+                    "zoneId": "real-zone-uuid-optional"
+                  }
+                },
+                "rareDropSpawned": {
+                  "summary": "Rare drop on map",
+                  "value": {
+                    "fcmToken": "YOUR_DEVICE_FCM_TOKEN",
+                    "type": "rare_drop_spawned",
+                    "dropId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2"
+                  }
+                },
+                "coinRushLive": {
+                  "summary": "Coin Rush live",
+                  "value": {
+                    "fcmToken": "YOUR_DEVICE_FCM_TOKEN",
+                    "type": "coin_rush_live",
+                    "eventId": "cccccccc-cccc-4ccc-8ccc-ccccccccccc3"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushNavigationTestResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Navigation test push sent",
+                  "sent": {
+                    "title": "[Test] Your zone is under attack",
+                    "body": "Someone started capturing your zone.",
+                    "data": {
+                      "category": "zoneAttackSnatch",
+                      "type": "zone_under_attack",
+                      "zoneId": "real-zone-uuid-optional"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "fcmToken is required"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "fcmToken is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Push navigation test is disabled"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Push navigation test is disabled"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Failed to send navigation test push"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Failed to send navigation test push"
+                }
+              }
+            }
           }
         }
       }
@@ -14841,7 +15823,9 @@
         "required": true,
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/CreateCommercialVoucherRequest" },
+            "schema": {
+              "$ref": "#/components/schemas/CreateCommercialVoucherRequest"
+            },
             "example": {
               "title": "Free Coffee",
               "description": "Any size",
@@ -14861,9 +15845,17 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": { "type": "boolean", "example": true },
-                  "msg": { "type": "string", "example": "Voucher created successfully" },
-                  "data": { "$ref": "#/components/schemas/CommercialVoucherDto" }
+                  "status": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "msg": {
+                    "type": "string",
+                    "example": "Voucher created successfully"
+                  },
+                  "data": {
+                    "$ref": "#/components/schemas/CommercialVoucherDto"
+                  }
                 }
               }
             }
@@ -14871,15 +15863,33 @@
         },
         "400": {
           "description": "Validation error",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         },
         "401": {
           "description": "Unauthorized",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         },
         "500": {
           "description": "Server error",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         }
       }
     },
@@ -14902,10 +15912,15 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": { "type": "boolean", "example": true },
+                  "status": {
+                    "type": "boolean",
+                    "example": true
+                  },
                   "data": {
                     "type": "array",
-                    "items": { "$ref": "#/components/schemas/CommercialVoucherDto" }
+                    "items": {
+                      "$ref": "#/components/schemas/CommercialVoucherDto"
+                    }
                   }
                 }
               }
@@ -14914,11 +15929,23 @@
         },
         "401": {
           "description": "Unauthorized",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         },
         "500": {
           "description": "Server error",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         }
       }
     }
@@ -15018,15 +16045,23 @@
   },
   "/admin/brand-months": {
     "post": {
-      "tags": ["Admin - Brand Month"],
+      "tags": [
+        "Admin - Brand Month"
+      ],
       "summary": "Create Brand Month campaign",
       "description": "Monthly season: xpTarget, FCFS inventoryRemaining (starts equal to inventoryTotal), INLINE or COMMERCIAL_VOUCHER reward.",
-      "security": [{ "bearerAuth": [] }],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
       "requestBody": {
         "required": true,
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/CreateBrandMonthRequest" },
+            "schema": {
+              "$ref": "#/components/schemas/CreateBrandMonthRequest"
+            },
             "examples": {
               "inlineReward": {
                 "summary": "INLINE grand prize",
@@ -15070,9 +16105,17 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": { "type": "boolean", "example": true },
-                  "msg": { "type": "string", "example": "Brand Month campaign created" },
-                  "data": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                  "status": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "msg": {
+                    "type": "string",
+                    "example": "Brand Month campaign created"
+                  },
+                  "data": {
+                    "$ref": "#/components/schemas/BrandMonthCampaignAdminDto"
+                  }
                 }
               },
               "example": {
@@ -15093,22 +16136,46 @@
         },
         "400": {
           "description": "Validation or missing voucher/theme",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         },
         "401": {
           "description": "Unauthorized",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         },
         "500": {
           "description": "Server error",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
         }
       }
     },
     "get": {
-      "tags": ["Admin - Brand Month"],
+      "tags": [
+        "Admin - Brand Month"
+      ],
       "summary": "List Brand Month campaigns",
-      "security": [{ "bearerAuth": [] }],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
       "responses": {
         "200": {
           "description": "All campaigns (newest first)",
@@ -15117,27 +16184,66 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": { "type": "boolean", "example": true },
+                  "status": {
+                    "type": "boolean",
+                    "example": true
+                  },
                   "data": {
                     "type": "array",
-                    "items": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                    "items": {
+                      "$ref": "#/components/schemas/BrandMonthCampaignAdminDto"
+                    }
                   }
                 }
               }
             }
           }
         },
-        "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        "401": {
+          "description": "Unauthorized",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        }
       }
     }
   },
   "/admin/brand-months/{id}": {
     "get": {
-      "tags": ["Admin - Brand Month"],
+      "tags": [
+        "Admin - Brand Month"
+      ],
       "summary": "Get Brand Month campaign by id",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
       "responses": {
         "200": {
           "description": "Campaign found",
@@ -15146,27 +16252,68 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": { "type": "boolean", "example": true },
-                  "data": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                  "status": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "data": {
+                    "$ref": "#/components/schemas/BrandMonthCampaignAdminDto"
+                  }
                 }
               }
             }
           }
         },
-        "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        "404": {
+          "description": "Not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        }
       }
     },
     "put": {
-      "tags": ["Admin - Brand Month"],
+      "tags": [
+        "Admin - Brand Month"
+      ],
       "summary": "Update Brand Month campaign",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
       "requestBody": {
         "required": true,
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/UpdateBrandMonthRequest" },
+            "schema": {
+              "$ref": "#/components/schemas/UpdateBrandMonthRequest"
+            },
             "example": {
               "inventoryRemaining": 25,
               "xpTarget": 2000,
@@ -15183,24 +16330,75 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": { "type": "boolean", "example": true },
-                  "msg": { "type": "string", "example": "Campaign updated" },
-                  "data": { "$ref": "#/components/schemas/BrandMonthCampaignAdminDto" }
+                  "status": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "msg": {
+                    "type": "string",
+                    "example": "Campaign updated"
+                  },
+                  "data": {
+                    "$ref": "#/components/schemas/BrandMonthCampaignAdminDto"
+                  }
                 }
               }
             }
           }
         },
-        "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-        "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        "400": {
+          "description": "Validation error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        }
       }
     },
     "delete": {
-      "tags": ["Admin - Brand Month"],
+      "tags": [
+        "Admin - Brand Month"
+      ],
       "summary": "Delete Brand Month campaign",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
       "responses": {
         "200": {
           "description": "Deleted",
@@ -15209,16 +16407,43 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": { "type": "boolean", "example": true },
-                  "msg": { "type": "string", "example": "Campaign deleted" }
+                  "status": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "msg": {
+                    "type": "string",
+                    "example": "Campaign deleted"
+                  }
                 }
               },
-              "example": { "status": true, "msg": "Campaign deleted" }
+              "example": {
+                "status": true,
+                "msg": "Campaign deleted"
+              }
             }
           }
         },
-        "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-        "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        "404": {
+          "description": "Not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -15242,6 +16467,10 @@
     {
       "name": "Merchant Single Player",
       "description": "Single Player Phase 2 — Merchant Single Player"
+    },
+    {
+      "name": "Test",
+      "description": "Push notification navigation QA (FCM). Not for production unless PUSH_NAV_TEST_SECRET is configured."
     }
   ]
 }

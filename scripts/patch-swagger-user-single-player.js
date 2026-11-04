@@ -195,19 +195,167 @@ Object.assign(swagger.components.schemas, {
       quantity: { type: "integer", minimum: 1, example: 1 },
     },
   },
-  UserNotificationPreference: {
+  PushNotificationFcmData: {
+    type: "object",
+    description:
+      "FCM `data` map on server-sent pushes (all values strings). Sent alongside notification title/body. See docs/NOTIFICATIONS.md and docs/NOTIFICATION_TEST_API.md.",
+    properties: {
+      category: {
+        type: "string",
+        description: "Matches a UserNotificationPreference toggle key when the push is category-gated.",
+        enum: [
+          "dailyDropReminders",
+          "rareDropAlerts",
+          "raidZoneShield",
+          "zoneAttackSnatch",
+          "b2bRivalryNearby",
+          "rewardsVoucher",
+          "eventsCoinRush",
+          "promotionalSponsored",
+        ],
+        example: "rareDropAlerts",
+      },
+      type: {
+        type: "string",
+        description: "Deep-link routing action (snake_case).",
+        enum: [
+          "rare_drop_spawned",
+          "shield_expiring",
+          "zone_under_attack",
+          "zone_snatched",
+          "b2b_rivalry_milestone",
+          "b2b_reward_claimed",
+          "brand_month_reward",
+          "coin_rush_starts_20m",
+          "coin_rush_starts_10m",
+          "coin_rush_live",
+          "coin_rush_completed",
+          "coin_rush_scheduled_nearby",
+          "live_raid_new_nearby",
+          "live_raid_starts_20m",
+          "live_raid_starts_10m",
+          "live_raid_live",
+          "live_raid_completed",
+          "referral_reward",
+          "test",
+        ],
+        example: "rare_drop_spawned",
+      },
+      zoneId: { type: "string", format: "uuid", description: "SinglePlayerZone.id" },
+      dropId: { type: "string", format: "uuid", description: "DailyDrop.id" },
+      eventId: {
+        type: "string",
+        format: "uuid",
+        description: "LiveEvent.id or CoinRushEvent.id (use with eventKind).",
+      },
+      eventKind: { type: "string", enum: ["live_raid", "coin_rush"], example: "coin_rush" },
+      claimId: { type: "string", format: "uuid", description: "SinglePlayerB2bClaim.id" },
+      userVoucherId: { type: "string", format: "uuid", description: "UserVoucher.id" },
+      campaignId: { type: "string", format: "uuid", description: "BrandMonthCampaign.id" },
+      milestoneHours: { type: "string", example: "24", description: "B2B rivalry milestone hours." },
+    },
+    example: {
+      category: "rareDropAlerts",
+      type: "rare_drop_spawned",
+      dropId: "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
+    },
+  },
+  PushNavigationTestRequest: {
+    type: "object",
+    required: ["fcmToken", "type"],
+    description:
+      "POST /test/push-navigation — send a device push with production FCM `data` for navigation QA.",
+    properties: {
+      fcmToken: {
+        type: "string",
+        description: "Device FCM token from the mobile app.",
+        example: "YOUR_DEVICE_FCM_TOKEN",
+      },
+      type: {
+        type: "string",
+        description: "Deep-link routing action. Use GET /test/push-navigation/types for the full list.",
+        enum: [
+          "rare_drop_spawned",
+          "shield_expiring",
+          "zone_under_attack",
+          "zone_snatched",
+          "b2b_rivalry_milestone",
+          "b2b_reward_claimed",
+          "brand_month_reward",
+          "coin_rush_starts_20m",
+          "coin_rush_starts_10m",
+          "coin_rush_live",
+          "coin_rush_completed",
+          "coin_rush_scheduled_nearby",
+          "live_raid_new_nearby",
+          "live_raid_starts_20m",
+          "live_raid_starts_10m",
+          "live_raid_live",
+          "live_raid_completed",
+          "referral_reward",
+          "test",
+        ],
+        example: "zone_under_attack",
+      },
+      title: { type: "string", description: "Optional notification title override." },
+      body: { type: "string", description: "Optional notification body override." },
+      secret: {
+        type: "string",
+        description: "Required when server env PUSH_NAV_TEST_SECRET is set.",
+      },
+      zoneId: { type: "string", format: "uuid", description: "SinglePlayerZone.id" },
+      dropId: { type: "string", format: "uuid", description: "DailyDrop.id" },
+      eventId: { type: "string", format: "uuid", description: "LiveEvent or CoinRushEvent id" },
+      eventKind: { type: "string", enum: ["live_raid", "coin_rush"] },
+      claimId: { type: "string", format: "uuid" },
+      userVoucherId: { type: "string", format: "uuid" },
+      campaignId: { type: "string", format: "uuid" },
+      milestoneHours: { type: "string", example: "24" },
+      category: { type: "string", description: "Override FCM data.category (preference key)." },
+    },
+    example: {
+      fcmToken: "YOUR_DEVICE_FCM_TOKEN",
+      type: "zone_under_attack",
+      zoneId: "real-zone-uuid-optional",
+    },
+  },
+  PushNavigationTestResponse: {
     type: "object",
     properties: {
-      userId: { type: "string" },
-      masterEnabled: { type: "boolean" },
-      dailyDropReminders: { type: "boolean" },
-      rareDropAlerts: { type: "boolean" },
-      raidZoneShield: { type: "boolean" },
-      zoneAttackSnatch: { type: "boolean" },
-      b2bRivalryNearby: { type: "boolean" },
-      rewardsVoucher: { type: "boolean" },
-      eventsCoinRush: { type: "boolean" },
-      promotionalSponsored: { type: "boolean" },
+      success: { type: "boolean", example: true },
+      message: { type: "string", example: "Navigation test push sent" },
+      sent: {
+        type: "object",
+        properties: {
+          title: { type: "string", example: "[Test] Your zone is under attack" },
+          body: { type: "string" },
+          data: { $ref: "#/components/schemas/PushNotificationFcmData" },
+        },
+      },
+    },
+  },
+  UserNotificationPreference: {
+    type: "object",
+    description:
+      "In-app notification toggles. Server push honors masterEnabled + each category (except dailyDropReminders — client-local reminders only). FCM data.category uses these keys.",
+    properties: {
+      userId: { type: "string", format: "uuid" },
+      masterEnabled: { type: "boolean", description: "Global push master switch." },
+      dailyDropReminders: {
+        type: "boolean",
+        description: "Client-only: schedule local daily-drop reminders when true. Backend does not send this category via FCM.",
+      },
+      rareDropAlerts: { type: "boolean", description: "Rare daily drop spawned (FCM includes dropId)." },
+      raidZoneShield: { type: "boolean", description: "Shield expiring soon on owned zone (zoneId)." },
+      zoneAttackSnatch: { type: "boolean", description: "Zone under attack / snatched (zoneId)." },
+      b2bRivalryNearby: { type: "boolean", description: "Nearby B2B hold milestone (zoneId, milestoneHours)." },
+      rewardsVoucher: { type: "boolean", description: "B2B claim and Brand Month voucher (claimId / userVoucherId)." },
+      eventsCoinRush: { type: "boolean", description: "Coin Rush scheduled, reminders, live, completed (eventId)." },
+      promotionalSponsored: {
+        type: "boolean",
+        description: "Live raid geo alerts and merchant new-raid nearby (eventId, eventKind live_raid).",
+      },
+      updatedAt: { type: "string", format: "date-time" },
     },
   },
   B2bClaimZoneSummary: {
@@ -1069,6 +1217,8 @@ swagger.paths["/user/notification-preferences"] = {
   get: {
     tags: ["User"],
     summary: "Get notification preferences",
+    description:
+      "Returns master + per-category toggles. Server FCM payloads include `data.category` matching these keys (see components.schemas.PushNotificationFcmData). `dailyDropReminders` is for on-device scheduling only.",
     security: bearer,
     responses: withAuth({
       200: okJson(
@@ -1080,13 +1230,30 @@ swagger.paths["/user/notification-preferences"] = {
             data: { $ref: "#/components/schemas/UserNotificationPreference" },
           },
         },
-        { status: true, data: { userId: "uuid", masterEnabled: true, zoneAttackSnatch: true } }
+        {
+          status: true,
+          data: {
+            userId: "uuid",
+            masterEnabled: true,
+            dailyDropReminders: true,
+            rareDropAlerts: true,
+            raidZoneShield: true,
+            zoneAttackSnatch: true,
+            b2bRivalryNearby: true,
+            rewardsVoucher: true,
+            eventsCoinRush: true,
+            promotionalSponsored: true,
+            updatedAt: "2026-11-03T12:00:00.000Z",
+          },
+        }
       ),
     }),
   },
   patch: {
     tags: ["User"],
     summary: "Update notification preferences",
+    description:
+      "Patch any subset of boolean fields (unknown keys rejected). Does not affect FCM token — use PATCH /user/update-fcm.",
     security: bearer,
     requestBody: {
       content: {
@@ -1095,7 +1262,10 @@ swagger.paths["/user/notification-preferences"] = {
             type: "object",
             properties: {
               masterEnabled: { type: "boolean" },
-              dailyDropReminders: { type: "boolean" },
+              dailyDropReminders: {
+                type: "boolean",
+                description: "Client-local daily drop reminders (not server push).",
+              },
               rareDropAlerts: { type: "boolean" },
               raidZoneShield: { type: "boolean" },
               zoneAttackSnatch: { type: "boolean" },
@@ -1125,6 +1295,11 @@ swagger.paths["/user/notification-preferences"] = {
     }),
   },
 };
+
+if (swagger.paths["/user/update-fcm"]?.patch) {
+  swagger.paths["/user/update-fcm"].patch.description =
+    "Register the device FCM token for server push. Outbound messages include notification title/body plus FCM `data` (schema PushNotificationFcmData) for deep linking.";
+}
 
 swagger.paths["/single-player/daily-drop"] = {
   post: {
@@ -1348,6 +1523,128 @@ swagger.paths["/single-player/vouchers"] = {
   },
 };
 
+swagger.paths["/test/push-navigation/types"] = {
+  get: {
+    tags: ["Test"],
+    summary: "List push navigation test cases",
+    description:
+      "Returns every FCM `data.type` value with default title/body, category, and ID fields. Optional: set env PUSH_NAV_TEST_SECRET and pass `?secret=` or header x-push-test-secret.",
+    parameters: [
+      {
+        name: "secret",
+        in: "query",
+        required: false,
+        schema: { type: "string" },
+        description: "Required when PUSH_NAV_TEST_SECRET is set on the server.",
+      },
+    ],
+    responses: {
+      200: okJson(
+        "Catalog",
+        {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            data: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  type: { type: "string", example: "rare_drop_spawned" },
+                  category: { type: "string", nullable: true },
+                  title: { type: "string" },
+                  body: { type: "string" },
+                  eventKind: { type: "string", nullable: true },
+                  idFields: { type: "array", items: { type: "string" } },
+                  placeholderIds: { type: "object", additionalProperties: { type: "string" } },
+                },
+              },
+            },
+            placeholderIds: { type: "object" },
+            hint: { type: "string" },
+          },
+        },
+        {
+          success: true,
+          data: [{ type: "rare_drop_spawned", category: "rareDropAlerts", idFields: ["dropId"] }],
+          hint: "POST /api/test/push-navigation with fcmToken + type",
+        }
+      ),
+      403: err("Forbidden", "Push navigation test is disabled"),
+    },
+  },
+};
+
+swagger.paths["/test/push-navigation"] = {
+  post: {
+    tags: ["Test"],
+    summary: "Send push navigation test (FCM data)",
+    description:
+      "Sends a real FCM notification with the same `data` shape as production (`PushNotificationFcmData`). **No auth.** Body schema: `PushNavigationTestRequest`. List types: `GET /test/push-navigation/types`.",
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/PushNavigationTestRequest" },
+          example: {
+            fcmToken: "YOUR_DEVICE_FCM_TOKEN",
+            type: "zone_under_attack",
+            zoneId: "real-zone-uuid-optional",
+          },
+          examples: {
+            zoneUnderAttack: {
+              summary: "Zone under attack (deep link to zone)",
+              value: {
+                fcmToken: "YOUR_DEVICE_FCM_TOKEN",
+                type: "zone_under_attack",
+                zoneId: "real-zone-uuid-optional",
+              },
+            },
+            rareDropSpawned: {
+              summary: "Rare drop on map",
+              value: {
+                fcmToken: "YOUR_DEVICE_FCM_TOKEN",
+                type: "rare_drop_spawned",
+                dropId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2",
+              },
+            },
+            coinRushLive: {
+              summary: "Coin Rush live",
+              value: {
+                fcmToken: "YOUR_DEVICE_FCM_TOKEN",
+                type: "coin_rush_live",
+                eventId: "cccccccc-cccc-4ccc-8ccc-ccccccccccc3",
+              },
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: okJson(
+        "Sent",
+        { $ref: "#/components/schemas/PushNavigationTestResponse" },
+        {
+          success: true,
+          message: "Navigation test push sent",
+          sent: {
+            title: "[Test] Your zone is under attack",
+            body: "Someone started capturing your zone.",
+            data: {
+              category: "zoneAttackSnatch",
+              type: "zone_under_attack",
+              zoneId: "real-zone-uuid-optional",
+            },
+          },
+        }
+      ),
+      400: err("Bad request", "fcmToken is required"),
+      403: err("Forbidden", "Push navigation test is disabled"),
+      500: err("Internal server error", "Failed to send navigation test push"),
+    },
+  },
+};
+
 const USER_PATH_PREFIXES = ["/single-player", "/store/all-items", "/store/purchase", "/user/notification-preferences"];
 
 for (const pathKey of Object.keys(swagger.paths)) {
@@ -1366,6 +1663,15 @@ for (const pathKey of Object.keys(swagger.paths)) {
       }
     }
   }
+}
+
+if (!swagger.tags) swagger.tags = [];
+if (!swagger.tags.some((t) => t.name === "Test")) {
+  swagger.tags.unshift({
+    name: "Test",
+    description:
+      "Push navigation QA: POST /test/push-navigation (body: PushNavigationTestRequest), GET /test/push-navigation/types.",
+  });
 }
 
 fs.writeFileSync(swaggerPath, `${JSON.stringify(swagger, null, 2)}\n`);

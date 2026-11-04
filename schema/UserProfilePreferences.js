@@ -1,6 +1,5 @@
 import Joi from "joi";
 
-/** UUID or admin seed slug (e.g. male, 25_34, fashion). */
 const profileOptionRef = Joi.string().trim().min(1);
 
 export const SaveProfilePreferencesSchema = (payload) => {

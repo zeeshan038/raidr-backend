@@ -14,6 +14,10 @@ export const SP_DEFAULTS = {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/** Must match `cron/passiveCoins.js` interval (5 minutes). */
+export const PASSIVE_COINS_CRON_INTERVAL_MS = 5 * 60 * 1000;
+export const PASSIVE_COINS_CRON_INTERVAL_HOURS = 5 / 60;
+
 export const isShieldActive = (zone, now = new Date()) => {
   if (!zone?.shieldExpiresAt) return false;
   return new Date(zone.shieldExpiresAt) > now;
@@ -60,6 +64,73 @@ export const deriveZonePlayerStatus = (zone, userId, now = new Date()) => {
     return "conquered_by_me";
   }
   return "conquered_by_others";
+};
+
+/**
+ * NORMAL zone passive bar: progress vs top earner on this zone (100% = leader's coins from zone).
+ * @param {object} ledgerStats - { yourCoins, leaderCoins, leaderUserId? }
+ */
+export const computeNormalPassiveCoinProgress = (zone, ledgerStats = {}) => {
+  if (zone?.zoneType !== "NORMAL" || !zone.ownedAt) {
+    return null;
+  }
+
+  const coinsPerHour = zone.coinsPerHour ?? 0;
+  const yourCoins = Math.max(0, Math.floor(ledgerStats.yourCoins ?? 0));
+  const leaderCoins = Math.max(0, Math.floor(ledgerStats.leaderCoins ?? 0));
+  const barMax = Math.max(leaderCoins, yourCoins);
+  const progressPercent =
+    barMax <= 0 ? 0 : Math.min(100, Math.round((yourCoins / barMax) * 100));
+
+  return {
+    coinsPerHour,
+    yourCoinsFromZone: yourCoins,
+    leaderCoinsFromZone: leaderCoins,
+    progressPercent,
+    isLeader: yourCoins > 0 && yourCoins >= leaderCoins,
+    leaderUserId: ledgerStats.leaderUserId ?? null,
+    ownedAt: zone.ownedAt instanceof Date ? zone.ownedAt.toISOString() : zone.ownedAt,
+  };
+};
+
+/** Shown during snatch — passive rate after capture completes (NORMAL + B2B). */
+export const computeZonePassiveIncomePreview = (zone) => {
+  if (zone?.zoneType !== "NORMAL" && zone?.zoneType !== "B2B") return null;
+  const coinsPerHour = zone.coinsPerHour ?? 0;
+  return {
+    coinsPerHour,
+    coinsPerAccrualCycle: Math.floor(coinsPerHour * PASSIVE_COINS_CRON_INTERVAL_HOURS),
+    accrualCycleMinutes: PASSIVE_COINS_CRON_INTERVAL_MS / (60 * 1000),
+  };
+};
+
+/** NORMAL snatch preview only (legacy callers). */
+export const computeNormalPassiveIncomePreview = (zone) =>
+  zone?.zoneType === "NORMAL" ? computeZonePassiveIncomePreview(zone) : null;
+
+/**
+ * B2B owned during hold: coin bar vs max for this hold window.
+ * maxCoinsFromHold = holdDurationHours × coinsPerHour.
+ * coinsEarnedInHold = passive ledger total for this user+zone (cron increments).
+ */
+export const computeB2bPassiveCoinProgress = (zone, coinsEarnedFromZone = 0) => {
+  if (zone?.zoneType !== "B2B" || !zone.holdDurationHours || !zone.holdStartedAt) {
+    return null;
+  }
+  const coinsPerHour = zone.coinsPerHour ?? 0;
+  const maxCoinsFromHold = Math.floor(zone.holdDurationHours * coinsPerHour);
+  const coinsEarnedInHold = Math.max(0, Math.floor(coinsEarnedFromZone ?? 0));
+  const coinProgressPercent =
+    maxCoinsFromHold <= 0
+      ? 0
+      : Math.min(100, Math.round((coinsEarnedInHold / maxCoinsFromHold) * 100));
+
+  return {
+    coinsPerHour,
+    maxCoinsFromHold,
+    coinsEarnedInHold,
+    coinProgressPercent,
+  };
 };
 
 export const computeB2bHoldProgress = (zone, now = new Date()) => {
@@ -179,6 +250,7 @@ export const formatSinglePlayerZoneForClient = (
             ),
           }
         : null,
+    normal: null,
   };
 };
 

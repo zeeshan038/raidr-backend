@@ -2,6 +2,8 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "./singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "./pushNotificationPayload.js";
+import { awardRaidrCoins, getEconomyConfig } from "./economyConfig.js";
 
 export const BRAND_MONTH_REWARD_TYPE = {
   INLINE: "INLINE",
@@ -230,7 +232,12 @@ export const tryClaimBrandMonthPrize = async (
         userId,
         SP_NOTIFICATION_CATEGORIES.REWARDS,
         "Brand Month reward unlocked!",
-        `You earned: ${title}. Open RAIDR to view your voucher.`
+        `You earned: ${title}. Open RAIDR to view your voucher.`,
+        buildPushData({
+          type: PUSH_TYPE.BRAND_MONTH_REWARD,
+          campaignId,
+          userVoucherId,
+        })
       );
     }
 
@@ -274,6 +281,11 @@ export const applyBrandMonthXp = async (
       campaignXp: { increment: amount },
     },
   });
+
+  const economy = await getEconomyConfig(prisma);
+  if (economy.brandMonthActionCoins > 0) {
+    await awardRaidrCoins(prisma, userId, economy.brandMonthActionCoins, "brand_month");
+  }
 
   const freshCampaign = await prisma.brandMonthCampaign.findUnique({
     where: { id: campaign.id },

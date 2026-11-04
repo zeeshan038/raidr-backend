@@ -1,5 +1,12 @@
 import { prisma } from '../config/db.js';
 import { getSpGameConfig } from '../utils/singlePlayerConfig.js';
+import { applyPassiveCoinsWithDailyCap, economyFromConfigRow } from '../utils/economyConfig.js';
+import {
+  isSinglePlayerZoneTableReady,
+  logSinglePlayerCronSkippedOnce,
+  handleSinglePlayerSchemaError,
+} from '../utils/singlePlayerSchemaReady.js';
+import { incrementZonePassiveLedger } from '../utils/singlePlayerZonePassiveLedger.js';
 
 /**
  * @Description Job that awards passive income to players who own a shielded Single Player Zone
@@ -11,6 +18,11 @@ export const startPassiveCoinsCron = () => {
 
     const runPassiveCoins = async () => {
         try {
+            if (!(await isSinglePlayerZoneTableReady(prisma))) {
+                logSinglePlayerCronSkippedOnce('Passive coins');
+                return;
+            }
+
             const now = new Date();
             
             // Passive income for all owned zones (Phase 2 — not limited to shield window)
@@ -23,44 +35,53 @@ export const startPassiveCoinsCron = () => {
 
             if (shieldedZones.length === 0) return;
 
-            // Group coins by owner to avoid multiple database calls for the same user
-            const ownerCoins = {};
-            for (const zone of shieldedZones) {
-                const coinsToAward = Math.floor(zone.coinsPerHour * CRON_INTERVAL_HOURS);
-                if (coinsToAward > 0) {
-                    ownerCoins[zone.currentOwnerId] = (ownerCoins[zone.currentOwnerId] || 0) + coinsToAward;
-                }
-            }
-
-            // Fetch users to check for active boosts
-            const userIds = Object.keys(ownerCoins);
-            const [users, configRow] = await Promise.all([
-                prisma.user.findMany({
-                    where: { id: { in: userIds } },
-                    select: { id: true, coinBoostMultiplier: true, coinBoostExpiresAt: true }
-                }),
+            const [configRow, users] = await Promise.all([
                 getSpGameConfig(prisma),
+                prisma.user.findMany({
+                    where: {
+                        id: {
+                            in: [...new Set(shieldedZones.map((z) => z.currentOwnerId))],
+                        },
+                    },
+                    select: { id: true, coinBoostMultiplier: true, coinBoostExpiresAt: true },
+                }),
             ]);
 
+            const economy = economyFromConfigRow(configRow);
             const vipMin = configRow.empireVipMinOwnedZones ?? 5;
-            const vipMultiplier = configRow.vipRewardMultiplier ?? 1.0;
+            const vipMultiplier = configRow.vipRewardMultiplier ?? 1.25;
+            const dailyCap = economy.passiveCoinsDailyCapPerUser;
 
             const ownedCounts = {};
-            for (const z of shieldedZones) {
-                ownedCounts[z.currentOwnerId] = (ownedCounts[z.currentOwnerId] || 0) + 1;
+            /** @type {Record<string, { zoneId: string, base: number }[]>} */
+            const ownerZoneBases = {};
+
+            for (const zone of shieldedZones) {
+                ownedCounts[zone.currentOwnerId] = (ownedCounts[zone.currentOwnerId] || 0) + 1;
+                const coinsToAward = Math.floor(zone.coinsPerHour * CRON_INTERVAL_HOURS);
+                if (coinsToAward <= 0) continue;
+                if (!ownerZoneBases[zone.currentOwnerId]) {
+                    ownerZoneBases[zone.currentOwnerId] = [];
+                }
+                ownerZoneBases[zone.currentOwnerId].push({
+                    zoneId: zone.id,
+                    base: coinsToAward,
+                });
             }
-            
+
             const userMap = {};
             for (const user of users) {
                 userMap[user.id] = user;
             }
 
-            // Update user wallets concurrently
-            const updatePromises = Object.entries(ownerCoins).map(([ownerId, baseCoins]) => {
+            let awardedUsers = 0;
+            for (const [ownerId, zoneEntries] of Object.entries(ownerZoneBases)) {
+                const totalBase = zoneEntries.reduce((sum, z) => sum + z.base, 0);
+                if (totalBase <= 0) continue;
+
                 const user = userMap[ownerId];
-                let finalCoins = baseCoins;
-                
-                // Apply multiplier if boost is active
+                let finalCoins = totalBase;
+
                 if (user && user.coinBoostExpiresAt && user.coinBoostExpiresAt > now) {
                     const multiplier = user.coinBoostMultiplier || 1.0;
                     finalCoins = Math.floor(finalCoins * multiplier);
@@ -70,19 +91,43 @@ export const startPassiveCoinsCron = () => {
                     finalCoins = Math.floor(finalCoins * vipMultiplier);
                 }
 
-                return prisma.user.update({
-                    where: { id: ownerId },
-                    data: { raidrCoins: { increment: finalCoins } }
-                });
-            });
+                if (finalCoins <= 0) continue;
 
-            await Promise.all(updatePromises);
-            console.log(`[Cron] Passive coins awarded to ${updatePromises.length} players.`);
+                const { awarded } = await applyPassiveCoinsWithDailyCap(
+                    prisma,
+                    ownerId,
+                    finalCoins,
+                    dailyCap
+                );
+                if (awarded <= 0) continue;
+
+                awardedUsers += 1;
+
+                let allocated = 0;
+                for (let i = 0; i < zoneEntries.length; i++) {
+                    const entry = zoneEntries[i];
+                    const share =
+                        i === zoneEntries.length - 1
+                            ? awarded - allocated
+                            : Math.floor((awarded * entry.base) / totalBase);
+                    allocated += share;
+                    if (share > 0) {
+                        await incrementZonePassiveLedger(
+                            prisma,
+                            entry.zoneId,
+                            ownerId,
+                            share
+                        );
+                    }
+                }
+            }
+
+            console.log(`[Cron] Passive coins awarded to ${awardedUsers} players.`);
         } catch (error) {
+            if (handleSinglePlayerSchemaError(error, 'Passive coins')) return;
             console.error('[Cron] Error running passive coins job:', error);
         }
     };
 
-    // Run first iteration after the interval
     setInterval(runPassiveCoins, CRON_INTERVAL_MS);
 };

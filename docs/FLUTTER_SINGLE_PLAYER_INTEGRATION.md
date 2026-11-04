@@ -28,6 +28,7 @@ Rules:
 
 | File | Purpose |
 |------|---------|
+| [FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md](./FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md) | NORMAL zone coin bar + snatch timer (`normal.*`, `captureProgressPercent`) |
 | `docs/FLUTTER_SINGLE_PLAYER_INTEGRATION.md` | This document — contract + flows |
 | `docs/POSTMAN_SINGLE_PLAYER_V2.md` | Postman sequences (admin/merchant/user) |
 | `docs/FRONTEND_SINGLE_PLAYER_V2.md` | Short screen → endpoint map |
@@ -148,6 +149,7 @@ Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZo
 | `eligibilityNote` | string? | Marketing copy |
 | `meetsEligibility` | bool? | null if unknown; false = cannot capture B2B yet |
 | `b2b` | object? | null unless B2B zone |
+| `normal` | object? | null unless NORMAL zone (owned or mid-snatch preview) |
 | `owner` | `{ id, name, photoUrl? }? | Enemy/your profile snippet |
 
 **Dashboard-only extra on each zone:** `isConquered` (bool) — same as you owning it.
@@ -181,8 +183,51 @@ Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZo
 | `holdElapsedHours` | number | Progress |
 | `holdComplete` | bool | Timer done |
 | `holdStartedAt` | string | Starts when you **capture** B2B zone |
-| `progressPercent` | int | 0–100 for progress bar |
+| `progressPercent` | int | 0–100 **hold timer** bar |
 | `holdRemainingSeconds` | int | Countdown |
+
+#### `b2b.passiveIncome` (owned B2B during hold)
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `coinsPerHour` | int | Zone passive rate |
+| `maxCoinsFromHold` | int | `holdDurationHours × coinsPerHour` |
+| `coinsEarnedInHold` | int | Your passive from this zone (ledger) |
+| `coinProgressPercent` | int | 0–100 coin bar vs max hold |
+
+#### `b2b.passiveIncomePreview` (snatch)
+
+Same fields as `normal.passiveIncomePreview` — rate after capture.
+
+#### `normal` block (when `zoneType === NORMAL`)
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `passiveEarning` | object? | When **you own** the zone — coin progress bar (My Raids list, your zone detail) |
+| `passiveIncomePreview` | object? | During **active snatch** only — shows future `coinsPerHour` (bar starts at 0% after capture) |
+
+#### `normal.passiveEarning` (owned NORMAL zones)
+
+Competitive bar: **`progressPercent`** = your passive coins from this zone vs the **top earner on this zone** (100% = leader). See [FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md](./FRONTEND_NORMAL_ZONE_COIN_PROGRESS.md). B2B bars: [FRONTEND_B2B_ZONE_PROGRESS.md](./FRONTEND_B2B_ZONE_PROGRESS.md).
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `coinsPerHour` | int | Zone passive rate label |
+| `yourCoinsFromZone` | int | Your total passive coins earned from **this zone** |
+| `leaderCoinsFromZone` | int | Highest total any player earned from **this zone** |
+| `progressPercent` | int | **0–100** — `your / max(your, leader)` |
+| `isLeader` | bool | You are the top earner on this zone |
+| `leaderUserId` | string? | User id of top earner |
+| `ownedAt` | string | When you captured the zone |
+
+#### `activeCaptureSession` (snatch timer bar)
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `captureProgressPercent` | int | **0–100** snatch hold timer (NORMAL + B2B) |
+| `remainingSec` | int | Countdown |
+
+**Screen 5 (NORMAL):** use **`captureProgressPercent`** for the hold timer; after capture, use **`normal.passiveEarning.progressPercent`** for coins from this zone. **`capture/complete`** also returns `normal.passiveEarning` for the success screen.
 
 ### 2.3 `DashboardStats`
 
@@ -1093,6 +1138,9 @@ Legacy alias: `avatarId` instead of `storeItemId`.
 
 ### 4.14 Notification preferences
 
+Push notifications: [NOTIFICATIONS.md](./NOTIFICATIONS.md). Test API: [NOTIFICATION_TEST_API.md](./NOTIFICATION_TEST_API.md).  
+`dailyDropReminders` is honored **on device** (local reminders); the backend does not send daily-drop reminder pushes.
+
 #### `GET /user/notification-preferences`
 
 **200 OK**
@@ -1160,6 +1208,8 @@ Legacy alias: `avatarId` instead of `storeItemId`.
 - [ ] Location permission + continuous updates during capture
 - [ ] Guard shop: never call 410 purchase route
 - [ ] B2B: show hold bar from `b2b.hold.progressPercent`; claim button gated on `canClaim`
+- [ ] NORMAL owned: coin bar from `progressPercent`; label `yourCoinsFromZone` / `leaderCoinsFromZone`
+- [ ] NORMAL snatch: timer bar from `activeCaptureSession.captureProgressPercent`; preview rate via `normal.passiveIncomePreview`
 - [ ] Cache `game-config`; respect `maxOwnedZonesPerPlayer` on CTA
 - [ ] Optional: `GET /theme` for seasonal map skin
 - [ ] Settings: notification prefs PATCH

@@ -5,20 +5,25 @@ name: raidr-dev
 services:
   api:
     container_name: raidr_api_dev
-    ports:
+    # Override base ports (5001/3001) so dev does not bind prod host ports on same VPS.
+    ports: !override
       - "5002:5001"
-      - "3002:3001"
+      # 3002 is often taken locally (e.g. gizra-backend); use 3012 for dev WebSocket
+      - "3012:3001"
+    env_file:
+      - .env
     environment:
-      # Dev must NOT use prod Postgres (host :5432) or prod DB name from a copied .env.
+      # Overrides .env — dev must use dev Postgres service, not host 188.245.72.1:5432 (prod).
       - DATABASE_URL=postgresql://raidr_user:raidr_password@postgres:5432/raidr_db?schema=public
       - REDIS_URL=redis://redis:6379
 
   postgres:
     container_name: raidr_postgres_dev
-    ports:
-      - "5433:5432"
+    # No host port — avoids 5433 clashes on Mac (API uses @postgres:5432). psql via:
+    #   docker exec -it raidr_postgres_dev psql -U raidr_user -d raidr_db
+    ports: !override []
 
   redis:
     container_name: raidr_redis_dev
-    ports:
-      - "6380:6379"
+    # No host port — avoids clashing with other Redis on 6379/6380; API uses redis://redis:6379
+    ports: !override []

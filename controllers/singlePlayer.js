@@ -19,6 +19,12 @@ import {
   validateCaptureLocation,
 } from "../utils/singlePlayerZone.js";
 import {
+  buildB2bPassiveIncomeForZone,
+  buildNormalPassiveEarningForZone,
+  enrichB2bPassiveIncomeOnFormattedZones,
+  enrichNormalPassiveEarningOnFormattedZones,
+} from "../utils/singlePlayerZonePassiveLedger.js";
+import {
   getSpGameConfig,
   gameplayFromConfig,
   userVisibleZoneFilter,
@@ -34,7 +40,15 @@ import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "../utils/pushNotificationPayload.js";
 import { awardUserXp } from "../utils/awardUserXp.js";
+import {
+  awardRaidrCoins,
+  economyForClient,
+  economyFromConfigRow,
+  getEconomyConfig,
+} from "../utils/economyConfig.js";
+import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.js";
 import {
   findActiveBrandMonthCampaign,
   getBrandMonthStateForUser,
@@ -60,6 +74,7 @@ export const getGameConfigForUser = async (_req, res) => {
   try {
     const configRow = await getSpGameConfig(prisma);
     const config = gameplayFromConfig(configRow);
+    const economy = economyFromConfigRow(configRow);
     res.status(200).json({
       status: true,
       data: {
@@ -68,6 +83,7 @@ export const getGameConfigForUser = async (_req, res) => {
         allowedHoldDurationHours: parseJsonIntArray(configRow.allowedHoldDurationHours, [24, 48, 72]),
         dailyDropXpNormal: configRow.dailyDropXpNormal ?? 50,
         dailyDropXpRare: configRow.dailyDropXpRare ?? 150,
+        ...economyForClient(economy),
       },
     });
   } catch (error) {
@@ -172,6 +188,18 @@ export const getZones = async (req, res) => {
     const processedZones = zones.map((zone) =>
       formatSinglePlayerZoneForClient(zone, userId, now, gameplay, ownedZonesCount)
     );
+    await enrichNormalPassiveEarningOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
+    await enrichB2bPassiveIncomeOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
 
     res.status(200).json({
       status: totalZones > 0,
@@ -247,6 +275,9 @@ export const getZoneById = async (req, res) => {
       gameplay,
       ownedZonesCount
     );
+
+    await enrichNormalPassiveEarningOnFormattedZones(prisma, [data], [zone], userId);
+    await enrichB2bPassiveIncomeOnFormattedZones(prisma, [data], [zone], userId);
 
     if (userId) {
       data.activeCaptureSession = await getActiveCaptureSessionForUser(
@@ -425,7 +456,11 @@ export const startCapture = async (req, res) => {
         previousOwnerId,
         SP_NOTIFICATION_CATEGORIES.ATTACK_SNATCH,
         "Your zone is under attack",
-        `Someone started capturing "${zone.name}".`
+        `Someone started capturing "${zone.name}".`,
+        buildPushData({
+          type: PUSH_TYPE.ZONE_UNDER_ATTACK,
+          zoneId: zone.id,
+        })
       );
 
       const attacker = await prisma.user.findUnique({
@@ -678,15 +713,38 @@ export const completeCapture = async (req, res) => {
         previousOwnerId,
         SP_NOTIFICATION_CATEGORIES.ATTACK_SNATCH,
         "Zone snatched",
-        `You lost "${zone.name}" to another player.`
+        `You lost "${zone.name}" to another player.`,
+        buildPushData({
+          type: PUSH_TYPE.ZONE_SNATCHED,
+          zoneId: zone.id,
+        })
       );
     }
+
+    const ownedZoneSnapshot = {
+      ...zone,
+      ownedAt,
+      currentOwnerId: userId,
+      holdStartedAt: holdStartedAt ?? zone.holdStartedAt,
+    };
+    const passiveEarning =
+      zone.zoneType === "NORMAL"
+        ? await buildNormalPassiveEarningForZone(prisma, ownedZoneSnapshot, userId)
+        : null;
+    const normalPassive = passiveEarning ? { passiveEarning } : null;
+    const b2bPassiveIncome =
+      zone.zoneType === "B2B"
+        ? await buildB2bPassiveIncomeForZone(prisma, ownedZoneSnapshot, userId)
+        : null;
+    const b2bBlock = b2bPassiveIncome ? { passiveIncome: b2bPassiveIncome } : null;
 
     res.status(200).json({
       status: true,
       msg: previousOwnerId ? "Zone snatched successfully" : "Zone captured successfully",
       shieldExpiresAt,
       ownedAt,
+      normal: normalPassive,
+      b2b: b2bBlock,
     });
   } catch (error) {
     res.status(500).json({
@@ -745,7 +803,9 @@ export const getDailyDrop = async (req, res) => {
 
     const dropLocation = generateNearbyCoordinates(parseFloat(latitude), parseFloat(longitude), 50, 150);
     const isRare = Math.random() < 0.15; // 15% chance
+    const economy = await getEconomyConfig(prisma);
     const rewardType = isRare ? "2X_BOOST_24H" : "100_COINS";
+    const rewardAmount = isRare ? null : economy.dailyDropCoinsNormal;
 
     dailyDrop = await prisma.dailyDrop.create({
       data: {
@@ -753,7 +813,8 @@ export const getDailyDrop = async (req, res) => {
         latitude: dropLocation.latitude,
         longitude: dropLocation.longitude,
         isRare,
-        rewardType
+        rewardType,
+        rewardAmount,
       }
     });
 
@@ -763,7 +824,11 @@ export const getDailyDrop = async (req, res) => {
         userId,
         SP_NOTIFICATION_CATEGORIES.RARE_DROP,
         "Rare drop spawned!",
-        "A rare daily drop appeared nearby. Open the map to collect it before it's gone."
+        "A rare daily drop appeared nearby. Open the map to collect it before it's gone.",
+        buildPushData({
+          type: PUSH_TYPE.RARE_DROP_SPAWNED,
+          dropId: dailyDrop.id,
+        })
       );
     }
 
@@ -815,18 +880,17 @@ export const collectDailyDrop = async (req, res) => {
       });
     }
 
-    let rewardMsg = "You found 100 Coins!";
+    const economy = await getEconomyConfig(prisma);
+    let rewardMsg = "You found coins!";
     let rewardData = null;
 
     if (drop.rewardType === "100_COINS") {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { raidrCoins: { increment: drop.rewardAmount || 100 } }
-      });
-      rewardMsg = `You found ${drop.rewardAmount || 100} Coins!`;
+      const coinAmount = drop.rewardAmount ?? economy.dailyDropCoinsNormal;
+      await awardRaidrCoins(prisma, userId, coinAmount, "daily_drop");
+      rewardMsg = `You found ${coinAmount} Coins!`;
       rewardData = {
         type: "COINS",
-        amount: drop.rewardAmount || 100
+        amount: coinAmount,
       };
     } else if (drop.rewardType === "2X_BOOST_24H") {
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -837,11 +901,15 @@ export const collectDailyDrop = async (req, res) => {
           coinBoostExpiresAt: expiresAt
         }
       });
+      if (economy.rareDropBonusCoins > 0) {
+        await awardRaidrCoins(prisma, userId, economy.rareDropBonusCoins, "daily_drop_rare");
+      }
       rewardMsg = "You found a Rare Drop! 2x Passive Coins for 24 hours.";
       rewardData = {
         type: "BOOST",
         multiplier: 2.0,
-        expiresAt: expiresAt
+        expiresAt: expiresAt,
+        bonusCoins: economy.rareDropBonusCoins,
       };
     } else if (drop.rewardType === "INSTANT_CAPTURE") {
       rewardMsg = "You found a Rare Drop! 1x Instant Capture added.";
@@ -882,6 +950,10 @@ export const collectDailyDrop = async (req, res) => {
       : configRow.dailyDropXpNormal ?? 50;
 
     const xpResult = await awardUserXp(prisma, userId, xpAmount);
+
+    tryCompleteReferralQualifyingActivity(userId).catch((err) =>
+      console.error("Referral qualifying activity (daily drop):", err)
+    );
 
     res.status(200).json({
       status: true,
@@ -1147,7 +1219,11 @@ export const getSinglePlayerDashboard = async (req, res) => {
           userId,
           SP_NOTIFICATION_CATEGORIES.RARE_DROP,
           "Rare drop spawned!",
-          "A rare daily drop appeared nearby. Open the map to collect it before it's gone."
+          "A rare daily drop appeared nearby. Open the map to collect it before it's gone.",
+          buildPushData({
+            type: PUSH_TYPE.RARE_DROP_SPAWNED,
+            dropId: dailyDrop.id,
+          })
         );
       }
     }
@@ -1168,6 +1244,18 @@ export const getSinglePlayerDashboard = async (req, res) => {
         isConquered: userOwnsSinglePlayerZone(zone, userId),
       };
     });
+    await enrichNormalPassiveEarningOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
+    await enrichB2bPassiveIncomeOnFormattedZones(
+      prisma,
+      processedZones,
+      zones,
+      userId
+    );
 
     let processedDailyDrop = null;
     if (dailyDrop) {

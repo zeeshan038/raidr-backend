@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db.js";
 import { CreateB2bZoneSchema, UpdateB2bZoneSchema } from "../../schema/Merchant/SinglePlayer.js";
 import { getSpGameConfig, isB2bAutoApproveEnabled } from "../../utils/singlePlayerConfig.js";
+import { economyFromConfigRow } from "../../utils/economyConfig.js";
 import { parseJsonIntArray } from "../../utils/configJson.js";
 import { bumpAdminB2bPendingSignal } from "../../utils/adminB2bPendingSignal.js";
 import { getMerchantB2bApprovalSignal } from "../../utils/merchantB2bApprovalSignal.js";
@@ -27,6 +28,7 @@ export const createB2bZone = async (req, res) => {
       });
     }
 
+    const economy = economyFromConfigRow(configRow);
     const autoApprove = isB2bAutoApproveEnabled();
     const zone = await prisma.singlePlayerZone.create({
       data: {
@@ -37,7 +39,10 @@ export const createB2bZone = async (req, res) => {
         city: value.city || null,
         country: value.country || null,
         imageUrl: value.imageUrl || null,
-        coinsPerHour: value.coinsPerHour ?? 0,
+        coinsPerHour:
+          value.coinsPerHour !== undefined && value.coinsPerHour !== null
+            ? value.coinsPerHour
+            : economy.defaultZoneCoinsPerHour,
         zoneType: "B2B",
         merchantId,
         approvalStatus: autoApprove ? "approved" : "pending",

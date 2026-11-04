@@ -13,10 +13,8 @@ services:
     env_file:
       - .env
     environment:
-      # .env REDIS_URL is often localhost — must use the compose Redis service name.
+      # .env often has localhost — inside Docker use service names. DATABASE_URL comes from .env only.
       - REDIS_URL=redis://redis:6379
-      # Prod API → prod compose Postgres only (@postgres), not host :5432 (shared with dev mistake).
-      - DATABASE_URL=postgresql://raidr_user:raidr_password@postgres:5432/raidr_prod?schema=public
     depends_on:
       postgres:
         condition: service_healthy

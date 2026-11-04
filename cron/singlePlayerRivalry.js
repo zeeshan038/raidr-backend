@@ -1,11 +1,17 @@
 import { prisma } from "../config/db.js";
 import { getSpGameConfig } from "../utils/singlePlayerConfig.js";
+import {
+  isSinglePlayerZoneTableReady,
+  logSinglePlayerCronSkippedOnce,
+  handleSinglePlayerSchemaError,
+} from "../utils/singlePlayerSchemaReady.js";
 import { parseJsonIntArray } from "../utils/configJson.js";
 import { haversineDistance } from "../utils/methods/methods.js";
 import {
   notifyUserIfAllowed,
   SP_NOTIFICATION_CATEGORIES,
 } from "../utils/singlePlayerNotify.js";
+import { buildPushData, PUSH_TYPE } from "../utils/pushNotificationPayload.js";
 
 const RIVALRY_RADIUS_M = 5000;
 
@@ -17,6 +23,11 @@ export const startSinglePlayerRivalryCron = () => {
 
   const run = async () => {
     try {
+      if (!(await isSinglePlayerZoneTableReady(prisma))) {
+        logSinglePlayerCronSkippedOnce("Single Player rivalry");
+        return;
+      }
+
       const configRow = await getSpGameConfig(prisma);
       const milestones = parseJsonIntArray(configRow.rivalryMilestoneHours, [24, 48]);
       if (milestones.length === 0) return;
@@ -74,7 +85,12 @@ export const startSinglePlayerRivalryCron = () => {
               u.id,
               SP_NOTIFICATION_CATEGORIES.B2B_RIVALRY,
               "Nearby B2B streak",
-              `${zone.name}: a rival has held for ${milestone}h. Visit and break the streak!`
+              `${zone.name}: a rival has held for ${milestone}h. Visit and break the streak!`,
+              buildPushData({
+                type: PUSH_TYPE.B2B_RIVALRY_MILESTONE,
+                zoneId: zone.id,
+                milestoneHours: milestone,
+              })
             );
           }
 
@@ -84,6 +100,7 @@ export const startSinglePlayerRivalryCron = () => {
         }
       }
     } catch (err) {
+      if (handleSinglePlayerSchemaError(err, "Single Player rivalry")) return;
       console.error("[Cron] Single Player rivalry:", err);
     }
   };

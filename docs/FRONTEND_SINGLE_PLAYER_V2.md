@@ -45,6 +45,9 @@ Returned on every formatted zone (list, dashboard, detail):
 - **Passive income:** `coinsPerHour`; map aggregate: `dashboard.passiveIncomePerHour`
 - **Ownership cap (map “2/5”):** `dashboard.ownedZonesCount` and `dashboard.maxOwnedZonesPerPlayer` (null = unlimited until admin sets cap)
 - **B2B hold:** `b2b.hold.progressPercent`, `holdRemainingSeconds`, `holdElapsedHours`, `holdDurationHours`, `holdComplete`, `canClaim`
+- **B2B coins during hold:** `b2b.passiveIncome.coinProgressPercent`, `coinsEarnedInHold`, `maxCoinsFromHold`, `coinsPerHour`
+- **NORMAL passive coins (owned):** `normal.passiveEarning.progressPercent`, `yourCoinsFromZone`, `leaderCoinsFromZone`, `isLeader`
+- **NORMAL snatch:** `activeCaptureSession.captureProgressPercent`; preview `normal.passiveIncomePreview.coinsPerHour`
 
 ## Capture start (screen 5)
 
@@ -73,7 +76,7 @@ Default **5** zones per player (`maxOwnedZonesPerPlayer`). Admin can set `null` 
 
 ## Notifications (settings screen)
 
-`GET/PATCH /user/notification-preferences` — respects `eventsCoinRush`, `rareDropAlerts`, etc. Coin Rush cron and rare drop spawn use these prefs.
+`GET/PATCH /user/notification-preferences` — respects `eventsCoinRush`, `rareDropAlerts`, etc. Push integration: [NOTIFICATIONS.md](./NOTIFICATIONS.md). QA: [NOTIFICATION_TEST_API.md](./NOTIFICATION_TEST_API.md). `dailyDropReminders` is client-local only (no server cron).
 
 ## Refresh single zone
 
