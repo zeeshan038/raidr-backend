@@ -105,7 +105,10 @@ Object.assign(swagger.components.schemas, {
       userId: { type: "string", format: "uuid" },
       name: { type: "string" },
       photoUrl: { type: "string" },
-      avatarUrl: { type: "string" },
+      avatarUrl: {
+        type: "string",
+        description: "Always set — store/equipped avatar, user.avatarFrontUrl, photoUrl, or default.",
+      },
       coins: { type: "integer" },
       isWinner: { type: "boolean" },
       isYou: { type: "boolean" },

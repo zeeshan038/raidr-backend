@@ -35,6 +35,7 @@
 
 | Field | Meaning |
 |-------|---------|
+| `avatarUrl` | **Always a non-empty HTTPS URL** — equipped store avatar, else `User.avatarFrontUrl`, else `photoUrl`, else default Raider avatar |
 | `top` | Up to **3** entries |
 | `viewer` | Present when **you** are rank **> 3** (show as 4th row in UI) |
 | `isYou` | True when row is the authenticated user |

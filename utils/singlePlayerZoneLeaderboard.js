@@ -1,7 +1,12 @@
 import { computeB2bHoldProgress } from "./singlePlayerZone.js";
 import { publishToSinglePlayerZone } from "../sockets/singlePlayerZonePublisher.js";
+import {
+  fetchAvatarFrontUrlMaps,
+  resolveAvatarDisplayUrl,
+  storeFrontUrlForSelectedAvatarId,
+} from "./userAvatarDisplayUrl.js";
 
-const mapLedgerRowsToRankedEntries = (rows, avatarById, viewerUserId) => {
+const mapLedgerRowsToRankedEntries = (rows, avatarMaps, viewerUserId) => {
   const sorted = [...rows].sort((a, b) => {
     if (b.coinsEarned !== a.coinsEarned) {
       return b.coinsEarned - a.coinsEarned;
@@ -10,11 +15,15 @@ const mapLedgerRowsToRankedEntries = (rows, avatarById, viewerUserId) => {
   });
 
   return sorted.map((row, index) => {
-    let avatarUrl = "";
-    const avatarId = row.user?.selectedAvatarId;
-    if (avatarId && avatarById[avatarId]) {
-      avatarUrl = avatarById[avatarId];
-    }
+    const storeFrontUrl = storeFrontUrlForSelectedAvatarId(
+      row.user?.selectedAvatarId,
+      avatarMaps
+    );
+    const avatarUrl = resolveAvatarDisplayUrl({
+      storeFrontUrl,
+      avatarFrontUrl: row.user?.avatarFrontUrl,
+      photoUrl: row.user?.photoUrl,
+    });
 
     return {
       rank: index + 1,
@@ -72,7 +81,13 @@ export const buildZoneLeaderboard = async (prisma, zone, viewerUserId = null) =>
       where: { zoneId: zone.id, coinsEarned: { gt: 0 } },
       include: {
         user: {
-          select: { id: true, name: true, photoUrl: true, selectedAvatarId: true },
+          select: {
+            id: true,
+            name: true,
+            photoUrl: true,
+            avatarFrontUrl: true,
+            selectedAvatarId: true,
+          },
         },
       },
     });
@@ -81,30 +96,12 @@ export const buildZoneLeaderboard = async (prisma, zone, viewerUserId = null) =>
     throw err;
   }
 
-  const avatarIds = [
-    ...new Set(
-      rows
-        .map((r) => r.user?.selectedAvatarId)
-        .filter((id) => id && String(id).trim() !== "")
-    ),
-  ];
+  const avatarMaps = await fetchAvatarFrontUrlMaps(
+    prisma,
+    rows.map((r) => r.user?.selectedAvatarId)
+  );
 
-  let avatarById = {};
-  if (avatarIds.length > 0) {
-    try {
-      const avatars = await prisma.store.findMany({
-        where: { id: { in: avatarIds } },
-        select: { id: true, frontUrl: true },
-      });
-      avatarById = Object.fromEntries(
-        avatars.map((a) => [a.id, a.frontUrl || ""])
-      );
-    } catch (err) {
-      if (err?.code !== "P2021") throw err;
-    }
-  }
-
-  const entries = mapLedgerRowsToRankedEntries(rows, avatarById, viewerUserId);
+  const entries = mapLedgerRowsToRankedEntries(rows, avatarMaps, viewerUserId);
   const now = new Date();
 
   let winnerAnnounced = false;
