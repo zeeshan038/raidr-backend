@@ -7,6 +7,29 @@ import {
 /**
  * Increment passive coins attributed to a user for a specific zone (after cron payout split).
  */
+/** Ensures a ledger row exists so leaderboard can show the owner (0 coins until cron credits). */
+export const ensureZonePassiveLedgerRow = async (prisma, zoneId, userId) => {
+  if (!zoneId || !userId) return;
+
+  try {
+    await prisma.singlePlayerZonePassiveLedger.upsert({
+      where: {
+        zoneId_userId: { zoneId, userId },
+      },
+      create: {
+        id: randomUUID(),
+        zoneId,
+        userId,
+        coinsEarned: 0,
+      },
+      update: {},
+    });
+  } catch (err) {
+    if (err?.code === "P2021") return;
+    throw err;
+  }
+};
+
 export const incrementZonePassiveLedger = async (prisma, zoneId, userId, amount) => {
   const delta = Math.floor(amount ?? 0);
   if (!zoneId || !userId || delta <= 0) return;

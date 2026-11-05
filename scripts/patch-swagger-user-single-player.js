@@ -1,8 +1,3 @@
-/**
- * Updates swagger.json — USER routes only (single-player, store guards, notification prefs).
- * Full 200/4xx/5xx bodies with msg (matches rest of Raidr swagger).
- * Run: node scripts/patch-swagger-user-single-player.js
- */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";

@@ -347,9 +347,11 @@ Connect to the existing live tracking socket (same as events / coin rush):
 
 See **[FRONTEND_ZONE_LEADERBOARD.md](./FRONTEND_ZONE_LEADERBOARD.md)**.
 
+- **UI placement:** **Zone detail screen** only (map tap → detail). Not on `single_player_zone_under_attack` (that is a separate owner alert).
 - REST: `GET /single-player/zones/:id` → `leaderboard.top` (3) + `leaderboard.viewer` (you if rank > 3).
 - WS join: `{ "type": "join_single_player_zone", "zoneId": "..." }` on `/live-tracking`.
 - Updates: `single_player_zone_leaderboard_updated` (includes `entries`); B2B claim may emit `single_player_zone_winner_announced`.
+- Domain WS: `wss://backend.raidr-app.com/live-tracking?token={JWT}` (not `/api`, not `https://`).
 
 ---
 

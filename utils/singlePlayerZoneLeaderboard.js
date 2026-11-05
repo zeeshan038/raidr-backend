@@ -75,10 +75,17 @@ export const buildZoneLeaderboard = async (prisma, zone, viewerUserId = null) =>
   if (!zone?.id) return null;
   if (zone.zoneType !== "NORMAL" && zone.zoneType !== "B2B") return null;
 
+  const ledgerWhere = zone.currentOwnerId
+    ? {
+        zoneId: zone.id,
+        OR: [{ coinsEarned: { gt: 0 } }, { userId: zone.currentOwnerId }],
+      }
+    : { zoneId: zone.id, coinsEarned: { gt: 0 } };
+
   let rows;
   try {
     rows = await prisma.singlePlayerZonePassiveLedger.findMany({
-      where: { zoneId: zone.id, coinsEarned: { gt: 0 } },
+      where: ledgerWhere,
       include: {
         user: {
           select: {

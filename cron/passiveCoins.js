@@ -9,6 +9,34 @@ import {
 import { incrementZonePassiveLedger } from '../utils/singlePlayerZonePassiveLedger.js';
 import { broadcastSinglePlayerZoneLeaderboard } from '../utils/singlePlayerZoneLeaderboard.js';
 
+/** Round-robin tie-break when splitting a small award across many owned zones. */
+const passiveLedgerRotateByOwner = new Map();
+
+/**
+ * Split `awarded` coins across zones proportional to `base`, with remainder rotated per owner.
+ * @param {{ zoneId: string, base: number }[]} zoneEntries
+ * @returns {{ zoneId: string, share: number }[]}
+ */
+const splitPassiveAwardAcrossZones = (zoneEntries, awarded, ownerId) => {
+    if (awarded <= 0 || !zoneEntries?.length) return [];
+
+    const totalBase = zoneEntries.reduce((sum, z) => sum + z.base, 0);
+    if (totalBase <= 0) return [];
+
+    const sorted = [...zoneEntries].sort((a, b) => a.zoneId.localeCompare(b.zoneId));
+    const shares = sorted.map((e) => Math.floor((awarded * e.base) / totalBase));
+    let remainder = awarded - shares.reduce((sum, n) => sum + n, 0);
+
+    let rotate = passiveLedgerRotateByOwner.get(ownerId) ?? 0;
+    const n = sorted.length;
+    for (let r = 0; r < remainder; r++) {
+        shares[(rotate + r) % n] += 1;
+    }
+    passiveLedgerRotateByOwner.set(ownerId, (rotate + remainder) % n);
+
+    return sorted.map((e, i) => ({ zoneId: e.zoneId, share: shares[i] }));
+};
+
 /**
  * @Description Job that awards passive income to players who own a shielded Single Player Zone
  */
@@ -105,23 +133,11 @@ export const startPassiveCoinsCron = () => {
 
                 awardedUsers += 1;
 
-                let allocated = 0;
-                for (let i = 0; i < zoneEntries.length; i++) {
-                    const entry = zoneEntries[i];
-                    const share =
-                        i === zoneEntries.length - 1
-                            ? awarded - allocated
-                            : Math.floor((awarded * entry.base) / totalBase);
-                    allocated += share;
-                    if (share > 0) {
-                        await incrementZonePassiveLedger(
-                            prisma,
-                            entry.zoneId,
-                            ownerId,
-                            share
-                        );
-                        zoneIdsToBroadcast.add(entry.zoneId);
-                    }
+                const splits = splitPassiveAwardAcrossZones(zoneEntries, awarded, ownerId);
+                for (const { zoneId, share } of splits) {
+                    if (share <= 0) continue;
+                    await incrementZonePassiveLedger(prisma, zoneId, ownerId, share);
+                    zoneIdsToBroadcast.add(zoneId);
                 }
             }
 

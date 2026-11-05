@@ -23,6 +23,7 @@ import {
   buildNormalPassiveEarningForZone,
   enrichB2bPassiveIncomeOnFormattedZones,
   enrichNormalPassiveEarningOnFormattedZones,
+  ensureZonePassiveLedgerRow,
 } from "../utils/singlePlayerZonePassiveLedger.js";
 import {
   broadcastSinglePlayerZoneLeaderboard,
@@ -742,6 +743,10 @@ export const completeCapture = async (req, res) => {
         ? await buildB2bPassiveIncomeForZone(prisma, ownedZoneSnapshot, userId)
         : null;
     const b2bBlock = b2bPassiveIncome ? { passiveIncome: b2bPassiveIncome } : null;
+
+    if (zone.zoneType === "NORMAL" || zone.zoneType === "B2B") {
+      await ensureZonePassiveLedgerRow(prisma, zoneId, userId);
+    }
 
     res.status(200).json({
       status: true,
