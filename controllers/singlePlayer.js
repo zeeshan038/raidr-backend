@@ -25,6 +25,10 @@ import {
   enrichNormalPassiveEarningOnFormattedZones,
 } from "../utils/singlePlayerZonePassiveLedger.js";
 import {
+  broadcastSinglePlayerZoneLeaderboard,
+  enrichZoneLeaderboardOnFormattedZones,
+} from "../utils/singlePlayerZoneLeaderboard.js";
+import {
   getSpGameConfig,
   gameplayFromConfig,
   userVisibleZoneFilter,
@@ -278,6 +282,7 @@ export const getZoneById = async (req, res) => {
 
     await enrichNormalPassiveEarningOnFormattedZones(prisma, [data], [zone], userId);
     await enrichB2bPassiveIncomeOnFormattedZones(prisma, [data], [zone], userId);
+    await enrichZoneLeaderboardOnFormattedZones(prisma, [data], [zone], userId);
 
     if (userId) {
       data.activeCaptureSession = await getActiveCaptureSessionForUser(
@@ -746,6 +751,8 @@ export const completeCapture = async (req, res) => {
       normal: normalPassive,
       b2b: b2bBlock,
     });
+
+    void broadcastSinglePlayerZoneLeaderboard(prisma, zoneId);
   } catch (error) {
     res.status(500).json({
       status: false,

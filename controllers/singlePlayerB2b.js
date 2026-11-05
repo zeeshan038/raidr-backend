@@ -11,6 +11,10 @@ import {
 import { buildPushData, PUSH_TYPE } from "../utils/pushNotificationPayload.js";
 import { awardRaidrCoins, getEconomyConfig } from "../utils/economyConfig.js";
 import { awardUserXp } from "../utils/awardUserXp.js";
+import {
+  broadcastSinglePlayerZoneLeaderboard,
+  publishSinglePlayerZoneWinnerAnnounced,
+} from "../utils/singlePlayerZoneLeaderboard.js";
 
 /**
  * @Description Claim B2B hold-to-win reward after hold duration is complete
@@ -117,6 +121,9 @@ export const claimB2bReward = async (req, res) => {
       xpAwarded,
       coinsAwarded,
     });
+
+    publishSinglePlayerZoneWinnerAnnounced(zoneId, userId);
+    void broadcastSinglePlayerZoneLeaderboard(prisma, zoneId);
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
   }

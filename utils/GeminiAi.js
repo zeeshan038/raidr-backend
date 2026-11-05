@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -89,6 +90,27 @@ OUTPUT (all assets):
 - Object centered with safe transparent padding; readable at 48px map pin size
 - Must read as dimensional 3D at a glance — avoid sticker-like flat shading
 `.trim();
+
+const extractBase64FromGemini = (res) => {
+  const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+  return part ? part.inlineData.data : null;
+};
+
+/** Normalize AI output to 512×512 PNG with transparent letterbox padding. */
+const normalize512PngBase64 = async (base64) => {
+  if (!base64) {
+    return null;
+  }
+  const buf = Buffer.from(base64, "base64");
+  const normalized = await sharp(buf)
+    .resize(512, 512, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+  return normalized.toString("base64");
+};
 
 /**
  * Generates the three required images for a SponsoredTheme using Gemini.
@@ -215,23 +237,24 @@ BACKGROUND:
       }),
     ]);
 
-    const extractBase64 = (res) => {
-      const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
-      return part ? part.inlineData.data : null;
-    };
-
-    const dropImageBase64 = extractBase64(dropImgRes);
-    const zoneImageBase64 = extractBase64(zoneImgRes);
-    const mapLogoBase64 = extractBase64(mapLogoRes);
+    const dropImageBase64 = extractBase64FromGemini(dropImgRes);
+    const zoneImageBase64 = extractBase64FromGemini(zoneImgRes);
+    const mapLogoBase64 = extractBase64FromGemini(mapLogoRes);
 
     if (!dropImageBase64 || !zoneImageBase64 || !mapLogoBase64) {
       throw new Error("Failed to extract image bytes from response.");
     }
 
+    const [dropNorm, zoneNorm, mapNorm] = await Promise.all([
+      normalize512PngBase64(dropImageBase64),
+      normalize512PngBase64(zoneImageBase64),
+      normalize512PngBase64(mapLogoBase64),
+    ]);
+
     return {
-      dropImageBase64,
-      zoneImageBase64,
-      mapLogoBase64,
+      dropImageBase64: dropNorm,
+      zoneImageBase64: zoneNorm,
+      mapLogoBase64: mapNorm,
     };
   } catch (error) {
     console.error("Error generating theme images:", error);
@@ -374,4 +397,113 @@ b2bRewardType must be DIGITAL_COUPON, PHYSICAL, or CASH. This is a draft only �
 
   const text = response.choices[0].message.content;
   return JSON.parse(text);
+};
+
+/**
+ * Generates B2B map zone icon + optional reward hero (512×512 PNG, transparent background).
+ */
+export const generateB2bZoneImages = async ({
+  zoneName,
+  rewardTitle,
+  brandHint,
+  primaryColor,
+  secondaryColor,
+  referenceImageBase64,
+  includeRewardImage = true,
+} = {}) => {
+  if (!zoneName || typeof zoneName !== "string") {
+    throw new Error("zoneName is required");
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY or GEMINI_KEY is missing in .env");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const primary = primaryColor || "associated with the brand";
+  const secondary = secondaryColor || "associated with the brand";
+  const logoHint = brandHint || "the merchant brand";
+  const rewardLabel = rewardTitle || "exclusive in-store reward";
+
+  const zoneImagePrompt = `
+Create ONE premium B2B Raid Zone map icon for "${zoneName}".
+
+${SHARED_3D_OUTPUT_RULES}
+
+FIXED COMPOSITION (match RAIDR zone references):
+- Symmetrical 3D SHIELD outer shape with layered beveled edges and glass/metal premium materials
+- Simple 3D CASTLE / FORT / ROOK symbol centered inside the shield
+- Keep shield + fort silhouette identical in structure to the reference samples; only recolor and add sponsor branding
+- Controlled internal neon on edges; no large external bloom
+
+SPONSOR:
+- Colors: primary ${primary}, secondary ${secondary}
+- Integrate ${logoHint} subtly inside the shield; readable at small map sizes
+- Do not replace the fort with food/products/random objects
+
+BACKGROUND:
+- Transparent alpha; optional soft contact shadow under the shield only
+`.trim();
+
+  const rewardImagePrompt = `
+Create ONE premium 3D reward hero asset for a mobile game B2B offer: "${rewardLabel}" at "${zoneName}".
+
+${SHARED_3D_OUTPUT_RULES}
+
+SUBJECT:
+- A single iconic 3D object representing the reward (gift box, voucher ticket, or product silhouette) — chunky, tactile volume
+- Polished PBR materials, beveled edges, sponsor colors primary ${primary} and secondary ${secondary}
+- Subtle ${logoHint} integration on the object surface (embossed/illuminated), not a flat sticker
+- No paragraphs of text; at most a tiny abstract mark, no fine print
+
+BACKGROUND:
+- Transparent alpha everywhere except an optional soft contact shadow beneath the object
+`.trim();
+
+  const modelName = "gemini-3.1-flash-image";
+  const zoneRefs = loadReferenceImages(
+    REFERENCE_ASSET_FILES.zone,
+    referenceImageBase64
+  );
+
+  try {
+    const zoneImgRes = await ai.models.generateContent({
+      model: modelName,
+      contents: buildContents(zoneImagePrompt, zoneRefs, "Raid Zone"),
+      config: { outputMimeType: "image/png" },
+    });
+
+    let rewardImageBase64 = null;
+    if (includeRewardImage) {
+      const rewardImgRes = await ai.models.generateContent({
+        model: modelName,
+        contents: [{ text: rewardImagePrompt }],
+        config: { outputMimeType: "image/png" },
+      });
+      rewardImageBase64 = extractBase64FromGemini(rewardImgRes);
+    }
+
+    const zoneImageBase64 = extractBase64FromGemini(zoneImgRes);
+    if (!zoneImageBase64) {
+      throw new Error("Failed to extract zone image from Gemini response.");
+    }
+
+    const [zoneNorm, rewardNorm] = await Promise.all([
+      normalize512PngBase64(zoneImageBase64),
+      includeRewardImage ? normalize512PngBase64(rewardImageBase64) : Promise.resolve(null),
+    ]);
+
+    if (includeRewardImage && !rewardNorm) {
+      throw new Error("Failed to extract reward image from Gemini response.");
+    }
+
+    return {
+      zoneImageBase64: zoneNorm,
+      rewardImageBase64: rewardNorm,
+    };
+  } catch (error) {
+    console.error("Error generating B2B zone images:", error);
+    throw new Error(error.message || "Failed to generate B2B zone images using Gemini API.");
+  }
 };

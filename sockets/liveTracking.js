@@ -14,6 +14,7 @@ import { registerUWSApp } from './eventPublisher.js';
 import { registerUWSAppForCoinRush } from './coinRushPublisher.js';
 import { handleJoinEventRoom, handlePlayerLocationUpdate, handleCheckEventAvailability, handleCheckSurpriseAvailability } from './handlers/eventHandler.js';
 import { handleJoinCoinRushRoom } from './handlers/coinRushHandler.js';
+import { handleJoinSinglePlayerZoneRoom } from './handlers/singlePlayerZoneHandler.js';
 
 
 // Create a queue producer
@@ -112,6 +113,11 @@ export const startWebSocketServer = () => {
                 // Coin Rush Room 
                 if (payload.type === 'join_coin_rush') {
                     await handleJoinCoinRushRoom(ws, payload);
+                    return;
+                }
+
+                if (payload.type === 'join_single_player_zone') {
+                    await handleJoinSinglePlayerZoneRoom(ws, payload);
                     return;
                 }
 

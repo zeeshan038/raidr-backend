@@ -7,6 +7,7 @@ import {
   handleSinglePlayerSchemaError,
 } from '../utils/singlePlayerSchemaReady.js';
 import { incrementZonePassiveLedger } from '../utils/singlePlayerZonePassiveLedger.js';
+import { broadcastSinglePlayerZoneLeaderboard } from '../utils/singlePlayerZoneLeaderboard.js';
 
 /**
  * @Description Job that awards passive income to players who own a shielded Single Player Zone
@@ -75,6 +76,7 @@ export const startPassiveCoinsCron = () => {
             }
 
             let awardedUsers = 0;
+            const zoneIdsToBroadcast = new Set();
             for (const [ownerId, zoneEntries] of Object.entries(ownerZoneBases)) {
                 const totalBase = zoneEntries.reduce((sum, z) => sum + z.base, 0);
                 if (totalBase <= 0) continue;
@@ -118,8 +120,13 @@ export const startPassiveCoinsCron = () => {
                             ownerId,
                             share
                         );
+                        zoneIdsToBroadcast.add(entry.zoneId);
                     }
                 }
+            }
+
+            for (const zoneId of zoneIdsToBroadcast) {
+                void broadcastSinglePlayerZoneLeaderboard(prisma, zoneId);
             }
 
             console.log(`[Cron] Passive coins awarded to ${awardedUsers} players.`);
