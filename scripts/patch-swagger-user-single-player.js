@@ -1,8 +1,3 @@
-/**
- * Updates swagger.json — USER routes only (single-player, store guards, notification prefs).
- * Full 200/4xx/5xx bodies with msg (matches rest of Raidr swagger).
- * Run: node scripts/patch-swagger-user-single-player.js
- */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -98,6 +93,43 @@ Object.assign(swagger.components.schemas, {
       photoUrl: { type: "string", nullable: true },
     },
   },
+  SinglePlayerZoneLeaderboardEntry: {
+    type: "object",
+    properties: {
+      rank: { type: "integer" },
+      userId: { type: "string", format: "uuid" },
+      name: { type: "string" },
+      photoUrl: { type: "string" },
+      avatarUrl: {
+        type: "string",
+        description: "Always set — store/equipped avatar, user.avatarFrontUrl, photoUrl, or default.",
+      },
+      coins: { type: "integer" },
+      isWinner: { type: "boolean" },
+      isYou: { type: "boolean" },
+    },
+  },
+  SinglePlayerZoneLeaderboard: {
+    type: "object",
+    nullable: true,
+    description:
+      "Top coin earners on this zone (passive ledger). viewer set when authenticated user rank > 3.",
+    properties: {
+      zoneId: { type: "string", format: "uuid" },
+      zoneType: { type: "string", enum: ["NORMAL", "B2B"] },
+      sortBy: { type: "string", example: "coins_from_zone" },
+      top: {
+        type: "array",
+        items: { $ref: "#/components/schemas/SinglePlayerZoneLeaderboardEntry" },
+      },
+      viewer: {
+        allOf: [{ $ref: "#/components/schemas/SinglePlayerZoneLeaderboardEntry" }],
+        nullable: true,
+      },
+      winnerAnnounced: { type: "boolean" },
+      winnerUserId: { type: "string", format: "uuid", nullable: true },
+    },
+  },
   SinglePlayerZoneFormatted: {
     type: "object",
     properties: {
@@ -126,6 +158,7 @@ Object.assign(swagger.components.schemas, {
       eligibilityNote: { type: "string", nullable: true },
       meetsEligibility: { type: "boolean", nullable: true },
       b2b: { $ref: "#/components/schemas/SinglePlayerB2bBlock" },
+      leaderboard: { $ref: "#/components/schemas/SinglePlayerZoneLeaderboard" },
       owner: { $ref: "#/components/schemas/ZoneOwnerSummary" },
     },
   },

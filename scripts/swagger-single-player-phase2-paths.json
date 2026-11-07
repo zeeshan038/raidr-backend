@@ -368,5 +368,13 @@
       "security": [{ "bearerAuth": [] }],
       "responses": { "200": { "description": "Success" } }
     }
+  },
+  "/merchant/single-player/b2b-zones/generate-images": {
+    "post": {
+      "tags": ["Merchant Single Player"],
+      "summary": "AI 512×512 transparent PNG for B2B zone map icon and reward",
+      "security": [{ "bearerAuth": [] }],
+      "responses": { "200": { "description": "Success" } }
+    }
   }
 }

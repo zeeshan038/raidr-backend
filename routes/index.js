@@ -47,6 +47,8 @@ import CoinRushRoutes from './coinRush.js'
 import RewardsRoutes from './rewards.js'
 import ReviewRoutes from './review.js'
 import ReferralRoutes from './referral.js'
+
+//User Routes
 router.use("/user",UserRoutes);
 router.use("/trip",TripRoutes);
 router.use("/upload",UploadRoutes);

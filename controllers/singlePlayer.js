@@ -23,7 +23,12 @@ import {
   buildNormalPassiveEarningForZone,
   enrichB2bPassiveIncomeOnFormattedZones,
   enrichNormalPassiveEarningOnFormattedZones,
+  ensureZonePassiveLedgerRow,
 } from "../utils/singlePlayerZonePassiveLedger.js";
+import {
+  broadcastSinglePlayerZoneLeaderboard,
+  enrichZoneLeaderboardOnFormattedZones,
+} from "../utils/singlePlayerZoneLeaderboard.js";
 import {
   getSpGameConfig,
   gameplayFromConfig,
@@ -278,6 +283,7 @@ export const getZoneById = async (req, res) => {
 
     await enrichNormalPassiveEarningOnFormattedZones(prisma, [data], [zone], userId);
     await enrichB2bPassiveIncomeOnFormattedZones(prisma, [data], [zone], userId);
+    await enrichZoneLeaderboardOnFormattedZones(prisma, [data], [zone], userId);
 
     if (userId) {
       data.activeCaptureSession = await getActiveCaptureSessionForUser(
@@ -738,6 +744,10 @@ export const completeCapture = async (req, res) => {
         : null;
     const b2bBlock = b2bPassiveIncome ? { passiveIncome: b2bPassiveIncome } : null;
 
+    if (zone.zoneType === "NORMAL" || zone.zoneType === "B2B") {
+      await ensureZonePassiveLedgerRow(prisma, zoneId, userId);
+    }
+
     res.status(200).json({
       status: true,
       msg: previousOwnerId ? "Zone snatched successfully" : "Zone captured successfully",
@@ -746,6 +756,8 @@ export const completeCapture = async (req, res) => {
       normal: normalPassive,
       b2b: b2bBlock,
     });
+
+    void broadcastSinglePlayerZoneLeaderboard(prisma, zoneId);
   } catch (error) {
     res.status(500).json({
       status: false,

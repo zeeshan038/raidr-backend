@@ -343,6 +343,16 @@ Connect to the existing live tracking socket (same as events / coin rush):
 
 **Owner UI note:** `zoneGuardCount` stays your deployed defense (DB). Progress fields describe **that attacker’s session** (each raider clears their own copy; not shared). Use events to animate “hits” and show “under attack — cannot assign guards” (API returns **409** on assign/unassign while attacked).
 
+### 3.1c Zone coin leaderboard (NORMAL + B2B)
+
+See **[FRONTEND_ZONE_LEADERBOARD.md](./FRONTEND_ZONE_LEADERBOARD.md)**.
+
+- **UI placement:** **Zone detail screen** only (map tap → detail). Not on `single_player_zone_under_attack` (that is a separate owner alert).
+- REST: `GET /single-player/zones/:id` → `leaderboard.top` (3) + `leaderboard.viewer` (you if rank > 3).
+- WS join: `{ "type": "join_single_player_zone", "zoneId": "..." }` on `/live-tracking`.
+- Updates: `single_player_zone_leaderboard_updated` (includes `entries`); B2B claim may emit `single_player_zone_winner_announced`.
+- Domain WS: `wss://backend.raidr-app.com/live-tracking?token={JWT}` (not `/api`, not `https://`).
+
 ---
 
 ### 3.2 Capture / snatch

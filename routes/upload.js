@@ -97,14 +97,36 @@ router.route("/image").post(verifyAnyAuth, uploadImage.single("image"), async (r
             return res.status(400).json({ error: "No image file provided" });
         }
 
-        // Compress Image
-        const compressedImageBuffer = await sharp(req.file.buffer)
-            .toFormat("webp")
-            .webp({ quality: 80 })
-            .toBuffer();
+        const isB2bMapAsset =
+            req.query.b2bAsset === "1" ||
+            req.query.b2bAsset === "true" ||
+            folderName.includes("single-player-b2b");
+
+        let compressedImageBuffer;
+        let contentType;
+
+        if (isB2bMapAsset) {
+            compressedImageBuffer = await sharp(req.file.buffer)
+                .resize(512, 512, {
+                    fit: "contain",
+                    background: { r: 0, g: 0, b: 0, alpha: 0 },
+                })
+                .png()
+                .toBuffer();
+            contentType = "image/png";
+        } else {
+            compressedImageBuffer = await sharp(req.file.buffer)
+                .toFormat("webp")
+                .webp({ quality: 80 })
+                .toBuffer();
+            contentType = "image/webp";
+        }
 
         // Generate a unique blob name (includes folder if provided)
-        const fileName = `${Date.now()}_${sanitizeBlobName(req.file.originalname)}`;
+        const ext = isB2bMapAsset ? ".png" : ".webp";
+        const rawName = sanitizeBlobName(req.file.originalname);
+        const baseName = rawName.replace(/\.[^.]+$/, "") || "file";
+        const fileName = `${Date.now()}_${baseName}${ext}`;
         const blobName = `${folderName}${fileName}`;
 
         // Upload the image to Hetzner Object Storage
@@ -112,7 +134,7 @@ router.route("/image").post(verifyAnyAuth, uploadImage.single("image"), async (r
             Bucket: containerName,
             Key: blobName,
             Body: compressedImageBuffer,
-            ContentType: "image/webp",
+            ContentType: contentType,
             ACL: "public-read",
         });
 
