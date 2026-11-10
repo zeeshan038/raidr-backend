@@ -1,8 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import path from "path";
-import sharp from "sharp";
 import { fileURLToPath } from "url";
+import { normalizeMapAssetPngBase64 } from "./mapAssetImage.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +68,7 @@ You MUST match this production look:
 - Background: PNG with TRUE transparent alpha outside the object
 - Allowed for depth: a soft, semi-transparent CONTACT SHADOW directly under the object only (no floor texture, no room, no map)
 - Forbidden: solid white/gray backdrop, checkerboard baked in, photo environments, busy scenes, outer glow halos, text labels
+- Reference files may show a light backdrop for display only — your output must NOT include any backdrop pixels (true alpha outside the 3D object)
 
 Apply sponsor colors and logo from the written brief while keeping the same 3D craft as the references.
 `.trim();
@@ -94,22 +95,6 @@ OUTPUT (all assets):
 const extractBase64FromGemini = (res) => {
   const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
   return part ? part.inlineData.data : null;
-};
-
-/** Normalize AI output to 512×512 PNG with transparent letterbox padding. */
-const normalize512PngBase64 = async (base64) => {
-  if (!base64) {
-    return null;
-  }
-  const buf = Buffer.from(base64, "base64");
-  const normalized = await sharp(buf)
-    .resize(512, 512, {
-      fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .png()
-    .toBuffer();
-  return normalized.toString("base64");
 };
 
 /**
@@ -246,9 +231,9 @@ BACKGROUND:
     }
 
     const [dropNorm, zoneNorm, mapNorm] = await Promise.all([
-      normalize512PngBase64(dropImageBase64),
-      normalize512PngBase64(zoneImageBase64),
-      normalize512PngBase64(mapLogoBase64),
+      normalizeMapAssetPngBase64(dropImageBase64),
+      normalizeMapAssetPngBase64(zoneImageBase64),
+      normalizeMapAssetPngBase64(mapLogoBase64),
     ]);
 
     return {
@@ -490,8 +475,8 @@ BACKGROUND:
     }
 
     const [zoneNorm, rewardNorm] = await Promise.all([
-      normalize512PngBase64(zoneImageBase64),
-      includeRewardImage ? normalize512PngBase64(rewardImageBase64) : Promise.resolve(null),
+      normalizeMapAssetPngBase64(zoneImageBase64),
+      includeRewardImage ? normalizeMapAssetPngBase64(rewardImageBase64) : Promise.resolve(null),
     ]);
 
     if (includeRewardImage && !rewardNorm) {
