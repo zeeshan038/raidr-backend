@@ -57,6 +57,7 @@ import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.
 import {
   findActiveBrandMonthCampaign,
   getBrandMonthStateForUser,
+  parseBrandMonthCoords,
 } from "../utils/brandMonth.js";
 import {
   applyCaptureSessionToZoneClientView,
@@ -961,7 +962,9 @@ export const collectDailyDrop = async (req, res) => {
       ? configRow.dailyDropXpRare ?? 150
       : configRow.dailyDropXpNormal ?? 50;
 
-    const xpResult = await awardUserXp(prisma, userId, xpAmount);
+    const xpResult = await awardUserXp(prisma, userId, xpAmount, {
+      brandMonthCoords: parseBrandMonthCoords({ latitude, longitude }),
+    });
 
     tryCompleteReferralQualifyingActivity(userId).catch((err) =>
       console.error("Referral qualifying activity (daily drop):", err)
@@ -989,8 +992,9 @@ export const getActiveTheme = async (req, res) => {
   try {
     const { lat, lng } = req.query;
     const now = new Date();
+    const coords = parseBrandMonthCoords(req.query);
 
-    const activeBrandMonth = await findActiveBrandMonthCampaign(prisma, now);
+    const activeBrandMonth = await findActiveBrandMonthCampaign(prisma, now, coords);
     let activeTheme = activeBrandMonth?.sponsoredTheme ?? null;
 
     if (!activeTheme) {
@@ -1287,7 +1291,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     }
 
-    const brandMonth = await getBrandMonthStateForUser(prisma, userId, now);
+    const brandMonth = await getBrandMonthStateForUser(prisma, userId, now, coords);
 
     res.status(200).json({
       status: true,

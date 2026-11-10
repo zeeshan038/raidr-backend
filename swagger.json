@@ -1943,7 +1943,7 @@
       },
       "BrandMonthClientStateDto": {
         "type": "object",
-        "description": "Player-facing Brand Month progression (dashboard, active, history).",
+        "description": "Player-facing Brand Month progression (dashboard, active, history). Which campaign is returned is resolved from the player's GPS and the linked Sponsored Theme geo (latitude, longitude, radius). Regional campaigns beat global (no theme geo). Omitting location only matches worldwide campaigns.",
         "properties": {
           "campaignId": {
             "type": "string",
@@ -4111,6 +4111,7 @@
           "Single Player"
         ],
         "summary": "Collect daily drop within range",
+        "description": "Awards lifetime XP and Brand Month campaign XP. Brand Month uses the request body latitude/longitude to pick the regional campaign (same geo rules as GET /single-player/brand-month/active).",
         "security": [
           {
             "bearerAuth": []
@@ -4328,6 +4329,7 @@
           "Single Player"
         ],
         "summary": "Active sponsored theme",
+        "description": "Returns the sponsored theme for the location-aware active Brand Month when one exists, otherwise the newest date-active theme. Pass lat and lng when campaigns or themes are geo-fenced (same rules as GET /single-player/brand-month/active).",
         "security": [
           {
             "bearerAuth": []
@@ -4340,14 +4342,15 @@
             "schema": {
               "type": "number"
             },
-            "description": "User latitude if theme is geo-fenced"
+            "description": "User latitude (alias: latitude on Brand Month endpoints)"
           },
           {
             "name": "lng",
             "in": "query",
             "schema": {
               "type": "number"
-            }
+            },
+            "description": "User longitude (alias: longitude on Brand Month endpoints)"
           }
         ],
         "responses": {
@@ -4611,7 +4614,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Map dashboard (stats, zones, daily drop)",
+        "summary": "Map dashboard (stats, zones, daily drop, brand month)",
+        "description": "Requires player GPS. data.brandMonth uses the same location-aware campaign selection as GET /single-player/brand-month/active.",
         "security": [
           {
             "bearerAuth": []
@@ -4624,7 +4628,8 @@
             "required": true,
             "schema": {
               "type": "number"
-            }
+            },
+            "description": "Player latitude for zones, daily drop distance, and Brand Month campaign selection"
           },
           {
             "name": "longitude",
@@ -4632,7 +4637,8 @@
             "required": true,
             "schema": {
               "type": "number"
-            }
+            },
+            "description": "Player longitude for zones, daily drop distance, and Brand Month campaign selection"
           },
           {
             "name": "city",
@@ -4668,6 +4674,15 @@
                           ],
                           "nullable": true
                         },
+                        "brandMonth": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/BrandMonthClientStateDto"
+                            }
+                          ],
+                          "nullable": true,
+                          "description": "Active Brand Month for latitude/longitude, or null if none applies"
+                        },
                         "zones": {
                           "type": "array",
                           "items": {
@@ -4690,6 +4705,7 @@
                       "vipRewardMultiplier": 1,
                       "daysUntilNextRareDrop": 3
                     },
+                    "brandMonth": null,
                     "dailyDrop": null,
                     "zones": [
                       {
@@ -4929,10 +4945,48 @@
           "Single Player"
         ],
         "summary": "Active Brand Month progression",
-        "description": "XP bar, vouchers remaining (FCFS), prizeStatus, eligibleToClaim. Grand prize is claimed via POST /single-player/brand-month/{campaignId}/claim. data is null when no campaign is active for the current date.",
+        "description": "XP bar, vouchers remaining (FCFS), prizeStatus, eligibleToClaim. Grand prize is claimed via POST /single-player/brand-month/{campaignId}/claim. Pass the player's location so the correct regional campaign is returned when multiple countries run Brand Month at once. Selection uses the campaign's linked Sponsored Theme (latitude, longitude, radius meters). Geo-matched campaigns beat worldwide campaigns (theme without coordinates). data is null when no campaign is active for the date window, or when location is missing and only geo-fenced campaigns exist, or the player is outside every fenced region.",
         "security": [
           {
             "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Player latitude. Recommended on map/progression screens. Aliases: lat."
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Player longitude. Recommended on map/progression screens. Aliases: lng."
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Alias for latitude (same as GET /single-player/theme)"
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Alias for longitude (same as GET /single-player/theme)"
           }
         ],
         "responses": {
@@ -5000,6 +5054,13 @@
                   },
                   "none": {
                     "summary": "No active campaign",
+                    "value": {
+                      "status": true,
+                      "data": null
+                    }
+                  },
+                  "outsideRegion": {
+                    "summary": "GPS provided but no matching regional campaign",
                     "value": {
                       "status": true,
                       "data": null

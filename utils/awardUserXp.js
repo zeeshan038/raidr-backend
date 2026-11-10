@@ -17,7 +17,7 @@ export const computeLevelStateAfterXp = (level, xpProgress, xpToAdd) => {
  * @param {import("@prisma/client").PrismaClient} prisma
  * @param {string} userId
  * @param {number} amount
- * @param {{ skipBrandMonth?: boolean, notifyOnPrize?: boolean }} [options]
+ * @param {{ skipBrandMonth?: boolean, notifyOnPrize?: boolean, brandMonthCoords?: { lat: number, lng: number } | null }} [options]
  */
 export const awardUserXp = async (prisma, userId, amount, options = {}) => {
   const xpAwarded = Math.max(0, Math.floor(amount ?? 0));
@@ -63,6 +63,8 @@ export const awardUserXp = async (prisma, userId, amount, options = {}) => {
   if (!options.skipBrandMonth) {
     brandMonth = await applyBrandMonthXp(prisma, userId, xpAwarded, {
       notifyOnPrize: options.notifyOnPrize !== false,
+      coords: options.brandMonthCoords ?? null,
+      useProfileLocation: options.brandMonthCoords == null,
     });
   }
 
