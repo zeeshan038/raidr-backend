@@ -1,95 +1,30 @@
 import { GoogleGenAI } from "@google/genai";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import { normalizeMapAssetPngBase64 } from "./mapAssetImage.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const MIME_BY_EXT = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".webp": "image/webp",
-};
-
-const getReferenceImageFromFile = (filename) => {
-  const filePath = path.join(__dirname, filename);
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
-  const ext = path.extname(filename).toLowerCase();
-  return {
-    inlineData: {
-      data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
-      mimeType: MIME_BY_EXT[ext] || "image/jpeg",
-    },
-  };
-};
-
-const getReferenceImageFromBase64 = (base64, mimeType = "image/png") => {
-  if (!base64 || typeof base64 !== "string") {
-    return null;
-  }
-  const data = base64.replace(/^data:image\/\w+;base64,/, "");
-  return {
-    inlineData: { data, mimeType },
-  };
-};
-
-const loadReferenceImages = (filenames, uploadBase64) => {
-  if (uploadBase64) {
-    const uploaded = getReferenceImageFromBase64(uploadBase64);
-    if (uploaded) {
-      return [uploaded];
-    }
-  }
-  return filenames
-    .map((name) => getReferenceImageFromFile(name))
-    .filter(Boolean);
-};
-
-const REFERENCE_ASSET_FILES = {
-  drop: ["Drop.jpeg"],
-  zone: ["zone.jpeg", "conquered zone.jpeg"],
-  map: ["map icon.jpeg"],
-};
-
+/** Image generation is text-only — never attach background plates or reference JPEGs to the model. */
 const REFERENCE_STYLE_BLOCK = (assetLabel) => `
-REFERENCE IMAGES (required quality bar):
-The attached image(s) are official RAIDR ${assetLabel} samples from our art team.
-Treat them as the gold standard for style — NOT for copying any specific brand.
-
-You MUST match this production look:
+STYLE (RAIDR ${assetLabel}):
+- Text brief only — no background image, reference photo, or logo file is provided to the model
 - Real 3D game asset render (Cinema 4D / Blender / mobile AAA UI quality) — never flat 2D vector art
 - Strong depth: beveled edges, thickness, PBR gloss/metal/glass, crisp specular highlights
 - Lighting: key + fill + rim light, ambient occlusion, controlled neon accents inside the mesh
-- Background: PNG with TRUE transparent alpha outside the object
+- PNG with TRUE transparent alpha outside the object
 - Allowed for depth: a soft, semi-transparent CONTACT SHADOW directly under the object only (no floor texture, no room, no map)
 - Forbidden: solid white/gray backdrop, checkerboard baked in, photo environments, busy scenes, outer glow halos, text labels
-- Reference files may show a light backdrop for display only — your output must NOT include any backdrop pixels (true alpha outside the 3D object)
 
-Apply sponsor colors and logo from the written brief while keeping the same 3D craft as the references.
+Apply sponsor colors and logo from the written brief only (descriptive text, not uploaded art).
 `.trim();
 
-const buildContents = (prompt, refImages, assetLabel) => {
-  const parts = [];
-  if (refImages.length > 0) {
-    parts.push({ text: REFERENCE_STYLE_BLOCK(assetLabel) });
-    for (const ref of refImages) {
-      parts.push(ref);
-    }
-  }
-  parts.push({ text: prompt });
-  return parts;
-};
+const buildContents = (assetLabel, promptBody) => [
+  { text: `${REFERENCE_STYLE_BLOCK(assetLabel)}\n\n${promptBody}` },
+];
 
 const SHARED_3D_OUTPUT_RULES = `
 OUTPUT (all assets):
 - Exactly 512x512 pixels, PNG, production-ready for a dark mobile map UI
 - Object centered with safe transparent padding; readable at 48px map pin size
 - Must read as dimensional 3D at a glance — avoid sticker-like flat shading
+- No background image is supplied — every pixel outside the subject must be fully transparent alpha
 `.trim();
 
 const extractBase64FromGemini = (res) => {
@@ -103,14 +38,13 @@ const extractBase64FromGemini = (res) => {
  * @param {string} brandLogo
  * @param {string} primaryColor
  * @param {string} secondaryColor
- * @param {{ referenceImages?: { drop?: string, zone?: string, map?: string } }} [options] - optional base64 samples from admin
  */
 export const generateThemeImages = async (
   themeName,
   brandLogo,
   primaryColor,
   secondaryColor,
-  options = {}
+  _options = {}
 ) => {
   if (!themeName) {
     throw new Error("Theme name is required");
@@ -122,7 +56,6 @@ export const generateThemeImages = async (
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const uploadedRefs = options.referenceImages || {};
 
   try {
     console.log(`Generating images for theme: ${themeName}...`);
@@ -185,39 +118,20 @@ BACKGROUND:
 
     const modelName = "gemini-3.1-flash-image";
 
-    const dropRefs = loadReferenceImages(
-      REFERENCE_ASSET_FILES.drop,
-      uploadedRefs.drop
-    );
-    const zoneRefs = loadReferenceImages(
-      REFERENCE_ASSET_FILES.zone,
-      uploadedRefs.zone
-    );
-    const mapRefs = loadReferenceImages(
-      REFERENCE_ASSET_FILES.map,
-      uploadedRefs.map
-    );
-
-    if (dropRefs.length === 0 || zoneRefs.length === 0 || mapRefs.length === 0) {
-      console.warn(
-        "[GeminiAi] Missing one or more local reference JPEGs in utils/ — output quality may drop. Ask design to add Drop.jpeg, zone.jpeg, map icon.jpeg."
-      );
-    }
-
     const [dropImgRes, zoneImgRes, mapLogoRes] = await Promise.all([
       ai.models.generateContent({
         model: modelName,
-        contents: buildContents(dropImagePrompt, dropRefs, "Daily Drop"),
+        contents: buildContents("Daily Drop", dropImagePrompt),
         config: { outputMimeType: "image/png" },
       }),
       ai.models.generateContent({
         model: modelName,
-        contents: buildContents(zoneImagePrompt, zoneRefs, "Raid Zone"),
+        contents: buildContents("Raid Zone", zoneImagePrompt),
         config: { outputMimeType: "image/png" },
       }),
       ai.models.generateContent({
         model: modelName,
-        contents: buildContents(mapLogoPrompt, mapRefs, "Map Pin"),
+        contents: buildContents("Map Pin", mapLogoPrompt),
         config: { outputMimeType: "image/png" },
       }),
     ]);
@@ -393,7 +307,6 @@ export const generateB2bZoneImages = async ({
   brandHint,
   primaryColor,
   secondaryColor,
-  referenceImageBase64,
   includeRewardImage = true,
 } = {}) => {
   if (!zoneName || typeof zoneName !== "string") {
@@ -447,15 +360,11 @@ BACKGROUND:
 `.trim();
 
   const modelName = "gemini-3.1-flash-image";
-  const zoneRefs = loadReferenceImages(
-    REFERENCE_ASSET_FILES.zone,
-    referenceImageBase64
-  );
 
   try {
     const zoneImgRes = await ai.models.generateContent({
       model: modelName,
-      contents: buildContents(zoneImagePrompt, zoneRefs, "Raid Zone"),
+      contents: buildContents("Raid Zone", zoneImagePrompt),
       config: { outputMimeType: "image/png" },
     });
 
@@ -463,7 +372,7 @@ BACKGROUND:
     if (includeRewardImage) {
       const rewardImgRes = await ai.models.generateContent({
         model: modelName,
-        contents: [{ text: rewardImagePrompt }],
+        contents: buildContents("B2B Reward", rewardImagePrompt),
         config: { outputMimeType: "image/png" },
       });
       rewardImageBase64 = extractBase64FromGemini(rewardImgRes);

@@ -1489,6 +1489,14 @@
             "description": "Seconds elapsed since capture start.",
             "example": 50
           },
+          "eligibleToComplete": {
+            "type": "boolean",
+            "description": "True when remainingSec is 0. Player may POST capture/complete without eliminating remaining session guards (full hold satisfies guard penalty)."
+          },
+          "showGuardElimination": {
+            "type": "boolean",
+            "description": "True while timer is running and sessionGuardsRemaining > 0. Elimination is optional (shortens time); not required if eligibleToComplete is true."
+          },
           "captureProgressPercent": {
             "type": "integer",
             "minimum": 0,

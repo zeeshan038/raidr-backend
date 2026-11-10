@@ -269,6 +269,10 @@ export const formatActiveCaptureSessionFromAttempt = (attempt) => {
     captureTimeSec > 0
       ? Math.min(100, Math.round((Math.max(0, elapsedSec) / captureTimeSec) * 100))
       : 0;
+  const eligibleToComplete = remainingSec <= 0;
+  const showGuardElimination =
+    !eligibleToComplete && (attempt.sessionGuardsRemaining ?? 0) > 0;
+
   return {
     initialGuardCount: attempt.initialGuardCount,
     sessionGuardsRemaining: attempt.sessionGuardsRemaining,
@@ -280,6 +284,10 @@ export const formatActiveCaptureSessionFromAttempt = (attempt) => {
     elapsedSec: Math.max(0, Math.floor(elapsedSec)),
     /** 0–100 for snatch hold timer bar (same pattern as b2b.hold.progressPercent). */
     captureProgressPercent,
+    /** True when hold timer finished — call POST capture/complete even if sessionGuardsRemaining > 0. */
+    eligibleToComplete,
+    /** Optional AR shortcut while timer is still running; not required if player waits full duration. */
+    showGuardElimination,
   };
 };
 

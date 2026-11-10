@@ -35,7 +35,6 @@ export const merchantB2bGenerateImages = async (req, res) => {
     brandHint,
     primaryColor,
     secondaryColor,
-    referenceImageBase64,
     includeRewardImage,
   } = req.body;
 
@@ -50,7 +49,6 @@ export const merchantB2bGenerateImages = async (req, res) => {
       brandHint,
       primaryColor,
       secondaryColor,
-      referenceImageBase64,
       includeRewardImage: includeRewardImage !== false,
     });
     res.status(200).json({

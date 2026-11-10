@@ -555,6 +555,10 @@ export const pingCapture = async (req, res) => {
     const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
     const remainingSec = Math.max(0, Math.ceil(attempt.captureTimeSec - elapsedSec));
 
+    const eligibleToComplete = remainingSec <= 0;
+    const showGuardElimination =
+      !eligibleToComplete && (attempt.sessionGuardsRemaining ?? 0) > 0;
+
     res.status(200).json({
       status: true,
       inRadius: true,
@@ -562,6 +566,12 @@ export const pingCapture = async (req, res) => {
       sessionGuardsRemaining: attempt.sessionGuardsRemaining,
       initialGuardCount: attempt.initialGuardCount,
       guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+      eligibleToComplete,
+      showGuardElimination,
+      captureProgressPercent:
+        attempt.captureTimeSec > 0
+          ? Math.min(100, Math.round((Math.max(0, elapsedSec) / attempt.captureTimeSec) * 100))
+          : 0,
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
@@ -647,15 +657,6 @@ export const completeCapture = async (req, res) => {
       });
     }
 
-    if (attempt.initialGuardCount > 0 && attempt.sessionGuardsRemaining > 0) {
-      return res.status(400).json({
-        status: false,
-        msg: "You must eliminate all guards before completing capture.",
-        sessionGuardsRemaining: attempt.sessionGuardsRemaining,
-        initialGuardCount: attempt.initialGuardCount,
-      });
-    }
-
     if (!isZoneAttackable(zone, now)) {
       return res.status(400).json({
         status: false,
@@ -664,11 +665,19 @@ export const completeCapture = async (req, res) => {
     }
 
     const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
-    if (elapsedSec < attempt.captureTimeSec) {
+    const remainingSec = Math.ceil(attempt.captureTimeSec - elapsedSec);
+    const timerComplete = elapsedSec >= attempt.captureTimeSec;
+
+    if (!timerComplete) {
+      const guardsRemain = (attempt.sessionGuardsRemaining ?? 0) > 0;
       return res.status(400).json({
         status: false,
-        msg: "Capture time not met. Hold position until the timer completes.",
-        remainingSec: Math.ceil(attempt.captureTimeSec - elapsedSec),
+        msg: guardsRemain
+          ? "Hold until the timer completes, or eliminate guards to shorten capture time."
+          : "Capture time not met. Hold position until the timer completes.",
+        remainingSec: Math.max(0, remainingSec),
+        sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+        initialGuardCount: attempt.initialGuardCount,
       });
     }
 

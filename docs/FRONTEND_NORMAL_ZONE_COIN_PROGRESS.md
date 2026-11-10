@@ -292,7 +292,7 @@ Do **not** animate the competitive bar locally — always bind to server values.
 | Only `passiveIncomePreview` | Mid-snatch — no coin bar yet (or show empty coin bar + preview text) |
 | `captureProgressPercent == 100` but still `available` | Call **`capture/complete`** — ownership not applied until then |
 | User owns 5 zones | `capture/start` → 403 — show `ownedZonesCount` / `maxOwnedZonesPerPlayer` |
-| Guards on zone | `sessionGuardsRemaining > 0` → eliminate before complete (unchanged) |
+| Guards on zone | While timer running: optional `eliminate-guards` to shorten time. When `activeCaptureSession.eligibleToComplete` (or `remainingSec === 0`), call `capture/complete` — guards need not be eliminated. |
 | Wallet balance | Passive coins still update via cron / `whoami` — bar is **per-zone UI**, not wallet |
 
 ---
