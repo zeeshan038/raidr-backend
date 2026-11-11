@@ -65,7 +65,7 @@ const storage = multer.memoryStorage();
 const uploadImage = multer({
     storage: storage,
     fileFilter: imageFilter,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+    limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 // Functions
@@ -77,8 +77,26 @@ function imageFilter(req, file, cb) {
     }
 }
 
+const runUploadImage = (req, res, next) => {
+    uploadImage.single("image")(req, res, (err) => {
+        if (!err) {
+            return next();
+        }
+        if (err.code === "LIMIT_FILE_SIZE") {
+            return res.status(413).json({
+                status: false,
+                msg: "Image too large (max 10MB). Compress or resize before upload.",
+            });
+        }
+        return res.status(400).json({
+            status: false,
+            msg: err.message || "Invalid image upload",
+        });
+    });
+};
+
 // Upload Image Route
-router.route("/image").post(verifyAnyAuth, uploadImage.single("image"), async (req, res) => {
+router.route("/image").post(verifyAnyAuth, runUploadImage, async (req, res) => {
     const containerName = process.env.HETZNER_BUCKET || req.query.containerName || "images";
 
     const folderName = req.query.folder ? `${req.query.folder}/` : "";
@@ -107,11 +125,19 @@ router.route("/image").post(verifyAnyAuth, uploadImage.single("image"), async (r
         let compressedImageBuffer;
         let contentType;
 
+        let sourceBuffer = req.file.buffer;
+        if (!isB2bMapAsset && req.file.size > 1024 * 1024) {
+            sourceBuffer = await sharp(sourceBuffer)
+                .rotate()
+                .resize(2048, 2048, { fit: "inside", withoutEnlargement: true })
+                .toBuffer();
+        }
+
         if (isB2bMapAsset) {
-            compressedImageBuffer = await normalizeMapAssetPngBuffer(req.file.buffer);
+            compressedImageBuffer = await normalizeMapAssetPngBuffer(sourceBuffer);
             contentType = "image/png";
         } else {
-            compressedImageBuffer = await sharp(req.file.buffer)
+            compressedImageBuffer = await sharp(sourceBuffer)
                 .toFormat("webp")
                 .webp({ quality: 80 })
                 .toBuffer();
