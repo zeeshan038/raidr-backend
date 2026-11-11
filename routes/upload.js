@@ -57,6 +57,7 @@ function sanitizeBlobName(name) {
 
 // Compression Packages
 import sharp from "sharp";
+import { normalizeMapAssetPngBuffer } from "../utils/mapAssetImage.js";
 
 // Multer
 import multer from "multer";
@@ -100,19 +101,14 @@ router.route("/image").post(verifyAnyAuth, uploadImage.single("image"), async (r
         const isB2bMapAsset =
             req.query.b2bAsset === "1" ||
             req.query.b2bAsset === "true" ||
-            folderName.includes("single-player-b2b");
+            folderName.includes("single-player-b2b") ||
+            folderName.includes("themes/");
 
         let compressedImageBuffer;
         let contentType;
 
         if (isB2bMapAsset) {
-            compressedImageBuffer = await sharp(req.file.buffer)
-                .resize(512, 512, {
-                    fit: "contain",
-                    background: { r: 0, g: 0, b: 0, alpha: 0 },
-                })
-                .png()
-                .toBuffer();
+            compressedImageBuffer = await normalizeMapAssetPngBuffer(req.file.buffer);
             contentType = "image/png";
         } else {
             compressedImageBuffer = await sharp(req.file.buffer)

@@ -4,7 +4,7 @@
 **Backend:** `raidr-backend` — all routes under **`/api`**.  
 **Requires:** Backend deployed with `normal.*` and `captureProgressPercent` fields (Phase 2+ passive bar).
 
-**Related docs:** [FLUTTER_SINGLE_PLAYER_INTEGRATION.md](./FLUTTER_SINGLE_PLAYER_INTEGRATION.md) (full Single Player API), [FRONTEND_SINGLE_PLAYER_V2.md](./FRONTEND_SINGLE_PLAYER_V2.md) (screen map), OpenAPI `swagger.json` schemas `NormalPassiveCoinProgress`, `SinglePlayerNormalBlock`, `ActiveCaptureSession`.
+**Related docs:** [FLUTTER_CAPTURE_TAP_ACCELERATION.md](./FLUTTER_CAPTURE_TAP_ACCELERATION.md) (rapid tap 2× snatch timer), [FLUTTER_SINGLE_PLAYER_INTEGRATION.md](./FLUTTER_SINGLE_PLAYER_INTEGRATION.md) (full Single Player API), [FRONTEND_SINGLE_PLAYER_V2.md](./FRONTEND_SINGLE_PLAYER_V2.md) (screen map), OpenAPI `swagger.json` schemas `NormalPassiveCoinProgress`, `SinglePlayerNormalBlock`, `ActiveCaptureSession`.
 
 ---
 
@@ -62,7 +62,8 @@ All **Private** — `Authorization: Bearer {{userToken}}`.
 | Zone detail | `GET` | `/single-player/zones/:id?latitude={lat}&longitude={lng}` | Required query when zone not yours (discovery) |
 | Start snatch | `POST` | `/single-player/zones/:id/capture/start` | Body: `{ latitude, longitude }` inside radius |
 | Hold ping | `POST` | `/single-player/zones/:id/capture/ping` | Same body; every 2–5s while on snatch screen |
-| Finish | `POST` | `/single-player/zones/:id/capture/complete` | After `remainingSec === 0` |
+| Rapid tap (2× speed) | `POST` | `/single-player/zones/:id/capture/taps` | Body: `{ latitude, longitude, taps?: 1 }` on each tap; drive UI from response `remainingSec` / `speedMultiplier` |
+| Finish | `POST` | `/single-player/zones/:id/capture/complete` | After server `remainingSec === 0` (`canComplete` / `eligibleToComplete`) |
 | My zones list | `GET` | `/single-player/zones?status=conquered_by_me&latitude=&longitude=&page=1&limit=20` | Each item is `SinglePlayerZoneFormatted` |
 
 Postman walkthrough: [POSTMAN_SINGLE_PLAYER_V2.md](./POSTMAN_SINGLE_PLAYER_V2.md) §2, §4, §6.
@@ -292,7 +293,7 @@ Do **not** animate the competitive bar locally — always bind to server values.
 | Only `passiveIncomePreview` | Mid-snatch — no coin bar yet (or show empty coin bar + preview text) |
 | `captureProgressPercent == 100` but still `available` | Call **`capture/complete`** — ownership not applied until then |
 | User owns 5 zones | `capture/start` → 403 — show `ownedZonesCount` / `maxOwnedZonesPerPlayer` |
-| Guards on zone | `sessionGuardsRemaining > 0` → eliminate before complete (unchanged) |
+| Guards on zone | While timer running: optional `eliminate-guards` to shorten time. When `activeCaptureSession.eligibleToComplete` (or `remainingSec === 0`), call `capture/complete` — guards need not be eliminated. |
 | Wallet balance | Passive coins still update via cron / `whoami` — bar is **per-zone UI**, not wallet |
 
 ---

@@ -5,6 +5,7 @@ import {
   getGameConfigForUser,
   startCapture,
   pingCapture,
+  tapCapture,
   cancelCapture,
   completeCapture,
   getDailyDrop,
@@ -52,6 +53,7 @@ router.post("/zones/:id/guards/assign", assignGuardsToZone);
 router.post("/zones/:id/guards/unassign", unassignGuardsFromZone);
 router.post("/zones/:id/capture/start", startCapture);
 router.post("/zones/:id/capture/ping", pingCapture);
+router.post("/zones/:id/capture/taps", tapCapture);
 router.post("/zones/:id/capture/cancel", cancelCapture);
 router.post("/zones/:id/capture/eliminate-guards", eliminateGuardsDuringCapture);
 router.post("/zones/:id/capture/complete", completeCapture);

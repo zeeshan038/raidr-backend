@@ -2,6 +2,7 @@ import { prisma } from "../config/db.js";
 import {
   formatBrandMonthForClient,
   getBrandMonthStateForUser,
+  parseBrandMonthCoords,
   tryClaimBrandMonthPrize,
 } from "../utils/brandMonth.js";
 
@@ -12,7 +13,13 @@ import {
  */
 export const getActiveBrandMonth = async (req, res) => {
   try {
-    const brandMonth = await getBrandMonthStateForUser(prisma, req.user.id);
+    const coords = parseBrandMonthCoords(req.query);
+    const brandMonth = await getBrandMonthStateForUser(
+      prisma,
+      req.user.id,
+      new Date(),
+      coords
+    );
     res.status(200).json({
       status: true,
       data: brandMonth,

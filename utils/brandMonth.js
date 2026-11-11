@@ -4,6 +4,7 @@ import {
 } from "./singlePlayerNotify.js";
 import { buildPushData, PUSH_TYPE } from "./pushNotificationPayload.js";
 import { awardRaidrCoins, getEconomyConfig } from "./economyConfig.js";
+import { haversineDistance } from "./methods/methods.js";
 
 export const BRAND_MONTH_REWARD_TYPE = {
   INLINE: "INLINE",
@@ -22,16 +23,87 @@ const campaignInWindowWhere = (now) => ({
   endDate: { gte: now },
 });
 
-/** Active Brand Month campaign (most recently created if several overlap). */
-export const findActiveBrandMonthCampaign = async (prisma, now = new Date()) => {
-  return prisma.brandMonthCampaign.findFirst({
+const activeCampaignInclude = {
+  commercialVoucher: true,
+  sponsoredTheme: true,
+};
+
+/** Parse lat/lng from query or body-style objects (supports lat/lng and latitude/longitude). */
+export const parseBrandMonthCoords = (source = {}) => {
+  const latRaw = source.lat ?? source.latitude;
+  const lngRaw = source.lng ?? source.longitude ?? source.long;
+  if (latRaw == null || lngRaw == null || latRaw === "" || lngRaw === "") {
+    return null;
+  }
+  const lat = parseFloat(latRaw);
+  const lng = parseFloat(lngRaw);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+  return { lat, lng };
+};
+
+/**
+ * Location tier for picking the right regional campaign:
+ * 2 = user inside linked theme radius, 0 = worldwide (no theme geo), -1 = excluded.
+ */
+const campaignLocationTier = (campaign, coords) => {
+  const theme = campaign.sponsoredTheme;
+  const hasGeo =
+    theme &&
+    theme.latitude != null &&
+    theme.longitude != null;
+
+  if (!hasGeo) {
+    return 0;
+  }
+
+  if (!coords) {
+    return -1;
+  }
+
+  const radius = theme.radius ?? 5000;
+  const distance = haversineDistance(
+    coords.lat,
+    coords.lng,
+    theme.latitude,
+    theme.longitude
+  );
+  return distance <= radius ? 2 : -1;
+};
+
+/** Pick best campaign among date-active rows (regional beats global; then newest). */
+export const pickBrandMonthCampaignForLocation = (campaigns, coords) => {
+  if (!campaigns?.length) {
+    return null;
+  }
+
+  const ranked = campaigns
+    .map((c) => ({ campaign: c, tier: campaignLocationTier(c, coords) }))
+    .filter((row) => row.tier >= 0)
+    .sort((a, b) => {
+      if (b.tier !== a.tier) {
+        return b.tier - a.tier;
+      }
+      return new Date(b.campaign.createdAt) - new Date(a.campaign.createdAt);
+    });
+
+  return ranked[0]?.campaign ?? null;
+};
+
+/** Active Brand Month for the player's location (linked SponsoredTheme geo). */
+export const findActiveBrandMonthCampaign = async (
+  prisma,
+  now = new Date(),
+  coords = null
+) => {
+  const campaigns = await prisma.brandMonthCampaign.findMany({
     where: campaignInWindowWhere(now),
     orderBy: { createdAt: "desc" },
-    include: {
-      commercialVoucher: true,
-      sponsoredTheme: true,
-    },
+    include: activeCampaignInclude,
   });
+
+  return pickBrandMonthCampaignForLocation(campaigns, coords);
 };
 
 export const getOrCreateBrandMonthProgress = async (prisma, userId, campaignId) => {
@@ -256,14 +328,23 @@ export const applyBrandMonthXp = async (
   prisma,
   userId,
   xpDelta,
-  _opts = {}
+  opts = {}
 ) => {
   const amount = Math.max(0, Math.floor(xpDelta ?? 0));
   if (amount === 0) {
     return null;
   }
 
-  const campaign = await findActiveBrandMonthCampaign(prisma);
+  let coords = opts.coords ?? null;
+  if (!coords && opts.useProfileLocation !== false) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { lat: true, long: true },
+    });
+    coords = parseBrandMonthCoords(user ?? {});
+  }
+
+  const campaign = await findActiveBrandMonthCampaign(prisma, new Date(), coords);
   if (!campaign) {
     return null;
   }
@@ -307,12 +388,19 @@ export const applyBrandMonthXp = async (
 };
 
 /** Load active campaign + user progress for dashboard / dedicated endpoint. */
-export const getBrandMonthStateForUser = async (prisma, userId, now = new Date()) => {
-  const campaign = await prisma.brandMonthCampaign.findFirst({
+export const getBrandMonthStateForUser = async (
+  prisma,
+  userId,
+  now = new Date(),
+  coords = null
+) => {
+  const campaigns = await prisma.brandMonthCampaign.findMany({
     where: campaignInWindowWhere(now),
     orderBy: { createdAt: "desc" },
-    include: { commercialVoucher: true },
+    include: { commercialVoucher: true, sponsoredTheme: true },
   });
+
+  const campaign = pickBrandMonthCampaignForLocation(campaigns, coords);
 
   if (!campaign) {
     return null;

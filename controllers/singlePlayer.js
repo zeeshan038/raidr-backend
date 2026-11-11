@@ -56,15 +56,17 @@ import {
 import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.js";
 import {
   findActiveBrandMonthCampaign,
-  getBrandMonthStateForUser,
+  parseBrandMonthCoords,
 } from "../utils/brandMonth.js";
 import {
   applyCaptureSessionToZoneClientView,
   clearZoneAttackers,
   extendCaptureSessionTtl,
   getActiveCaptureSessionForUser,
+  getCaptureTimerMetrics,
   normalizeCaptureAttempt,
   persistCaptureAttempt,
+  applyCaptureTaps,
   unregisterZoneAttacker,
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
@@ -551,16 +553,114 @@ export const pingCapture = async (req, res) => {
     }
 
     const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
-    const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
-    const remainingSec = Math.max(0, Math.ceil(attempt.captureTimeSec - elapsedSec));
+    const timer = getCaptureTimerMetrics(attempt);
+    await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
 
     res.status(200).json({
       status: true,
       inRadius: true,
-      remainingSec,
+      remainingSec: timer.remainingSec,
+      speedMultiplier: timer.speedMultiplier,
+      tapRate: timer.tapRate,
+      tapCount: timer.tapCount,
       sessionGuardsRemaining: attempt.sessionGuardsRemaining,
       initialGuardCount: attempt.initialGuardCount,
       guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+      eligibleToComplete: timer.eligibleToComplete,
+      canComplete: timer.canComplete,
+      showGuardElimination: timer.showGuardElimination,
+      captureProgressPercent: timer.captureProgressPercent,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+/**
+ * @Description Report tap activity during capture (rapid tap → up to 2× timer speed)
+ * @Route POST /api/single-player/zones/:id/capture/taps
+ * @Access Private
+ */
+export const tapCapture = async (req, res) => {
+  const { id: zoneId } = req.params;
+  const { latitude, longitude, taps: tapsRaw } = req.body;
+  const userId = req.user.id;
+  const requestedTaps = tapsRaw != null ? parseInt(tapsRaw, 10) : 1;
+
+  try {
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({
+        status: false,
+        msg: "Latitude and longitude are required",
+      });
+    }
+
+    if (Number.isNaN(requestedTaps) || requestedTaps < 1) {
+      return res.status(400).json({
+        status: false,
+        msg: "taps must be a positive integer",
+      });
+    }
+
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    const rawAttempt = await redis.get(attemptKey);
+    if (!rawAttempt) {
+      return res.status(400).json({
+        status: false,
+        msg: "No active capture attempt.",
+      });
+    }
+
+    const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
+    if (!zone) {
+      return res.status(404).json({ status: false, msg: "Zone not found" });
+    }
+
+    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
+    if (!locationCheck.ok) {
+      await redis.del(attemptKey);
+      await unregisterZoneAttacker(zoneId, userId);
+      return res.status(400).json({
+        status: false,
+        msg: "Left zone radius — capture cancelled.",
+        cancelled: true,
+      });
+    }
+
+    const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
+    const nowMs = Date.now();
+    const tapResult = applyCaptureTaps(attempt, nowMs, requestedTaps);
+
+    if (tapResult.throttled) {
+      const timer = getCaptureTimerMetrics(attempt, nowMs);
+      return res.status(429).json({
+        status: false,
+        msg: "Tap requests too frequent. Slow down slightly.",
+        remainingSec: timer.remainingSec,
+        speedMultiplier: timer.speedMultiplier,
+        tapRate: timer.tapRate,
+        tapCount: timer.tapCount,
+        eligibleToComplete: timer.eligibleToComplete,
+        canComplete: timer.canComplete,
+      });
+    }
+
+    const timer = getCaptureTimerMetrics(attempt, nowMs);
+    await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
+
+    res.status(200).json({
+      status: true,
+      inRadius: true,
+      tapsAccepted: tapResult.accepted,
+      tapsRejected: tapResult.rejected,
+      remainingSec: timer.remainingSec,
+      speedMultiplier: timer.speedMultiplier,
+      tapRate: timer.tapRate,
+      tapCount: timer.tapCount,
+      eligibleToComplete: timer.eligibleToComplete,
+      canComplete: timer.canComplete,
+      captureProgressPercent: timer.captureProgressPercent,
+      sessionGuardsRemaining: attempt.sessionGuardsRemaining,
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
@@ -646,15 +746,6 @@ export const completeCapture = async (req, res) => {
       });
     }
 
-    if (attempt.initialGuardCount > 0 && attempt.sessionGuardsRemaining > 0) {
-      return res.status(400).json({
-        status: false,
-        msg: "You must eliminate all guards before completing capture.",
-        sessionGuardsRemaining: attempt.sessionGuardsRemaining,
-        initialGuardCount: attempt.initialGuardCount,
-      });
-    }
-
     if (!isZoneAttackable(zone, now)) {
       return res.status(400).json({
         status: false,
@@ -662,12 +753,20 @@ export const completeCapture = async (req, res) => {
       });
     }
 
-    const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
-    if (elapsedSec < attempt.captureTimeSec) {
+    const timer = getCaptureTimerMetrics(attempt, now.getTime());
+    await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
+
+    if (!timer.eligibleToComplete) {
+      const guardsRemain = (attempt.sessionGuardsRemaining ?? 0) > 0;
       return res.status(400).json({
         status: false,
-        msg: "Capture time not met. Hold position until the timer completes.",
-        remainingSec: Math.ceil(attempt.captureTimeSec - elapsedSec),
+        msg: guardsRemain
+          ? "Hold until the timer completes, or eliminate guards to shorten capture time."
+          : "Capture time not met. Hold position until the timer completes.",
+        remainingSec: timer.remainingSec,
+        speedMultiplier: timer.speedMultiplier,
+        sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+        initialGuardCount: attempt.initialGuardCount,
       });
     }
 
@@ -961,7 +1060,9 @@ export const collectDailyDrop = async (req, res) => {
       ? configRow.dailyDropXpRare ?? 150
       : configRow.dailyDropXpNormal ?? 50;
 
-    const xpResult = await awardUserXp(prisma, userId, xpAmount);
+    const xpResult = await awardUserXp(prisma, userId, xpAmount, {
+      brandMonthCoords: parseBrandMonthCoords({ latitude, longitude }),
+    });
 
     tryCompleteReferralQualifyingActivity(userId).catch((err) =>
       console.error("Referral qualifying activity (daily drop):", err)
@@ -989,8 +1090,9 @@ export const getActiveTheme = async (req, res) => {
   try {
     const { lat, lng } = req.query;
     const now = new Date();
+    const coords = parseBrandMonthCoords(req.query);
 
-    const activeBrandMonth = await findActiveBrandMonthCampaign(prisma, now);
+    const activeBrandMonth = await findActiveBrandMonthCampaign(prisma, now, coords);
     let activeTheme = activeBrandMonth?.sponsoredTheme ?? null;
 
     if (!activeTheme) {
@@ -1287,8 +1389,6 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     }
 
-    const brandMonth = await getBrandMonthStateForUser(prisma, userId, now);
-
     res.status(200).json({
       status: true,
       data: {
@@ -1301,7 +1401,6 @@ export const getSinglePlayerDashboard = async (req, res) => {
           passiveIncomePerHour: passiveIncome,
           daysUntilNextRareDrop: 3,
         },
-        brandMonth,
         dailyDrop: processedDailyDrop,
         zones: processedZones,
       },
