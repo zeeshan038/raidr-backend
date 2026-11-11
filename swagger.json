@@ -4964,7 +4964,7 @@
           "Single Player"
         ],
         "summary": "Active Brand Month progression",
-        "description": "XP bar, vouchers remaining (FCFS), prizeStatus, eligibleToClaim. Grand prize is claimed via POST /single-player/brand-month/{campaignId}/claim. Pass the player's location so the correct regional campaign is returned when multiple countries run Brand Month at once. Selection uses the campaign's linked Sponsored Theme (latitude, longitude, radius meters). Geo-matched campaigns beat worldwide campaigns (theme without coordinates). data is null when no campaign is active for the date window, or when location is missing and only geo-fenced campaigns exist, or the player is outside every fenced region.",
+        "description": "XP bar, vouchers remaining (FCFS), prizeStatus, eligibleToClaim. Grand prize is claimed via POST /single-player/brand-month/{campaignId}/claim. Pass the player's location. Every active campaign must be linked to a Sponsored Theme (sponsoredThemeId). Regional: theme has latitude, longitude, radius — player must be inside. Worldwide: linked theme with no coordinates. Campaigns with no linked theme are never returned. Geo-matched beats worldwide. data is null when no campaign applies to the player location/date window.",
         "security": [
           {
             "bearerAuth": []
