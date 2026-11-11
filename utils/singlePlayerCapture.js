@@ -19,6 +19,15 @@ import {
 /** Extra Redis TTL after capture timer so AR / leave-screen / retry eliminate still sees session state. */
 export const CAPTURE_SESSION_BUFFER_SEC = 600;
 
+/** Valid taps per second in a 1s window to reach max capture speed (2×). */
+export const CAPTURE_TAP_RATE_FOR_2X = 4;
+export const CAPTURE_TAP_WINDOW_MS = 1000;
+export const CAPTURE_TAP_MAX_PER_REQUEST = 8;
+export const CAPTURE_TAP_MIN_INTERVAL_MS = 50;
+export const CAPTURE_TAP_MIN_REQUEST_INTERVAL_MS = 25;
+export const CAPTURE_TICK_MAX_GAP_SEC = 5;
+const CAPTURE_TAP_TIMESTAMP_CAP = 40;
+
 export const zoneAttackersRedisKey = (zoneId) => `single_player:zone:${zoneId}:attackers`;
 
 export const registerZoneAttacker = async (zoneId, userId, ttlSec) => {
@@ -51,7 +60,124 @@ export const normalizeCaptureAttempt = (attempt, zoneGuardCount = 0) => {
   if (attempt.guardsEliminatedInSession == null) {
     attempt.guardsEliminatedInSession = 0;
   }
+  ensureCaptureAccelState(attempt);
   return attempt;
+};
+
+/** Tap-acceleration fields on Redis capture attempts (server is source of truth). */
+export const ensureCaptureAccelState = (attempt, nowMs = Date.now()) => {
+  if (attempt.tapCount == null) attempt.tapCount = 0;
+  if (attempt.tapRate == null) attempt.tapRate = 0;
+  if (attempt.speedMultiplier == null) attempt.speedMultiplier = 1;
+  if (!Array.isArray(attempt.recentTapTimestamps)) attempt.recentTapTimestamps = [];
+  if (attempt.lastUpdateAt == null) {
+    attempt.lastUpdateAt = attempt.startedAt ?? nowMs;
+  }
+  if (attempt.effectiveElapsedSec == null && attempt.startedAt != null) {
+    attempt.effectiveElapsedSec = Math.max(0, (nowMs - attempt.startedAt) / 1000);
+  } else if (attempt.effectiveElapsedSec == null) {
+    attempt.effectiveElapsedSec = 0;
+  }
+  return attempt;
+};
+
+const pruneTapTimestamps = (attempt, nowMs) => {
+  const cutoff = nowMs - CAPTURE_TAP_WINDOW_MS;
+  attempt.recentTapTimestamps = (attempt.recentTapTimestamps ?? []).filter((t) => t > cutoff);
+  if (attempt.recentTapTimestamps.length > CAPTURE_TAP_TIMESTAMP_CAP) {
+    attempt.recentTapTimestamps = attempt.recentTapTimestamps.slice(-CAPTURE_TAP_TIMESTAMP_CAP);
+  }
+};
+
+export const computeTapRateFromAttempt = (attempt, nowMs = Date.now()) => {
+  pruneTapTimestamps(attempt, nowMs);
+  return attempt.recentTapTimestamps.length;
+};
+
+export const computeSpeedMultiplierFromTapRate = (tapRate) => {
+  const rate = Math.max(0, tapRate ?? 0);
+  return 1 + Math.min(1, rate / CAPTURE_TAP_RATE_FOR_2X);
+};
+
+/**
+ * Advance effective capture elapsed by (now - lastUpdateAt) × current speedMultiplier.
+ * Recomputes tapRate / speedMultiplier for the *next* interval from recent taps.
+ */
+export const advanceCaptureElapsed = (attempt, nowMs = Date.now()) => {
+  ensureCaptureAccelState(attempt, nowMs);
+  const last = attempt.lastUpdateAt ?? attempt.startedAt ?? nowMs;
+  let deltaSec = (nowMs - last) / 1000;
+  if (deltaSec < 0) deltaSec = 0;
+  if (deltaSec > CAPTURE_TICK_MAX_GAP_SEC) deltaSec = CAPTURE_TICK_MAX_GAP_SEC;
+
+  const mult = attempt.speedMultiplier ?? 1;
+  attempt.effectiveElapsedSec = (attempt.effectiveElapsedSec ?? 0) + deltaSec * mult;
+  attempt.lastUpdateAt = nowMs;
+
+  attempt.tapRate = computeTapRateFromAttempt(attempt, nowMs);
+  attempt.speedMultiplier = computeSpeedMultiplierFromTapRate(attempt.tapRate);
+  return attempt;
+};
+
+/**
+ * Record validated taps (rate-limited). Call advanceCaptureElapsed first or rely on this to tick once.
+ * Returns { accepted, rejected, throttled }.
+ */
+export const applyCaptureTaps = (attempt, nowMs = Date.now(), requestedTaps = 1) => {
+  ensureCaptureAccelState(attempt, nowMs);
+
+  if (attempt.lastTapRequestAt != null && nowMs - attempt.lastTapRequestAt < CAPTURE_TAP_MIN_REQUEST_INTERVAL_MS) {
+    advanceCaptureElapsed(attempt, nowMs);
+    return { accepted: 0, rejected: requestedTaps, throttled: true };
+  }
+  attempt.lastTapRequestAt = nowMs;
+
+  advanceCaptureElapsed(attempt, nowMs);
+
+  const want = Math.min(Math.max(1, requestedTaps), CAPTURE_TAP_MAX_PER_REQUEST);
+  let accepted = 0;
+  for (let i = 0; i < want; i++) {
+    const tapAt = nowMs - (want - 1 - i) * CAPTURE_TAP_MIN_INTERVAL_MS;
+    const lastTap = attempt.recentTapTimestamps[attempt.recentTapTimestamps.length - 1];
+    if (lastTap != null && tapAt - lastTap < CAPTURE_TAP_MIN_INTERVAL_MS) {
+      break;
+    }
+    attempt.recentTapTimestamps.push(tapAt);
+    attempt.tapCount += 1;
+    accepted += 1;
+  }
+
+  attempt.tapRate = computeTapRateFromAttempt(attempt, nowMs);
+  attempt.speedMultiplier = computeSpeedMultiplierFromTapRate(attempt.tapRate);
+
+  return { accepted, rejected: want - accepted, throttled: false };
+};
+
+export const getCaptureTimerMetrics = (attempt, nowMs = Date.now()) => {
+  advanceCaptureElapsed(attempt, nowMs);
+  const captureTimeSec = attempt.captureTimeSec ?? 0;
+  const effectiveElapsedSec = Math.max(0, attempt.effectiveElapsedSec ?? 0);
+  const remainingSec = Math.max(0, Math.ceil(captureTimeSec - effectiveElapsedSec));
+  const eligibleToComplete = remainingSec <= 0;
+  const captureProgressPercent =
+    captureTimeSec > 0
+      ? Math.min(100, Math.round((effectiveElapsedSec / captureTimeSec) * 100))
+      : 0;
+  const showGuardElimination =
+    !eligibleToComplete && (attempt.sessionGuardsRemaining ?? 0) > 0;
+
+  return {
+    remainingSec,
+    eligibleToComplete,
+    canComplete: eligibleToComplete,
+    captureProgressPercent,
+    elapsedSec: Math.max(0, Math.floor(effectiveElapsedSec)),
+    effectiveElapsedSec,
+    tapCount: attempt.tapCount ?? 0,
+    tapRate: attempt.tapRate ?? 0,
+    speedMultiplier: attempt.speedMultiplier ?? 1,
+    showGuardElimination,
+  };
 };
 
 export const zoneForSessionCaptureTimer = (zone, attempt) => ({
@@ -71,8 +197,8 @@ export const recomputeCaptureTimeAfterGuardElimination = (
   now = new Date()
 ) => {
   const secondsPerGuard = config.secondsPerGuard ?? SP_DEFAULTS.secondsPerGuard;
-  const startedAt = attempt.startedAt ?? now.getTime();
-  const elapsedSec = Math.max(0, (now.getTime() - startedAt) / 1000);
+  advanceCaptureElapsed(attempt, now.getTime());
+  const elapsedSec = Math.max(0, attempt.effectiveElapsedSec ?? 0);
   const zoneForTimer = zoneForSessionCaptureTimer(zone, attempt);
   const formulaTotal = computeRequiredCaptureSeconds(zoneForTimer, now, config);
   const previousTotal = attempt.captureTimeSec ?? formulaTotal;
@@ -262,16 +388,8 @@ export const applyCaptureSessionToZoneClientView = (
 
 export const formatActiveCaptureSessionFromAttempt = (attempt) => {
   if (!attempt?.startedAt) return null;
-  const elapsedSec = (Date.now() - attempt.startedAt) / 1000;
   const captureTimeSec = attempt.captureTimeSec ?? 0;
-  const remainingSec = Math.max(0, Math.ceil(captureTimeSec - elapsedSec));
-  const captureProgressPercent =
-    captureTimeSec > 0
-      ? Math.min(100, Math.round((Math.max(0, elapsedSec) / captureTimeSec) * 100))
-      : 0;
-  const eligibleToComplete = remainingSec <= 0;
-  const showGuardElimination =
-    !eligibleToComplete && (attempt.sessionGuardsRemaining ?? 0) > 0;
+  const timer = getCaptureTimerMetrics(attempt);
 
   return {
     initialGuardCount: attempt.initialGuardCount,
@@ -279,15 +397,15 @@ export const formatActiveCaptureSessionFromAttempt = (attempt) => {
     guardsEliminatedInSession: attempt.guardsEliminatedInSession,
     captureTimeSec,
     startedAt: new Date(attempt.startedAt).toISOString(),
-    remainingSec,
-    /** Use for snatch timer after eliminate — matches Redis attempt, not zone DB estimate. */
-    elapsedSec: Math.max(0, Math.floor(elapsedSec)),
-    /** 0–100 for snatch hold timer bar (same pattern as b2b.hold.progressPercent). */
-    captureProgressPercent,
-    /** True when hold timer finished — call POST capture/complete even if sessionGuardsRemaining > 0. */
-    eligibleToComplete,
-    /** Optional AR shortcut while timer is still running; not required if player waits full duration. */
-    showGuardElimination,
+    remainingSec: timer.remainingSec,
+    elapsedSec: timer.elapsedSec,
+    captureProgressPercent: timer.captureProgressPercent,
+    eligibleToComplete: timer.eligibleToComplete,
+    canComplete: timer.canComplete,
+    tapCount: timer.tapCount,
+    tapRate: timer.tapRate,
+    speedMultiplier: timer.speedMultiplier,
+    showGuardElimination: timer.showGuardElimination,
   };
 };
 

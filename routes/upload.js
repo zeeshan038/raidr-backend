@@ -101,7 +101,8 @@ router.route("/image").post(verifyAnyAuth, uploadImage.single("image"), async (r
         const isB2bMapAsset =
             req.query.b2bAsset === "1" ||
             req.query.b2bAsset === "true" ||
-            folderName.includes("single-player-b2b");
+            folderName.includes("single-player-b2b") ||
+            folderName.includes("themes/");
 
         let compressedImageBuffer;
         let contentType;

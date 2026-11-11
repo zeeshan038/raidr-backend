@@ -375,10 +375,12 @@ sequenceDiagram
   API-->>App: shieldExpiresAt, ownedAt
 ```
 
+**Tap acceleration:** See [FLUTTER_CAPTURE_TAP_ACCELERATION.md](./FLUTTER_CAPTURE_TAP_ACCELERATION.md) — `POST .../capture/taps` while snatching; keep `capture/ping` every 2–5s.
+
 **Client rules:**
 
 1. Disable start if `!isAttackable` or own zone or B2B with `meetsEligibility === false`.
-2. Show timer from `captureTimeSec` / `remainingSec`; server is source of truth.
+2. Show timer from `captureTimeSec` / `remainingSec`; server is source of truth (tap acceleration included).
 3. If ping returns `cancelled: true`, exit capture UI and show `msg`.
 4. On app background, ping may fail — expect session expiry (`No active capture attempt`).
 5. User can `POST .../capture/cancel` to abandon.

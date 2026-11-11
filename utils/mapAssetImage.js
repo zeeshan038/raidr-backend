@@ -1,11 +1,78 @@
 import sharp from "sharp";
 
+const pixelLightness = (r, g, b) => (r + g + b) / 3;
+
+const pixelSaturation = (r, g, b) => {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  return max === 0 ? 0 : (max - min) / max;
+};
+
+const colorDistance = (r, g, b, r2, g2, b2) => Math.hypot(r - r2, g - g2, b - b2);
+
 /**
- * Remove solid light backdrops typical of AI image output (white/gray) by
- * flood-filling from the image border through similarly colored pixels.
- * Does not global-key all near-white pixels (preserves highlights on the subject).
+ * AI models often bake a gray/white checkerboard or flat studio plate into the PNG.
+ * Subject pixels are usually saturated (brand colors); backdrop is neutral gray/white.
  */
-export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
+const isNeutralBackdropPixel = (r, g, b, { maxSaturation = 0.16, minLightness = 155 } = {}) => {
+  const sat = pixelSaturation(r, g, b);
+  const l = pixelLightness(r, g, b);
+  if (sat > maxSaturation) {
+    return false;
+  }
+  if (l >= 238) {
+    return true;
+  }
+  return l >= minLightness;
+};
+
+/** Collect dominant neutral grays along the image border (checkerboard pair or flat gray). */
+function learnBorderBackdropColors(data, w, h) {
+  const buckets = [];
+  const push = (x, y) => {
+    const i = (y * w + x) * 4;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if (!isNeutralBackdropPixel(r, g, b, { maxSaturation: 0.14, minLightness: 150 })) {
+      return;
+    }
+    buckets.push([r, g, b]);
+  };
+
+  for (let x = 0; x < w; x++) {
+    push(x, 0);
+    push(x, h - 1);
+  }
+  for (let y = 1; y < h - 1; y++) {
+    push(0, y);
+    push(w - 1, y);
+  }
+
+  if (buckets.length === 0) {
+    return [
+      [232, 232, 232],
+      [245, 245, 245],
+    ];
+  }
+
+  buckets.sort((a, b) => pixelLightness(a[0], a[1], a[2]) - pixelLightness(b[0], b[1], b[2]));
+  const dark = buckets[Math.floor(buckets.length * 0.2)] ?? buckets[0];
+  const light = buckets[Math.floor(buckets.length * 0.8)] ?? buckets[buckets.length - 1];
+  return [dark, light];
+}
+
+const matchesLearnedBackdrop = (r, g, b, colors, tolerance = 42) => {
+  if (!isNeutralBackdropPixel(r, g, b)) {
+    return false;
+  }
+  return colors.some(([cr, cg, cb]) => colorDistance(r, g, b, cr, cg, cb) <= tolerance);
+};
+
+/**
+ * Flood from edges through neutral backdrop (white, gray, baked checkerboard cells).
+ */
+async function floodTransparentBackdrop(inputBuffer, options = {}) {
   const colorTolerance = options.colorTolerance ?? 32;
   const lightnessMin = options.lightnessMin ?? 195;
 
@@ -24,7 +91,7 @@ export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
 
   const lightness = (i) => (data[i] + data[i + 1] + data[i + 2]) / 3;
 
-  const colorDistance = (i, r, g, b) => {
+  const colorDistanceAt = (i, r, g, b) => {
     const dr = data[i] - r;
     const dg = data[i + 1] - g;
     const db = data[i + 2] - b;
@@ -50,16 +117,21 @@ export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
   sg = Math.round(sg / 4);
   sb = Math.round(sb / 4);
 
+  const learned = learnBorderBackdropColors(data, w, h);
+
   const isBackdropPixel = (i) => {
-    if (lightness(i) < lightnessMin) {
-      return false;
-    }
-    if (colorDistance(i, sr, sg, sb) <= colorTolerance) {
-      return true;
-    }
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
+    if (matchesLearnedBackdrop(r, g, b, learned, 44)) {
+      return true;
+    }
+    if (lightness(i) < lightnessMin) {
+      return false;
+    }
+    if (colorDistanceAt(i, sr, sg, sb) <= colorTolerance) {
+      return true;
+    }
     return r >= 238 && g >= 238 && b >= 238;
   };
 
@@ -113,6 +185,56 @@ export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
     }
   }
 
+  return { data, w, h };
+}
+
+/**
+ * Remove baked checkerboard / gray plate pixels even when they sit behind the subject
+ * (low-saturation neutrals matching the learned checker pair).
+ */
+function stripInteriorBakedGrid(data, w, h) {
+  const learned = learnBorderBackdropColors(data, w, h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      if (data[i + 3] === 0) {
+        continue;
+      }
+      if (matchesLearnedBackdrop(r, g, b, learned, 40)) {
+        data[i + 3] = 0;
+      }
+    }
+  }
+}
+
+/**
+ * Remove solid light backdrops typical of AI image output (white/gray/checkerboard).
+ */
+export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
+  let data;
+  let w;
+  let h;
+  try {
+    const flooded = await floodTransparentBackdrop(inputBuffer, options);
+    data = flooded.data;
+    w = flooded.w;
+    h = flooded.h;
+    stripInteriorBakedGrid(data, w, h);
+  } catch (err) {
+    const { data: rawData, info } = await sharp(inputBuffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    data = rawData;
+    w = info.width;
+    h = info.height;
+    stripInteriorBakedGrid(data, w, h);
+    console.warn("[mapAssetImage] flood backdrop fallback:", err?.message);
+  }
+
   return sharp(data, {
     raw: { width: w, height: h, channels: 4 },
   })
@@ -120,16 +242,17 @@ export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
     .toBuffer();
 }
 
-/** 512×512 PNG, transparent letterbox, with AI backdrop stripped when present. */
+/** 512×512 PNG, transparent letterbox, with AI backdrop + checkerboard stripped. */
 export async function normalizeMapAssetPngBuffer(inputBuffer) {
   let buf = inputBuffer;
   try {
-    buf = await stripOpaqueBackdrop(buf);
+    buf = await stripOpaqueBackdrop(buf, { lightnessMin: 165, colorTolerance: 40 });
   } catch (err) {
     console.warn("[mapAssetImage] stripOpaqueBackdrop skipped:", err?.message);
   }
 
   return sharp(buf)
+    .trim({ threshold: 1 })
     .resize(512, 512, {
       fit: "contain",
       background: { r: 0, g: 0, b: 0, alpha: 0 },

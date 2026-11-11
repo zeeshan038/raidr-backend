@@ -4,13 +4,14 @@ import { normalizeMapAssetPngBase64 } from "./mapAssetImage.js";
 /** Image generation is text-only — never attach background plates or reference JPEGs to the model. */
 const REFERENCE_STYLE_BLOCK = (assetLabel) => `
 STYLE (RAIDR ${assetLabel}):
+- CRITICAL: Export PNG with real alpha transparency. Do NOT paint a white/gray background. Do NOT draw a transparency checkerboard pattern anywhere in the image — that pattern must never appear in the file.
 - Text brief only — no background image, reference photo, or logo file is provided to the model
 - Real 3D game asset render (Cinema 4D / Blender / mobile AAA UI quality) — never flat 2D vector art
 - Strong depth: beveled edges, thickness, PBR gloss/metal/glass, crisp specular highlights
 - Lighting: key + fill + rim light, ambient occlusion, controlled neon accents inside the mesh
-- PNG with TRUE transparent alpha outside the object
+- PNG with TRUE transparent alpha outside the object — pixels outside the subject must be 100% transparent, not gray or checkered
 - Allowed for depth: a soft, semi-transparent CONTACT SHADOW directly under the object only (no floor texture, no room, no map)
-- Forbidden: solid white/gray backdrop, checkerboard baked in, photo environments, busy scenes, outer glow halos, text labels
+- Forbidden: solid white/gray backdrop, transparency preview grid, checkerboard tiles, photo environments, busy scenes, outer glow halos, text labels
 
 Apply sponsor colors and logo from the written brief only (descriptive text, not uploaded art).
 `.trim();
@@ -22,9 +23,10 @@ const buildContents = (assetLabel, promptBody) => [
 const SHARED_3D_OUTPUT_RULES = `
 OUTPUT (all assets):
 - Exactly 512x512 pixels, PNG, production-ready for a dark mobile map UI
-- Object centered with safe transparent padding; readable at 48px map pin size
+- Object centered with generous transparent padding; readable at 48px map pin size
 - Must read as dimensional 3D at a glance — avoid sticker-like flat shading
-- No background image is supplied — every pixel outside the subject must be fully transparent alpha
+- No background image is supplied — every pixel outside the subject must be fully transparent alpha (RGBA A=0)
+- Never simulate transparency with a gray/white checkerboard — mobile clients display transparent PNGs directly on a dark map
 `.trim();
 
 const extractBase64FromGemini = (res) => {

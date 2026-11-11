@@ -323,6 +323,7 @@ export const eliminateGuardsDuringCapture = async (req, res) => {
     });
     const captureTimeSec = timer?.captureTimeSec ?? attempt.captureTimeSec;
     attempt.captureTimeSec = captureTimeSec;
+    normalizeCaptureAttempt(attempt, zone.guardCount ?? 0);
     await persistCaptureAttempt(userId, zoneId, attempt, captureTimeSec);
 
     const activeCaptureSession = formatActiveCaptureSessionFromAttempt(attempt);

@@ -924,12 +924,67 @@ swagger.paths["/single-player/zones/{id}/capture/start"] = {
   },
 };
 
+swagger.paths["/single-player/zones/{id}/capture/taps"] = {
+  post: {
+    tags: ["Single Player"],
+    summary: "Tap during capture (accelerate hold timer up to 2×)",
+    description:
+      "Send tap bursts while holding snatch. Server validates rate (no client speed multiplier), advances effective elapsed time by real delta × speedMultiplier (1.0–2.0 from tap rate in the last second). Returns remainingSec and canComplete for UI.",
+    security: bearer,
+    parameters: [pathId],
+    requestBody: {
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            required: ["latitude", "longitude"],
+            properties: {
+              latitude: { type: "number" },
+              longitude: { type: "number" },
+              taps: { type: "integer", minimum: 1, maximum: 8, default: 1, example: 1 },
+            },
+          },
+          example: { latitude: 40.7829, longitude: -73.9654, taps: 1 },
+        },
+      },
+    },
+    responses: withAuth({
+      200: okJson(
+        "Tap recorded",
+        {
+          type: "object",
+          properties: {
+            status: { type: "boolean", example: true },
+            inRadius: { type: "boolean" },
+            tapsAccepted: { type: "integer" },
+            remainingSec: { type: "integer" },
+            speedMultiplier: { type: "number", minimum: 1, maximum: 2 },
+            tapRate: { type: "number" },
+            tapCount: { type: "integer" },
+            canComplete: { type: "boolean" },
+          },
+        },
+        {
+          status: true,
+          inRadius: true,
+          tapsAccepted: 1,
+          remainingSec: 22,
+          speedMultiplier: 2,
+          tapRate: 5,
+          canComplete: false,
+        }
+      ),
+      429: err("Too fast", "Tap requests too frequent. Slow down slightly."),
+    }),
+  },
+};
+
 swagger.paths["/single-player/zones/{id}/capture/ping"] = {
   post: {
     tags: ["Single Player"],
     summary: "Ping during capture (stay in radius)",
     description:
-      "Call every few seconds while the player holds snatch. Server checks GPS is still inside zone radius and returns remaining capture time. If the player leaves the radius, returns 400 with cancelled: true and clears the Redis capture session.",
+      "Call every few seconds while the player holds snatch. Server checks GPS is still inside zone radius and returns remaining capture time (server-side tap acceleration included). If the player leaves the radius, returns 400 with cancelled: true and clears the Redis capture session.",
     security: bearer,
     parameters: [pathId],
     requestBody: captureLocationBody,
@@ -942,9 +997,12 @@ swagger.paths["/single-player/zones/{id}/capture/ping"] = {
             status: { type: "boolean", example: true },
             inRadius: { type: "boolean" },
             remainingSec: { type: "integer" },
+            speedMultiplier: { type: "number" },
+            tapRate: { type: "number" },
+            canComplete: { type: "boolean" },
           },
         },
-        { status: true, inRadius: true, remainingSec: 45 }
+        { status: true, inRadius: true, remainingSec: 45, speedMultiplier: 1, canComplete: false }
       ),
       400: err("Capture cancelled", "Left zone radius — capture cancelled.", {
         cancelled: { type: "boolean", example: true },

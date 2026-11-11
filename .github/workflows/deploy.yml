@@ -26,4 +26,11 @@ jobs:
             echo "Deploying branch ${{ github.ref_name }} to $TARGET_DIR"
             cd $TARGET_DIR
             git pull origin ${{ github.ref_name }}
-            docker compose up -d --build
+            # Dev MUST use docker-compose.dev.yml — plain `docker compose up` reuses project
+            # name `raidr-backend-prod` and container names (raidr_postgres, …) and can hijack prod.
+            if [ "${{ github.ref_name }}" == "main" ]; then
+              sh scripts/compose-prod-up.sh
+            else
+              chmod +x scripts/compose-dev-up.sh
+              sh scripts/compose-dev-up.sh
+            fi

@@ -1503,6 +1503,27 @@
             "maximum": 100,
             "description": "Snatch hold timer progress 0–100 (same UX as b2b.hold.progressPercent).",
             "example": 55
+          },
+          "tapCount": {
+            "type": "integer",
+            "description": "Valid taps recorded this capture session.",
+            "example": 42
+          },
+          "tapRate": {
+            "type": "number",
+            "description": "Valid taps per second in the last 1s window (server-calculated).",
+            "example": 4.5
+          },
+          "speedMultiplier": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 2,
+            "description": "Capture timer speed 1.0–2.0 from tapRate (4+ taps/sec → 2×).",
+            "example": 2
+          },
+          "canComplete": {
+            "type": "boolean",
+            "description": "Alias of eligibleToComplete for mobile clients."
           }
         }
       },
@@ -13606,6 +13627,149 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/single-player/zones/{id}/capture/taps": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Tap during capture (accelerate hold timer up to 2×)",
+        "description": "Send tap bursts while holding snatch. Server validates tap rate (1.0–2.0 speed multiplier from taps in the last second). Do not send a client speed multiplier.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "latitude",
+                  "longitude"
+                ],
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  },
+                  "taps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8,
+                    "default": 1
+                  }
+                }
+              },
+              "example": {
+                "latitude": 40.7829,
+                "longitude": -73.9654,
+                "taps": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tap recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "inRadius": {
+                      "type": "boolean"
+                    },
+                    "tapsAccepted": {
+                      "type": "integer"
+                    },
+                    "tapsRejected": {
+                      "type": "integer"
+                    },
+                    "remainingSec": {
+                      "type": "integer"
+                    },
+                    "speedMultiplier": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 2
+                    },
+                    "tapRate": {
+                      "type": "number"
+                    },
+                    "tapCount": {
+                      "type": "integer"
+                    },
+                    "eligibleToComplete": {
+                      "type": "boolean"
+                    },
+                    "canComplete": {
+                      "type": "boolean"
+                    },
+                    "captureProgressPercent": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "inRadius": true,
+                  "tapsAccepted": 1,
+                  "remainingSec": 18,
+                  "speedMultiplier": 2,
+                  "tapRate": 5,
+                  "canComplete": false,
+                  "captureProgressPercent": 72
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "cancelled": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Tap requests too frequent"
           }
         }
       }
