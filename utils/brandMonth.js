@@ -45,14 +45,19 @@ export const parseBrandMonthCoords = (source = {}) => {
 
 /**
  * Location tier for picking the right regional campaign:
- * 2 = user inside linked theme radius, 0 = worldwide (no theme geo), -1 = excluded.
+ * 2 = inside linked SponsoredTheme radius
+ * 0 = linked theme has no lat/lng (explicit worldwide theme)
+ * -1 = excluded (no theme link, outside fence, or coords required but missing)
+ *
+ * Campaigns with sponsoredThemeId null are NOT global — admin must link a theme.
  */
 const campaignLocationTier = (campaign, coords) => {
   const theme = campaign.sponsoredTheme;
-  const hasGeo =
-    theme &&
-    theme.latitude != null &&
-    theme.longitude != null;
+  if (!theme) {
+    return -1;
+  }
+
+  const hasGeo = theme.latitude != null && theme.longitude != null;
 
   if (!hasGeo) {
     return 0;

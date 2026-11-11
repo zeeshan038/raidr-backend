@@ -20,7 +20,7 @@ On Docker prod, see [DEPLOY_SERVER_DB_FIX.md](./DEPLOY_SERVER_DB_FIX.md).
 
 ## Overview
 
-- Admin configures a **time-boxed campaign** (e.g. McDonald's Month): `xpTarget`, **voucher inventory** (FCFS), branding, optional `sponsoredThemeId`, and reward (INLINE or linked `CommercialVoucher`).
+- Admin configures a **time-boxed campaign**: link **`sponsoredThemeId`** (required for players to see it). Theme **with** lat/lng/radius = regional; theme **without** coordinates = worldwide.
 - Players earn **campaign XP** and **lifetime XP** from the same events (daily/rare drop collect uses config `dailyDropXpNormal` / `dailyDropXpRare`).
 - First players to reach `xpTarget` and call **claim** while `inventoryRemaining > 0` win the prize (FCFS at claim time).
 
