@@ -157,6 +157,40 @@ async function floodTransparentBackdrop(inputBuffer, options = {}) {
     trySeed(w - 1, y);
   }
 
+  const isNearWhiteBackdrop = (i) => {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const sat = pixelSaturation(r, g, b);
+    return r >= 248 && g >= 248 && b >= 248 && sat <= 0.06;
+  };
+
+  // Seed near-white corners/edges (Gemini flat plates when corner avg differs)
+  for (let x = 0; x < w; x++) {
+    const topI = pixelIndex(x, 0);
+    const bottomI = pixelIndex(x, h - 1);
+    if (isNearWhiteBackdrop(topI) && !visited[cell(x, 0)]) {
+      visited[cell(x, 0)] = 1;
+      queue.push([x, 0]);
+    }
+    if (isNearWhiteBackdrop(bottomI) && !visited[cell(x, h - 1)]) {
+      visited[cell(x, h - 1)] = 1;
+      queue.push([x, h - 1]);
+    }
+  }
+  for (let y = 1; y < h - 1; y++) {
+    const l = pixelIndex(0, y);
+    const r = pixelIndex(w - 1, y);
+    if (isNearWhiteBackdrop(l) && !visited[cell(0, y)]) {
+      visited[cell(0, y)] = 1;
+      queue.push([0, y]);
+    }
+    if (isNearWhiteBackdrop(r) && !visited[cell(w - 1, y)]) {
+      visited[cell(w - 1, y)] = 1;
+      queue.push([w - 1, y]);
+    }
+  }
+
   while (queue.length > 0) {
     const [x, y] = queue.shift();
     const i = pixelIndex(x, y);
@@ -177,7 +211,7 @@ async function floodTransparentBackdrop(inputBuffer, options = {}) {
         continue;
       }
       const ni = pixelIndex(nx, ny);
-      if (!isBackdropPixel(ni)) {
+      if (!isBackdropPixel(ni) && !isNearWhiteBackdrop(ni)) {
         continue;
       }
       visited[p] = 1;
@@ -204,6 +238,11 @@ function stripInteriorBakedGrid(data, w, h) {
         continue;
       }
       if (matchesLearnedBackdrop(r, g, b, learned, 40)) {
+        data[i + 3] = 0;
+        continue;
+      }
+      const sat = pixelSaturation(r, g, b);
+      if (r >= 248 && g >= 248 && b >= 248 && sat <= 0.06) {
         data[i + 3] = 0;
       }
     }
