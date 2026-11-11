@@ -56,7 +56,6 @@ import {
 import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.js";
 import {
   findActiveBrandMonthCampaign,
-  getBrandMonthStateForUser,
   parseBrandMonthCoords,
 } from "../utils/brandMonth.js";
 import {
@@ -1390,8 +1389,6 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     }
 
-    const brandMonth = await getBrandMonthStateForUser(prisma, userId, now, coords);
-
     res.status(200).json({
       status: true,
       data: {
@@ -1404,7 +1401,6 @@ export const getSinglePlayerDashboard = async (req, res) => {
           passiveIncomePerHour: passiveIncome,
           daysUntilNextRareDrop: 3,
         },
-        brandMonth,
         dailyDrop: processedDailyDrop,
         zones: processedZones,
       },

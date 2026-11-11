@@ -19,7 +19,7 @@ Base URL: `/api` (Bearer user token unless noted).
 | 8 | B2B zone detail | Zone + `zoneType: B2B`, `b2b.*`, `meetsEligibility` |
 | 9 | B2B owned / hold progress | `b2b.hold`, `POST .../zones/:id/b2b/claim` when `b2b.canClaim` |
 | 10 | My raid zones | `GET /single-player/zones?status=available\|conquered_by_me\|conquered_by_others` |
-| 11 | Brand Month bar (map) | `GET /single-player/dashboard` → `data.brandMonth` |
+| 11 | Brand Month bar (map) | `GET /single-player/brand-month/active` |
 | 12 | Brand Month progression | `GET /single-player/brand-month/active`, `GET .../history` |
 | 13 | Earn season XP | `POST /single-player/daily-drop/collect` → `xpAwarded`, `lifetimeXp`, `brandMonth` |
 

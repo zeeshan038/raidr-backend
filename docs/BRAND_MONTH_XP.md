@@ -50,7 +50,7 @@ Base: `/api/admin/brand-months` (Bearer admin token)
 | GET | `/api/single-player/brand-month/active` | Progress bar + `inventoryRemaining` / `inventoryTotal` |
 | GET | `/api/single-player/brand-month/history` | Past campaigns |
 | POST | `/api/single-player/brand-month/:campaignId/claim` | Claim grand prize when `eligibleToClaim` |
-| GET | `/api/single-player/dashboard` | Includes `brandMonth` (same shape as active) |
+| GET | `/api/single-player/dashboard` | Does not include `brandMonth` — use `/brand-month/active` |
 | POST | `/api/single-player/daily-drop/collect` | Adds `xpAwarded`, `lifetimeXp`, `brandMonth` (XP only) |
 
 ## `brandMonth` response (client)

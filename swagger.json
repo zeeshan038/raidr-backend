@@ -4643,8 +4643,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Map dashboard (stats, zones, daily drop, brand month)",
-        "description": "Requires player GPS. data.brandMonth uses the same location-aware campaign selection as GET /single-player/brand-month/active.",
+        "summary": "Map dashboard (stats, zones, daily drop)",
+        "description": "Requires player GPS. Brand Month progression is only on GET /single-player/brand-month/active (not included here).",
         "security": [
           {
             "bearerAuth": []
@@ -4658,7 +4658,7 @@
             "schema": {
               "type": "number"
             },
-            "description": "Player latitude for zones, daily drop distance, and Brand Month campaign selection"
+            "description": "Player latitude for zones and daily drop distance"
           },
           {
             "name": "longitude",
@@ -4667,7 +4667,7 @@
             "schema": {
               "type": "number"
             },
-            "description": "Player longitude for zones, daily drop distance, and Brand Month campaign selection"
+            "description": "Player longitude for zones and daily drop distance"
           },
           {
             "name": "city",
@@ -4703,15 +4703,6 @@
                           ],
                           "nullable": true
                         },
-                        "brandMonth": {
-                          "allOf": [
-                            {
-                              "$ref": "#/components/schemas/BrandMonthClientStateDto"
-                            }
-                          ],
-                          "nullable": true,
-                          "description": "Active Brand Month for latitude/longitude, or null if none applies"
-                        },
                         "zones": {
                           "type": "array",
                           "items": {
@@ -4734,7 +4725,6 @@
                       "vipRewardMultiplier": 1,
                       "daysUntilNextRareDrop": 3
                     },
-                    "brandMonth": null,
                     "dailyDrop": null,
                     "zones": [
                       {

@@ -15,7 +15,7 @@ Integrate Brand Month using docs/FLUTTER_BRAND_MONTH_INTEGRATION.md in raidr-bac
 
 Rules:
 - XP from POST /single-player/daily-drop/collect (and future XP sources). Grand prize: POST /single-player/brand-month/{campaignId}/claim when eligibleToClaim is true.
-- Show map bar from GET /single-player/dashboard → data.brandMonth OR GET /single-player/brand-month/active.
+- Show map bar from GET /single-player/brand-month/active (pass latitude/longitude).
 - Dual XP: same xpAwarded updates lifetime level (lifetimeXp) AND campaign bar (brandMonth.campaignXp).
 - prizeStatus: NONE | CLAIMED | SOLD_OUT. When eligibleToClaim, call POST /single-player/brand-month/{campaignId}/claim (FCFS inventory at claim time).
 - Urgency copy: inventoryRemaining / inventoryTotal (e.g. "25/50 vouchers left").
@@ -41,7 +41,7 @@ Rules:
 
 ## 2. Shared data model: `BrandMonthClientState`
 
-Returned as `data` (active/history) or `data.brandMonth` (dashboard) or root `brandMonth` (daily drop collect).  
+Returned as `data` (active/history) or root `brandMonth` (daily drop collect).  
 When no campaign is active, value is **`null`**.
 
 | Field | Type | UI use |
