@@ -10,20 +10,27 @@ const pixelSaturation = (r, g, b) => {
 
 const colorDistance = (r, g, b, r2, g2, b2) => Math.hypot(r - r2, g - g2, b - b2);
 
+const channelSpread = (r, g, b) => Math.max(r, g, b) - Math.min(r, g, b);
+
 /**
- * AI models often bake a gray/white checkerboard or flat studio plate into the PNG.
- * Subject pixels are usually saturated (brand colors); backdrop is neutral gray/white.
+ * Studio / export backdrop: white, gray, checkerboard, or dark navy plates from Gemini.
+ * Uses low channel spread (near-neutral) so dark blue-gray (#121826-style) is removed too.
  */
-const isNeutralBackdropPixel = (r, g, b, { maxSaturation = 0.16, minLightness = 155 } = {}) => {
+const isStudioBackdropPixel = (r, g, b) => {
+  const spread = channelSpread(r, g, b);
   const sat = pixelSaturation(r, g, b);
   const l = pixelLightness(r, g, b);
-  if (sat > maxSaturation) {
-    return false;
-  }
-  if (l >= 238) {
+
+  if (spread <= 28) {
     return true;
   }
-  return l >= minLightness;
+  if (sat <= 0.12 && (l >= 120 || l <= 72)) {
+    return true;
+  }
+  if (l >= 248 && spread <= 22) {
+    return true;
+  }
+  return false;
 };
 
 /** Collect dominant neutral grays along the image border (checkerboard pair or flat gray). */
@@ -34,7 +41,7 @@ function learnBorderBackdropColors(data, w, h) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    if (!isNeutralBackdropPixel(r, g, b, { maxSaturation: 0.14, minLightness: 150 })) {
+    if (!isStudioBackdropPixel(r, g, b)) {
       return;
     }
     buckets.push([r, g, b]);
@@ -51,6 +58,7 @@ function learnBorderBackdropColors(data, w, h) {
 
   if (buckets.length === 0) {
     return [
+      [18, 24, 38],
       [232, 232, 232],
       [245, 245, 245],
     ];
@@ -62,8 +70,8 @@ function learnBorderBackdropColors(data, w, h) {
   return [dark, light];
 }
 
-const matchesLearnedBackdrop = (r, g, b, colors, tolerance = 42) => {
-  if (!isNeutralBackdropPixel(r, g, b)) {
+const matchesLearnedBackdrop = (r, g, b, colors, tolerance = 48) => {
+  if (!isStudioBackdropPixel(r, g, b)) {
     return false;
   }
   return colors.some(([cr, cg, cb]) => colorDistance(r, g, b, cr, cg, cb) <= tolerance);
@@ -73,8 +81,7 @@ const matchesLearnedBackdrop = (r, g, b, colors, tolerance = 42) => {
  * Flood from edges through neutral backdrop (white, gray, baked checkerboard cells).
  */
 async function floodTransparentBackdrop(inputBuffer, options = {}) {
-  const colorTolerance = options.colorTolerance ?? 32;
-  const lightnessMin = options.lightnessMin ?? 195;
+  const colorTolerance = options.colorTolerance ?? 40;
 
   const { data, info } = await sharp(inputBuffer)
     .ensureAlpha()
@@ -123,16 +130,16 @@ async function floodTransparentBackdrop(inputBuffer, options = {}) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    if (matchesLearnedBackdrop(r, g, b, learned, 44)) {
+    if (isStudioBackdropPixel(r, g, b)) {
       return true;
     }
-    if (lightness(i) < lightnessMin) {
-      return false;
-    }
-    if (colorDistanceAt(i, sr, sg, sb) <= colorTolerance) {
+    if (matchesLearnedBackdrop(r, g, b, learned, 50)) {
       return true;
     }
-    return r >= 238 && g >= 238 && b >= 238;
+    if (colorDistanceAt(i, sr, sg, sb) <= colorTolerance && isStudioBackdropPixel(r, g, b)) {
+      return true;
+    }
+    return false;
   };
 
   const trySeed = (x, y) => {
@@ -157,40 +164,6 @@ async function floodTransparentBackdrop(inputBuffer, options = {}) {
     trySeed(w - 1, y);
   }
 
-  const isNearWhiteBackdrop = (i) => {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const sat = pixelSaturation(r, g, b);
-    return r >= 248 && g >= 248 && b >= 248 && sat <= 0.06;
-  };
-
-  // Seed near-white corners/edges (Gemini flat plates when corner avg differs)
-  for (let x = 0; x < w; x++) {
-    const topI = pixelIndex(x, 0);
-    const bottomI = pixelIndex(x, h - 1);
-    if (isNearWhiteBackdrop(topI) && !visited[cell(x, 0)]) {
-      visited[cell(x, 0)] = 1;
-      queue.push([x, 0]);
-    }
-    if (isNearWhiteBackdrop(bottomI) && !visited[cell(x, h - 1)]) {
-      visited[cell(x, h - 1)] = 1;
-      queue.push([x, h - 1]);
-    }
-  }
-  for (let y = 1; y < h - 1; y++) {
-    const l = pixelIndex(0, y);
-    const r = pixelIndex(w - 1, y);
-    if (isNearWhiteBackdrop(l) && !visited[cell(0, y)]) {
-      visited[cell(0, y)] = 1;
-      queue.push([0, y]);
-    }
-    if (isNearWhiteBackdrop(r) && !visited[cell(w - 1, y)]) {
-      visited[cell(w - 1, y)] = 1;
-      queue.push([w - 1, y]);
-    }
-  }
-
   while (queue.length > 0) {
     const [x, y] = queue.shift();
     const i = pixelIndex(x, y);
@@ -211,7 +184,7 @@ async function floodTransparentBackdrop(inputBuffer, options = {}) {
         continue;
       }
       const ni = pixelIndex(nx, ny);
-      if (!isBackdropPixel(ni) && !isNearWhiteBackdrop(ni)) {
+      if (!isBackdropPixel(ni)) {
         continue;
       }
       visited[p] = 1;
@@ -237,12 +210,7 @@ function stripInteriorBakedGrid(data, w, h) {
       if (data[i + 3] === 0) {
         continue;
       }
-      if (matchesLearnedBackdrop(r, g, b, learned, 40)) {
-        data[i + 3] = 0;
-        continue;
-      }
-      const sat = pixelSaturation(r, g, b);
-      if (r >= 248 && g >= 248 && b >= 248 && sat <= 0.06) {
+      if (isStudioBackdropPixel(r, g, b) || matchesLearnedBackdrop(r, g, b, learned, 46)) {
         data[i + 3] = 0;
       }
     }
@@ -250,7 +218,7 @@ function stripInteriorBakedGrid(data, w, h) {
 }
 
 /**
- * Remove solid light backdrops typical of AI image output (white/gray/checkerboard).
+ * Remove baked studio backdrops (light, dark, checkerboard) from AI PNGs.
  */
 export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
   let data;
@@ -285,7 +253,7 @@ export async function stripOpaqueBackdrop(inputBuffer, options = {}) {
 export async function normalizeMapAssetPngBuffer(inputBuffer) {
   let buf = inputBuffer;
   try {
-    buf = await stripOpaqueBackdrop(buf, { lightnessMin: 165, colorTolerance: 40 });
+    buf = await stripOpaqueBackdrop(buf, { colorTolerance: 44 });
   } catch (err) {
     console.warn("[mapAssetImage] stripOpaqueBackdrop skipped:", err?.message);
   }
