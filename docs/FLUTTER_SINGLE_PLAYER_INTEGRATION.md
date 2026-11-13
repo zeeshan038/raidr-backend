@@ -121,7 +121,7 @@ ISO-8601 strings from server, e.g. `"2026-10-12T14:30:00.000Z"`. Use `DateTime.p
 
 ### 2.2 `SinglePlayerZone` (client-formatted)
 
-Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZoneForClient`.
+**Dashboard `zones[]`** uses slim **map pins** only (`SinglePlayerZoneMapPin` — see §4.2). **Full** zone object: `GET /single-player/zones/:id` and zone list (`formatSinglePlayerZoneForClient`).
 
 | Field | Type | UI usage |
 |-------|------|----------|
@@ -490,7 +490,8 @@ Unless noted: **Private**, header `Authorization: Bearer <token>`, `Content-Type
       "distanceMeters": 85,
       "isNewlySpawned": true
     },
-    "zones": [ "/* SinglePlayerZone + isConquered */" ]
+    "silentDrops": [ "/* SilentMapDropMapPin */" ],
+    "zones": [ "/* SinglePlayerZoneMapPin — tap → GET /zones/:id */" ]
   }
 }
 ```

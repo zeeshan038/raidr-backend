@@ -304,6 +304,22 @@ export const executeBusinessQrClaim = async ({
   };
 };
 
+/** Admin/merchant: `imageUrl` = map pin asset; `commanderAvatar` = reward / product art. */
+export const resolveSilentDropMapIconUrl = (event) => {
+  const pin = typeof event?.imageUrl === "string" ? event.imageUrl.trim() : "";
+  const fallback =
+    typeof event?.commanderAvatar === "string" ? event.commanderAvatar.trim() : "";
+  return pin || fallback || null;
+};
+
+/** Product / reward image on detail screens (not the map pin). */
+export const resolveSilentDropProductImageUrl = (event) => {
+  const product =
+    typeof event?.commanderAvatar === "string" ? event.commanderAvatar.trim() : "";
+  const fallback = typeof event?.imageUrl === "string" ? event.imageUrl.trim() : "";
+  return product || fallback || null;
+};
+
 /** Dashboard map pin only — full detail: GET /single-player/silent-drops/:id */
 export const formatSilentDropMapPin = (event, userLat, userLng, claim) => {
   let distanceMeters = null;
@@ -320,7 +336,7 @@ export const formatSilentDropMapPin = (event, userLat, userLng, claim) => {
     title: event.title,
     latitude: event.latitude,
     longitude: event.longitude,
-    mapIconUrl: event.commanderAvatar || event.imageUrl || null,
+    mapIconUrl: resolveSilentDropMapIconUrl(event),
     distanceMeters,
     hasClaimed: Boolean(claim),
     ...(isGps ? { coinReward: event.coinReward ?? null } : {}),
@@ -344,8 +360,8 @@ export const formatSilentDropForClient = (event, userLat, userLng, claim) => {
     address: event.address,
     latitude: event.latitude,
     longitude: event.longitude,
-    imageUrl: event.imageUrl,
-    mapIconUrl: event.commanderAvatar || event.imageUrl,
+    imageUrl: resolveSilentDropProductImageUrl(event),
+    mapIconUrl: resolveSilentDropMapIconUrl(event),
     reward: event.reward,
     remainingQty: event.remainingQty,
     rewardQuantity: event.rewardQuantity,

@@ -130,6 +130,33 @@ Object.assign(swagger.components.schemas, {
       winnerUserId: { type: "string", format: "uuid", nullable: true },
     },
   },
+  SinglePlayerZoneMapPin: {
+    type: "object",
+    description:
+      "GET /single-player/dashboard zones[] only. Full zone: GET /single-player/zones/{id}.",
+    required: ["id", "name", "latitude", "longitude", "mapPinType", "status"],
+    properties: {
+      id: { type: "string", format: "uuid" },
+      name: { type: "string" },
+      latitude: { type: "number" },
+      longitude: { type: "number" },
+      radius: { type: "integer" },
+      zoneType: { type: "string", enum: ["NORMAL", "B2B"] },
+      type: { type: "string", enum: ["NORMAL", "B2B"] },
+      status: { type: "string", enum: ["available", "conquered_by_me", "conquered_by_others"] },
+      mapPinType: {
+        type: "string",
+        enum: ["YOUR_ZONE", "NEUTRAL", "B2B", "VULNERABLE", "ENEMY_SHIELDED"],
+      },
+      isShieldActive: { type: "boolean" },
+      isAttackable: { type: "boolean" },
+      isConquered: { type: "boolean" },
+      coinsPerHour: { type: "integer" },
+      imageUrl: { type: "string", nullable: true },
+      brandLogoUrl: { type: "string", nullable: true },
+      meetsEligibility: { type: "boolean", nullable: true },
+    },
+  },
   SinglePlayerZoneFormatted: {
     type: "object",
     properties: {
@@ -663,7 +690,9 @@ swagger.paths["/single-player/zones/{id}"] = {
 swagger.paths["/single-player/dashboard"] = {
   get: {
     tags: ["Single Player"],
-    summary: "Map dashboard (stats, zones, daily drop)",
+    summary: "Map dashboard (stats, zone pins, daily drop, silent drops)",
+    description:
+      "zones[] are slim map pins (SinglePlayerZoneMapPin). Tap a zone → GET /single-player/zones/{id} for capture timers, b2b hold, passive bars.",
     security: bearer,
     parameters: [
       { name: "latitude", in: "query", required: true, schema: { type: "number" } },
@@ -682,7 +711,7 @@ swagger.paths["/single-player/dashboard"] = {
               properties: {
                 dashboard: { $ref: "#/components/schemas/SinglePlayerDashboardBlock" },
                 dailyDrop: { allOf: [{ $ref: "#/components/schemas/DailyDropDto" }], nullable: true },
-                zones: { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneFormatted" } },
+                zones: { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneMapPin" } },
               },
             },
           },

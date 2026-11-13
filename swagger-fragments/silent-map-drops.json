@@ -14,7 +14,11 @@
         "title": { "type": "string", "example": "KFC crunch offer" },
         "latitude": { "type": "number", "example": 33.5650275 },
         "longitude": { "type": "number", "example": 73.1522898 },
-        "mapIconUrl": { "type": "string", "nullable": true },
+        "mapIconUrl": {
+          "type": "string",
+          "nullable": true,
+          "description": "Map pin asset (LiveEvent.imageUrl). Not the reward/product image (commanderAvatar)."
+        },
         "distanceMeters": { "type": "integer", "nullable": true },
         "hasClaimed": { "type": "boolean", "example": false },
         "coinReward": {
@@ -38,8 +42,14 @@
         "address": { "type": "string" },
         "latitude": { "type": "number", "example": 33.5650275 },
         "longitude": { "type": "number", "example": 73.1522898 },
-        "imageUrl": { "type": "string" },
-        "mapIconUrl": { "type": "string" },
+        "imageUrl": {
+          "type": "string",
+          "description": "Reward / product art on detail (LiveEvent.commanderAvatar)."
+        },
+        "mapIconUrl": {
+          "type": "string",
+          "description": "Map pin (LiveEvent.imageUrl)."
+        },
         "reward": { "type": "string", "example": "Free crunch burger" },
         "remainingQty": { "type": "integer", "example": 2 },
         "rewardQuantity": { "type": "integer", "example": 2 },

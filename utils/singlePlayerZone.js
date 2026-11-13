@@ -187,6 +187,41 @@ export const computeCaptureTimeBreakdown = (zone, now = new Date(), config = SP_
   };
 };
 
+/** Slim zone object for GET /single-player/dashboard map layer only — tap pin → GET /zones/:id */
+export const formatSinglePlayerZoneMapPin = (
+  zone,
+  userId,
+  now = new Date(),
+  ownedZonesCount = null
+) => {
+  const status = deriveZonePlayerStatus(zone, userId, now);
+  const mapPinType = deriveMapPinType(zone, userId, now);
+  const minRequired = zone.minOwnedZonesRequired ?? 0;
+  const meetsEligibility =
+    ownedZonesCount == null
+      ? null
+      : minRequired <= 0 || ownedZonesCount >= minRequired;
+
+  return {
+    id: zone.id,
+    name: zone.name,
+    latitude: zone.latitude,
+    longitude: zone.longitude,
+    radius: zone.radius,
+    zoneType: zone.zoneType,
+    type: zone.zoneType,
+    status,
+    mapPinType,
+    isShieldActive: isShieldActive(zone, now),
+    isAttackable: isZoneAttackable(zone, now),
+    isConquered: userOwnsSinglePlayerZone(zone, userId),
+    coinsPerHour: zone.coinsPerHour,
+    imageUrl: zone.imageUrl ?? null,
+    brandLogoUrl: zone.brandLogoUrl ?? null,
+    meetsEligibility,
+  };
+};
+
 export const formatSinglePlayerZoneForClient = (
   zone,
   userId,

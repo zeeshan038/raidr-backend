@@ -118,7 +118,7 @@ GET /single-player/dashboard?latitude=33.6844&longitude=73.0479&radiusKm=50
 | `id` | Detail / collect routes |
 | `title` | Pin label |
 | `latitude`, `longitude` | Pin position |
-| `mapIconUrl` | 3D / map icon |
+| `mapIconUrl` | Map **pin** asset (`imageUrl` in admin — `*-pin.png`), not reward/product icon |
 | `distanceMeters` | From query lat/lng |
 | `hasClaimed` | Grey out if true |
 | `coinReward` | **GPS pins only** (optional on pin) |
@@ -128,7 +128,7 @@ GET /single-player/dashboard?latitude=33.6844&longitude=73.0479&radiusKm=50
 | Key | `type` values |
 |-----|----------------|
 | `dailyDrop` | `DAILY_DROP` or `DAILY_DROP_RARE` (+ `rewardType`, coords, `isCollected`) |
-| `zones[]` | `type`: `NORMAL` or `B2B` (zone kind; full object still on dashboard today) |
+| `zones[]` | Slim **map pins** only — `GET /single-player/zones/:id` for full zone |
 
 ## 4b. Drop detail (`GET /single-player/silent-drops/:id`)
 

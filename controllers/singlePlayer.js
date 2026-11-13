@@ -14,6 +14,7 @@ import {
   computeCaptureTimeBreakdown,
   computeRequiredCaptureSeconds,
   formatSinglePlayerZoneForClient,
+  formatSinglePlayerZoneMapPin,
   isZoneAttackable,
   userOwnsSinglePlayerZone,
   validateCaptureLocation,
@@ -1382,31 +1383,8 @@ export const getSinglePlayerDashboard = async (req, res) => {
     // Calculate distance to drop
     const dropDistance = haversineDistance(dailyDrop.latitude, dailyDrop.longitude, userLat, userLng);
 
-    const processedZones = zones.map((zone) => {
-      const formatted = formatSinglePlayerZoneForClient(
-        zone,
-        userId,
-        now,
-        gameplay,
-        ownedZonesCount
-      );
-      return {
-        ...formatted,
-        type: zone.zoneType,
-        isConquered: userOwnsSinglePlayerZone(zone, userId),
-      };
-    });
-    await enrichNormalPassiveEarningOnFormattedZones(
-      prisma,
-      processedZones,
-      zones,
-      userId
-    );
-    await enrichB2bPassiveIncomeOnFormattedZones(
-      prisma,
-      processedZones,
-      zones,
-      userId
+    const processedZones = zones.map((zone) =>
+      formatSinglePlayerZoneMapPin(zone, userId, now, ownedZonesCount)
     );
 
     const silentDrops = await findNearbySilentDrops(
