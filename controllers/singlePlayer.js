@@ -25,7 +25,10 @@ import {
   enrichNormalPassiveEarningOnFormattedZones,
   ensureZonePassiveLedgerRow,
 } from "../utils/singlePlayerZonePassiveLedger.js";
-import { findNearbySilentDrops } from "../utils/liveEventSilentDrop.js";
+import {
+  findNearbySilentDrops,
+  fetchUserSilentDropClaimHistory,
+} from "../utils/liveEventSilentDrop.js";
 import {
   broadcastSinglePlayerZoneLeaderboard,
   enrichZoneLeaderboardOnFormattedZones,
@@ -1143,8 +1146,9 @@ export const getActiveTheme = async (req, res) => {
 };
 
 /**
- * @Description Get user's single player history (Daily Drops, Rare Drops, and Raid Zones)
+ * @Description Get user's single player history (Daily Drops, Rare Drops, Raid Zones, Silent map drops)
  * @Route GET /api/single-player/history
+ * @Query type optional — dailyDrops | rareDrops | raidZones | silentDrops
  * @Access Private
  */
 export const getSinglePlayerHistory = async (req, res) => {
@@ -1154,41 +1158,45 @@ export const getSinglePlayerHistory = async (req, res) => {
   try {
     let data;
 
-    if (type === 'dailyDrops') {
+    if (type === "dailyDrops") {
       data = await prisma.dailyDrop.findMany({
         where: { userId, isCollected: true, isRare: false },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: "desc" },
       });
-    } else if (type === 'rareDrops') {
+    } else if (type === "rareDrops") {
       data = await prisma.dailyDrop.findMany({
         where: { userId, isCollected: true, isRare: true },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: "desc" },
       });
-    } else if (type === 'raidZones') {
+    } else if (type === "raidZones") {
       data = await prisma.singlePlayerZone.findMany({
         where: { currentOwnerId: userId },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: "desc" },
       });
+    } else if (type === "silentDrops") {
+      data = await fetchUserSilentDropClaimHistory(userId);
     } else {
-      // Fallback: return everything if no query is passed
-      const dailyDrops = await prisma.dailyDrop.findMany({
-        where: { userId, isCollected: true, isRare: false },
-        orderBy: { updatedAt: 'desc' }
-      });
-      const rareDrops = await prisma.dailyDrop.findMany({
-        where: { userId, isCollected: true, isRare: true },
-        orderBy: { updatedAt: 'desc' }
-      });
-      const raidZones = await prisma.singlePlayerZone.findMany({
-        where: { currentOwnerId: userId },
-        orderBy: { updatedAt: 'desc' }
-      });
-      data = { dailyDrops, rareDrops, raidZones };
+      const [dailyDrops, rareDrops, raidZones, silentDrops] = await Promise.all([
+        prisma.dailyDrop.findMany({
+          where: { userId, isCollected: true, isRare: false },
+          orderBy: { updatedAt: "desc" },
+        }),
+        prisma.dailyDrop.findMany({
+          where: { userId, isCollected: true, isRare: true },
+          orderBy: { updatedAt: "desc" },
+        }),
+        prisma.singlePlayerZone.findMany({
+          where: { currentOwnerId: userId },
+          orderBy: { updatedAt: "desc" },
+        }),
+        fetchUserSilentDropClaimHistory(userId),
+      ]);
+      data = { dailyDrops, rareDrops, raidZones, silentDrops };
     }
 
     res.status(200).json({
       status: true,
-      data
+      data,
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });

@@ -458,10 +458,17 @@ Object.assign(swagger.components.schemas, {
   },
   SinglePlayerHistoryBundle: {
     type: "object",
+    description:
+      "GET /single-player/history without type. silentDrops = collected silent map claims (not live dashboard pins).",
     properties: {
       dailyDrops: { type: "array", items: { $ref: "#/components/schemas/DailyDropDto" } },
       rareDrops: { type: "array", items: { $ref: "#/components/schemas/DailyDropDto" } },
       raidZones: { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneFormatted" } },
+      silentDrops: {
+        type: "array",
+        description: "Collected GPS + QR silent map drops (SilentDropMyClaimItem)",
+        items: { $ref: "#/components/schemas/SilentDropMyClaimItem" },
+      },
     },
   },
   CommercialVoucherDto: {
@@ -1508,15 +1515,18 @@ swagger.paths["/single-player/daily-drop/collect"] = {
 swagger.paths["/single-player/history"] = {
   get: {
     tags: ["Single Player"],
-    summary: "Single player history",
+    summary: "Single player history (daily drops, zones, silent map drops)",
     description:
-      "Without type: returns { dailyDrops, rareDrops, raidZones }. With type query, data is an array of that type only.",
+      "Without type: returns { dailyDrops, rareDrops, raidZones, silentDrops }. type=silentDrops returns SilentDropMyClaimItem[] (alias: GET /single-player/silent-drops/my-claims).",
     security: bearer,
     parameters: [
       {
         name: "type",
         in: "query",
-        schema: { type: "string", enum: ["dailyDrops", "rareDrops", "raidZones"] },
+        schema: {
+          type: "string",
+          enum: ["dailyDrops", "rareDrops", "raidZones", "silentDrops"],
+        },
       },
     ],
     responses: withAuth({
@@ -1531,6 +1541,7 @@ swagger.paths["/single-player/history"] = {
                 { $ref: "#/components/schemas/SinglePlayerHistoryBundle" },
                 { type: "array", items: { $ref: "#/components/schemas/DailyDropDto" } },
                 { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneFormatted" } },
+                { type: "array", items: { $ref: "#/components/schemas/SilentDropMyClaimItem" } },
               ],
             },
           },
@@ -1550,6 +1561,24 @@ swagger.paths["/single-player/history"] = {
             ],
             rareDrops: [],
             raidZones: [sampleZoneFormatted],
+            silentDrops: [
+              {
+                type: "SILENT_DROP_QR",
+                claimId: "c1111111-1111-1111-1111-111111111111",
+                code: "A1B2C3D4",
+                xpEarned: 200,
+                coinsAwarded: null,
+                payoutType: "PARTNER_REWARD",
+                isRedeemed: true,
+                claimedAt: "2026-11-13T10:00:00.000Z",
+                drop: {
+                  id: "e1111111-1111-1111-1111-111111111111",
+                  title: "KFC",
+                  collectionMethod: "BUSINESS_QR",
+                  displayMode: "SILENT_MAP_DROP",
+                },
+              },
+            ],
           },
         }
       ),

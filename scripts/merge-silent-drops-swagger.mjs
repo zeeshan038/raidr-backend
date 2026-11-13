@@ -111,5 +111,80 @@ if (dashboardGet) {
   }
 }
 
+const silentDropHistorySamples = [
+  {
+    type: 'SILENT_DROP_QR',
+    claimId: 'c1111111-1111-1111-1111-111111111111',
+    code: 'A1B2C3D4',
+    xpEarned: 200,
+    coinsAwarded: null,
+    payoutType: 'PARTNER_REWARD',
+    isRedeemed: true,
+    redeemedAt: '2026-11-13T10:00:00.000Z',
+    claimedAt: '2026-11-13T10:00:00.000Z',
+    drop: {
+      id: 'e1111111-1111-1111-1111-111111111111',
+      title: 'KFC crunch offer',
+      reward: 'Free crunch burger',
+      displayMode: 'SILENT_MAP_DROP',
+      collectionMethod: 'BUSINESS_QR',
+    },
+  },
+  {
+    type: 'SILENT_DROP_GPS',
+    claimId: 'c2222222-2222-2222-2222-222222222222',
+    code: null,
+    xpEarned: 0,
+    coinsAwarded: 50,
+    payoutType: 'COINS_ONLY',
+    isRedeemed: true,
+    redeemedAt: '2026-11-12T08:30:00.000Z',
+    claimedAt: '2026-11-12T08:30:00.000Z',
+    drop: {
+      id: 'e2222222-2222-2222-2222-222222222222',
+      title: 'Park mystery coins',
+      coinReward: 50,
+      displayMode: 'SILENT_MAP_DROP',
+      collectionMethod: 'GPS_INSTANT',
+    },
+  },
+];
+
+const historyGet = swagger.paths['/single-player/history']?.get;
+if (historyGet) {
+  historyGet.summary = 'Single player history (daily drops, zones, silent map drops)';
+  historyGet.description =
+    'Without `type`: returns { dailyDrops, rareDrops, raidZones, silentDrops }. With `type=silentDrops`, `data` is SilentDropMyClaimItem[] (collected GPS + QR silent map drops). Legacy alias: GET /single-player/silent-drops/my-claims.';
+  const typeParam = historyGet.parameters?.find((p) => p.name === 'type');
+  if (typeParam?.schema) {
+    typeParam.schema.enum = ['dailyDrops', 'rareDrops', 'raidZones', 'silentDrops'];
+    typeParam.description =
+      'Filter history slice. Omit for full bundle including silentDrops (map drop claims, not live pins).';
+  }
+  const bundle = swagger.components.schemas.SinglePlayerHistoryBundle;
+  if (bundle) {
+    bundle.description =
+      'Combined profile/history payload when GET /single-player/history is called without type.';
+    if (bundle.properties) {
+      bundle.properties.silentDrops = {
+        type: 'array',
+        description: 'Collected silent map drops (GPS coins + QR partner rewards)',
+        items: { $ref: '#/components/schemas/SilentDropMyClaimItem' },
+      };
+    }
+  }
+  const dataSchema = historyGet.responses?.['200']?.content?.['application/json']?.schema?.properties?.data;
+  if (dataSchema?.oneOf && !dataSchema.oneOf.some((o) => o.items?.$ref?.includes('SilentDropMyClaimItem'))) {
+    dataSchema.oneOf.push({
+      type: 'array',
+      items: { $ref: '#/components/schemas/SilentDropMyClaimItem' },
+    });
+  }
+  const histExample = historyGet.responses?.['200']?.content?.['application/json']?.example;
+  if (histExample?.data && !Array.isArray(histExample.data)) {
+    histExample.data.silentDrops = silentDropHistorySamples;
+  }
+}
+
 fs.writeFileSync(swaggerPath, `${JSON.stringify(swagger, null, 2)}\n`);
 console.log('Merged silent map drops into swagger.json');

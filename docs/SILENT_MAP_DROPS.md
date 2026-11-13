@@ -34,7 +34,7 @@ Method 2 matches the demo flow: **Tap map icon → verify GPS → open QR scanne
 
 `GET /api/single-player/dashboard?latitude={lat}&longitude={lng}&radiusKm={optional}`
 
-Response includes `data.silentDrops[]` (same shape as drop detail). Only drops that are:
+Response includes **`data.silentDrops[]`** — **slim map pins** (`type`, `id`, `title`, coords, `mapIconUrl`, `distanceMeters`, `hasClaimed`, optional `coinReward`). Tap → detail endpoint below. Only drops that are:
 
 - `displayMode: SILENT_MAP_DROP`
 - `startTime <= now`, `endTime > now`, `remainingQty > 0`
@@ -42,7 +42,16 @@ Response includes `data.silentDrops[]` (same shape as drop detail). Only drops t
 
 ### 2) My claim history
 
-`GET /api/single-player/silent-drops/my-claims` — list of this user's silent drop claims (code, dates, drop title/reward).
+Use the **same history API** as daily / rare drops and raid zones:
+
+| Call | `data` shape |
+|------|----------------|
+| `GET /api/single-player/history` | `{ dailyDrops, rareDrops, raidZones, silentDrops }` |
+| `GET /api/single-player/history?type=silentDrops` | `SilentDropMyClaimItem[]` only |
+
+Legacy alias: **`GET /api/single-player/silent-drops/my-claims`** — identical items to `type=silentDrops`.
+
+Each history row: `type` (`SILENT_DROP_GPS` \| `SILENT_DROP_QR`), `payoutType`, `claimId`, `claimedAt`, nested `drop` (title, `collectionMethod`, etc.). GPS rows include `coinsAwarded`; QR rows include partner `code`.
 
 ### 3) Drop detail
 
@@ -83,6 +92,10 @@ Success: `data.armed: true`, `data.expiresAt`, `data.openQrScanner: true`.
 
 ### Success response (collect / collect-qr)
 
+**GPS_INSTANT:** `payoutType: "COINS_ONLY"`, `coinsAwarded` set, `xpEarned` typically `0`.
+
+**BUSINESS_QR:** `payoutType: "PARTNER_REWARD"`, show `code` at counter, optional bonus `coinsAwarded` from economy.
+
 ```json
 {
   "status": true,
@@ -90,8 +103,9 @@ Success: `data.armed: true`, `data.expiresAt`, `data.openQrScanner: true`.
   "data": {
     "claimId": "…",
     "code": "A1B2C3D4",
-    "xpEarned": 0,
+    "xpEarned": 200,
     "coinsAwarded": 0,
+    "payoutType": "PARTNER_REWARD",
     "isRedeemed": true
   }
 }
@@ -110,9 +124,13 @@ Success: `data.armed: true`, `data.expiresAt`, `data.openQrScanner: true`.
 
 Claims also appear in `GET /api/rewards/all` under `events` (with `event.displayMode`).
 
-### Client object shape (`silentDrops[]` / detail `data`)
+### Client object shapes (OpenAPI: `swagger.json` after `npm run swagger:merge-silent-drops`)
 
-`id`, `title`, `description`, `address`, `latitude`, `longitude`, `imageUrl`, `mapIconUrl`, `reward`, `remainingQty`, `rewardQuantity`, `startTime`, `endTime`, `status`, `displayMode`, `collectionMethod` (`GPS_INSTANT` \| `BUSINESS_QR`), `collectRadiusM`, `xpReward`, `distanceMeters`, `isClaimed`, `hasClaimed`, `claimId`.
+| Surface | Schema | Key fields |
+|---------|--------|------------|
+| Dashboard `silentDrops[]` | `SilentMapDropMapPin` | `type`, `id`, `title`, lat/lng, `mapIconUrl`, `distanceMeters`, `hasClaimed`, `coinReward?` |
+| Detail `GET …/silent-drops/:id` | `SilentMapDropClient` | Above + `description`, `reward`, `collectRadiusM`, `collectionMethod`, `payoutType`, stock, times |
+| History `silentDrops[]` | `SilentDropMyClaimItem` | `type`, `payoutType`, `coinsAwarded?`, `code?`, `claimedAt`, nested `drop` |
 
 ## DB migration
 

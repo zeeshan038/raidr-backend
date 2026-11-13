@@ -204,3 +204,51 @@ export const findNearbySilentDrops = async (userId, userLat, userLng, radiusMete
   nearby.sort((a, b) => (a.distanceMeters ?? 0) - (b.distanceMeters ?? 0));
   return nearby;
 };
+
+const silentDropClaimHistoryInclude = {
+  event: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      reward: true,
+      address: true,
+      imageUrl: true,
+      displayMode: true,
+      collectionMethod: true,
+      coinReward: true,
+      startTime: true,
+      endTime: true,
+    },
+  },
+};
+
+export const formatSilentDropClaimHistoryItem = (claim) => {
+  const isGps =
+    claim.event.collectionMethod === LIVE_EVENT_COLLECTION.GPS_INSTANT;
+  return {
+    type: isGps ? "SILENT_DROP_GPS" : "SILENT_DROP_QR",
+    claimId: claim.id,
+    code: claim.code,
+    xpEarned: claim.xpEarned,
+    coinsAwarded: isGps ? claim.event.coinReward ?? null : null,
+    payoutType: isGps ? "COINS_ONLY" : "PARTNER_REWARD",
+    isRedeemed: claim.isRedeemed,
+    redeemedAt: claim.redeemedAt,
+    claimedAt: claim.claimedAt,
+    drop: claim.event,
+  };
+};
+
+/** Collected silent map drops (GPS + QR) for profile/history screens. */
+export const fetchUserSilentDropClaimHistory = async (userId) => {
+  const claims = await prisma.liveEventClaim.findMany({
+    where: {
+      userId,
+      event: { displayMode: LIVE_EVENT_DISPLAY.SILENT_MAP_DROP },
+    },
+    include: silentDropClaimHistoryInclude,
+    orderBy: { claimedAt: "desc" },
+  });
+  return claims.map(formatSilentDropClaimHistoryItem);
+};

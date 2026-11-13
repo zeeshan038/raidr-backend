@@ -1017,7 +1017,9 @@ Other `msg` values: location required; too far (includes distance and radius).
 
 ### 4.11 `GET /single-player/history`
 
-**Query:** `type` optional — `dailyDrops` | `rareDrops` | `raidZones`
+**Query:** `type` optional — `dailyDrops` | `rareDrops` | `raidZones` | `silentDrops`
+
+See also **[Silent map drops — mobile developer guide](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md)** §3.1 for `silentDrops` history rows (`SILENT_DROP_GPS` / `SILENT_DROP_QR`, `payoutType`, nested `drop`).
 
 **200 OK** — with `type`
 
@@ -1036,12 +1038,15 @@ Other `msg` values: location required; too far (includes distance and radius).
   "data": {
     "dailyDrops": [],
     "rareDrops": [],
-    "raidZones": []
+    "raidZones": [],
+    "silentDrops": []
   }
 }
 ```
 
 `raidZones` entries are raw DB zone rows (not client-formatted) — use for history list or re-fetch detail by id.
+
+`silentDrops` items match `SilentDropMyClaimItem` in OpenAPI (`type` `SILENT_DROP_GPS` | `SILENT_DROP_QR`, `payoutType`, nested `drop`). Same array as `GET /single-player/silent-drops/my-claims`.
 
 ---
 

@@ -21,7 +21,7 @@
 
 GPS does **not** grant the partner reward early — `/collect` on a `BUSINESS_QR` drop is rejected; only coins path uses `/collect`.
 
-**Branch on API fields:** `collectionMethod` and `payoutType` on each pin (`GET dashboard` / detail).
+**Branch on API fields:** Dashboard pins use `type` (`SILENT_DROP_GPS` \| `SILENT_DROP_QR`). Detail adds `collectionMethod` and `payoutType`. History rows reuse the same `type` / `payoutType`.
 
 ---
 
@@ -71,14 +71,30 @@ Errors: `{ "status": false, "msg": "<machine-friendly or human text>" }` with HT
 |---|--------|------|---------|
 | 1 | `GET` | `/single-player/dashboard?latitude=&longitude=&radiusKm=` | Map pins in `data.silentDrops[]` |
 | 2 | `GET` | `/single-player/silent-drops/:id?latitude=&longitude=` | Drop detail + distance |
-| 3 | `GET` | `/single-player/silent-drops/my-claims` | User's silent-drop claim history |
+| 3 | `GET` | `/single-player/history?type=silentDrops` | Silent-drop claim history (GPS + QR) |
+| 3b | `GET` | `/single-player/silent-drops/my-claims` | Same as row 3 (legacy) |
 | 4 | `POST` | `/single-player/silent-drops/:id/collect` | **GPS_INSTANT** collect |
 | 5 | `POST` | `/single-player/silent-drops/:id/proximity` | **BUSINESS_QR** — GPS gate, arms scanner **20 min** |
 | 6 | `POST` | `/single-player/silent-drops/:id/collect-qr` | **BUSINESS_QR** — after scan |
 
 **Related (optional):** claimed rewards also appear in `GET /rewards/all` under `events` (includes `event.displayMode`).
 
-OpenAPI: merge fragment in repo (`swagger-fragments/silent-map-drops.json`) into `swagger.json`; paths under tag **Silent map drops**.
+**OpenAPI:** From `raidr-backend`, run `npm run swagger:merge-silent-drops`. Schemas: `SilentMapDropMapPin`, `SilentMapDropClient`, `SilentDropMyClaimItem`. History: `GET /single-player/history` + `SinglePlayerHistoryBundle.silentDrops`.
+
+### 3.1 Unified history (`GET /single-player/history`)
+
+Same endpoint as daily / rare drops and owned zones — add silent map drops to profile / activity tabs.
+
+| `type` query | `data` |
+|--------------|--------|
+| *(omit)* | `{ dailyDrops, rareDrops, raidZones, silentDrops }` |
+| `dailyDrops` | Collected normal daily drops |
+| `rareDrops` | Collected rare daily drops |
+| `raidZones` | Zones player owns |
+| **`silentDrops`** | **`SilentDropMyClaimItem[]`** — all collected GPS + QR silent drops |
+
+**Filter silent only:** `GET /single-player/history?type=silentDrops`  
+**Legacy (same array):** `GET /single-player/silent-drops/my-claims`
 
 ---
 
@@ -204,15 +220,21 @@ sequenceDiagram
 
 ## 6. Claim history
 
-**GET** `/single-player/silent-drops/my-claims`
+**GET** `/single-player/history?type=silentDrops`  
+Or full bundle: **GET** `/single-player/history` → `data.silentDrops[]` alongside `dailyDrops`, `rareDrops`, `raidZones`.
+
+Legacy: **GET** `/single-player/silent-drops/my-claims` (same items).
 
 **Response `data`:** array of:
 
 ```json
 {
+  "type": "SILENT_DROP_QR",
   "claimId": "…",
   "code": "A1B2C3D4",
-  "xpEarned": 0,
+  "xpEarned": 200,
+  "coinsAwarded": null,
+  "payoutType": "PARTNER_REWARD",
   "isRedeemed": true,
   "redeemedAt": null,
   "claimedAt": "2026-11-13T12:00:00.000Z",
@@ -227,6 +249,26 @@ sequenceDiagram
     "collectionMethod": "BUSINESS_QR",
     "startTime": "…",
     "endTime": "…"
+  }
+}
+```
+
+**GPS history row (coins):**
+
+```json
+{
+  "type": "SILENT_DROP_GPS",
+  "claimId": "…",
+  "code": null,
+  "xpEarned": 0,
+  "coinsAwarded": 50,
+  "payoutType": "COINS_ONLY",
+  "isRedeemed": true,
+  "claimedAt": "2026-11-12T08:30:00.000Z",
+  "drop": {
+    "title": "Park mystery coins",
+    "collectionMethod": "GPS_INSTANT",
+    "coinReward": 50
   }
 }
 ```
@@ -261,7 +303,7 @@ Full messages may include distance text, e.g. `Too far from drop. You are 120m a
 - [ ] Branch on `collectionMethod`: instant GPS button vs “Verify location” then QR.
 - [ ] For QR: call `/proximity` only when inside radius; show countdown to `expiresAt` (20 min max).
 - [ ] Never call trip live-event claim for these IDs.
-- [ ] Optional: sync history tab with `GET …/my-claims`.
+- [ ] History tab: `GET …/history?type=silentDrops` or full `GET …/history`.
 
 ---
 

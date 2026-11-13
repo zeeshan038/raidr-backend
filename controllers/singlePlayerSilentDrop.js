@@ -8,10 +8,10 @@ import {
 } from "../utils/liveEventClaim.js";
 import {
   isSilentMapDrop,
-  LIVE_EVENT_DISPLAY,
   qrArmRedisKey,
   QR_ARM_TTL_SEC,
 } from "../utils/liveEventModes.js";
+import { fetchUserSilentDropClaimHistory } from "../utils/liveEventSilentDrop.js";
 
 export const silentDropProximityCheck = async (req, res) => {
   const userId = req.user.id;
@@ -145,40 +145,7 @@ export const getMySilentDropClaims = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const claims = await prisma.liveEventClaim.findMany({
-      where: {
-        userId,
-        event: { displayMode: LIVE_EVENT_DISPLAY.SILENT_MAP_DROP },
-      },
-      include: {
-        event: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            reward: true,
-            address: true,
-            imageUrl: true,
-            displayMode: true,
-            collectionMethod: true,
-            startTime: true,
-            endTime: true,
-          },
-        },
-      },
-      orderBy: { claimedAt: "desc" },
-    });
-
-    const data = claims.map((c) => ({
-      claimId: c.id,
-      code: c.code,
-      xpEarned: c.xpEarned,
-      isRedeemed: c.isRedeemed,
-      redeemedAt: c.redeemedAt,
-      claimedAt: c.claimedAt,
-      drop: c.event,
-    }));
-
+    const data = await fetchUserSilentDropClaimHistory(userId);
     return res.status(200).json({
       status: true,
       msg: "Silent drop claim history",
