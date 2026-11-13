@@ -375,7 +375,7 @@ sequenceDiagram
   API-->>App: shieldExpiresAt, ownedAt
 ```
 
-**Tap acceleration:** See [FLUTTER_CAPTURE_TAP_ACCELERATION.md](./FLUTTER_CAPTURE_TAP_ACCELERATION.md) — `POST .../capture/taps` while snatching; keep `capture/ping` every 2–5s.
+**Tap acceleration:** See [FLUTTER_CAPTURE_TAP_ACCELERATION.md](./FLUTTER_CAPTURE_TAP_ACCELERATION.md) — taps are **local**; sync every 3–5s via `capture/ping` with `holdWallSec` + `speedMultiplier` (e.g. 60s capture: send `30` and `2` → complete).
 
 **Client rules:**
 
@@ -1019,7 +1019,7 @@ Other `msg` values: location required; too far (includes distance and radius).
 
 **Query:** `type` optional — `dailyDrops` | `rareDrops` | `raidZones` | `silentDrops`
 
-See also **[Silent map drops — mobile developer guide](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md)** §3.1 for `silentDrops` history rows (`SILENT_DROP_GPS` / `SILENT_DROP_QR`, `payoutType`, nested `drop`).
+See **[Silent map drops — developer handoff](./SILENT_MAP_DROPS_DEVELOPER.md)** (history + map pins) and **[full mobile guide](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md)** §3.1.
 
 **200 OK** — with `type`
 

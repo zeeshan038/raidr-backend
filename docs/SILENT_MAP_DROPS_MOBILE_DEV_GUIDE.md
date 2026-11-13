@@ -1,5 +1,7 @@
 # Silent map drops — mobile developer guide
 
+> **Short handoff:** [`SILENT_MAP_DROPS_DEVELOPER.md`](./SILENT_MAP_DROPS_DEVELOPER.md) — endpoints, shapes, decision tree (share with new devs first).
+
 **Feature:** Single-player pins on the map (not multiplayer live raids).  
 **Backend:** `LiveEvent` + `LiveEventClaim` with `displayMode: SILENT_MAP_DROP`.  
 **Audience:** Flutter / mobile engineers integrating the Single Player map.

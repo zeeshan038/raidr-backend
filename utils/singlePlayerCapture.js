@@ -24,9 +24,71 @@ export const CAPTURE_TAP_RATE_FOR_2X = 4;
 export const CAPTURE_TAP_WINDOW_MS = 1000;
 export const CAPTURE_TAP_MAX_PER_REQUEST = 8;
 export const CAPTURE_TAP_MIN_INTERVAL_MS = 50;
+/** @deprecated No longer used to reject tap requests — elapsed time still advances every call. */
 export const CAPTURE_TAP_MIN_REQUEST_INTERVAL_MS = 25;
+/** Fallback wall-clock cap per tick when captureTimeSec is unknown. */
 export const CAPTURE_TICK_MAX_GAP_SEC = 5;
+/** Max capture speed from taps (effective elapsed = wall × multiplier). */
+export const CAPTURE_MAX_SPEED = 2;
 const CAPTURE_TAP_TIMESTAMP_CAP = 40;
+
+/** Wall seconds we may credit in one ping/taps tick — enough to finish the hold at 2×. */
+export const maxWallGapSecForCaptureAttempt = (attempt) => {
+  const total = attempt.captureTimeSec ?? 0;
+  if (total <= 0) return CAPTURE_TICK_MAX_GAP_SEC;
+  return Math.max(CAPTURE_TICK_MAX_GAP_SEC, total / CAPTURE_MAX_SPEED);
+};
+
+/** Slack for device clock vs server when validating client holdWallSec. */
+export const CAPTURE_CLIENT_HOLD_CLOCK_SLACK_SEC = 3;
+
+const clampClientSpeedMultiplier = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(CAPTURE_MAX_SPEED, Math.max(1, n));
+};
+
+/**
+ * Client-reported hold: wall seconds on snatch UI × speed (1–2). No per-tap API calls.
+ * Example: 60s capture, holdWallSec 30, speed 2 → 60s effective → can complete.
+ */
+export const syncCaptureHoldFromClient = (attempt, nowMs = Date.now(), wallHoldSec, clientSpeedMult) => {
+  ensureCaptureAccelState(attempt, nowMs);
+  const started = attempt.startedAt ?? nowMs;
+  const maxWall = Math.max(0, (nowMs - started) / 1000) + CAPTURE_CLIENT_HOLD_CLOCK_SLACK_SEC;
+
+  let wall = Number(wallHoldSec);
+  if (!Number.isFinite(wall) || wall < 0) {
+    return { ok: false, msg: "holdWallSec must be a non-negative number" };
+  }
+  if (wall > maxWall) wall = maxWall;
+
+  const mult = clampClientSpeedMultiplier(clientSpeedMult);
+  const prevWall = attempt.clientWallHoldSec ?? 0;
+  if (wall + 0.01 < prevWall) {
+    return { ok: false, msg: "holdWallSec cannot go backwards" };
+  }
+
+  attempt.useClientHoldSync = true;
+  attempt.clientWallHoldSec = wall;
+  attempt.speedMultiplier = mult;
+  attempt.tapRate = 0;
+
+  let effective = wall * mult;
+  const captureTimeSec = attempt.captureTimeSec ?? 0;
+  if (captureTimeSec > 0) effective = Math.min(effective, captureTimeSec);
+
+  const prevEffective = attempt.effectiveElapsedSec ?? 0;
+  attempt.effectiveElapsedSec = Math.max(prevEffective, effective);
+  attempt.lastUpdateAt = nowMs;
+
+  return {
+    ok: true,
+    holdWallSec: wall,
+    speedMultiplier: mult,
+    effectiveElapsedSec: attempt.effectiveElapsedSec,
+  };
+};
 
 export const zoneAttackersRedisKey = (zoneId) => `single_player:zone:${zoneId}:attackers`;
 
@@ -105,13 +167,23 @@ export const computeSpeedMultiplierFromTapRate = (tapRate) => {
  */
 export const advanceCaptureElapsed = (attempt, nowMs = Date.now()) => {
   ensureCaptureAccelState(attempt, nowMs);
+  if (attempt.useClientHoldSync) {
+    return attempt;
+  }
   const last = attempt.lastUpdateAt ?? attempt.startedAt ?? nowMs;
   let deltaSec = (nowMs - last) / 1000;
   if (deltaSec < 0) deltaSec = 0;
-  if (deltaSec > CAPTURE_TICK_MAX_GAP_SEC) deltaSec = CAPTURE_TICK_MAX_GAP_SEC;
+  const maxWallGap = maxWallGapSecForCaptureAttempt(attempt);
+  if (deltaSec > maxWallGap) deltaSec = maxWallGap;
 
   const mult = attempt.speedMultiplier ?? 1;
-  attempt.effectiveElapsedSec = (attempt.effectiveElapsedSec ?? 0) + deltaSec * mult;
+  const captureTimeSec = attempt.captureTimeSec ?? 0;
+  let effectiveAdd = deltaSec * mult;
+  if (captureTimeSec > 0) {
+    const remaining = Math.max(0, captureTimeSec - (attempt.effectiveElapsedSec ?? 0));
+    if (effectiveAdd > remaining) effectiveAdd = remaining;
+  }
+  attempt.effectiveElapsedSec = (attempt.effectiveElapsedSec ?? 0) + effectiveAdd;
   attempt.lastUpdateAt = nowMs;
 
   attempt.tapRate = computeTapRateFromAttempt(attempt, nowMs);
@@ -125,12 +197,6 @@ export const advanceCaptureElapsed = (attempt, nowMs = Date.now()) => {
  */
 export const applyCaptureTaps = (attempt, nowMs = Date.now(), requestedTaps = 1) => {
   ensureCaptureAccelState(attempt, nowMs);
-
-  if (attempt.lastTapRequestAt != null && nowMs - attempt.lastTapRequestAt < CAPTURE_TAP_MIN_REQUEST_INTERVAL_MS) {
-    advanceCaptureElapsed(attempt, nowMs);
-    return { accepted: 0, rejected: requestedTaps, throttled: true };
-  }
-  attempt.lastTapRequestAt = nowMs;
 
   advanceCaptureElapsed(attempt, nowMs);
 

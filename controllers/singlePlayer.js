@@ -71,6 +71,7 @@ import {
   normalizeCaptureAttempt,
   persistCaptureAttempt,
   applyCaptureTaps,
+  syncCaptureHoldFromClient,
   unregisterZoneAttacker,
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
@@ -520,7 +521,7 @@ export const startCapture = async (req, res) => {
  */
 export const pingCapture = async (req, res) => {
   const { id: zoneId } = req.params;
-  const { latitude, longitude } = req.body;
+  const { latitude, longitude, holdWallSec: holdWallSecRaw, speedMultiplier: speedMultiplierRaw } = req.body;
   const userId = req.user.id;
 
   try {
@@ -528,81 +529,6 @@ export const pingCapture = async (req, res) => {
       return res.status(400).json({
         status: false,
         msg: "Latitude and longitude are required",
-      });
-    }
-
-    const attemptKey = captureAttemptRedisKey(userId, zoneId);
-    const rawAttempt = await redis.get(attemptKey);
-    if (!rawAttempt) {
-      return res.status(400).json({
-        status: false,
-        msg: "No active capture attempt.",
-      });
-    }
-
-    const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
-    if (!zone) {
-      return res.status(404).json({ status: false, msg: "Zone not found" });
-    }
-
-    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
-    if (!locationCheck.ok) {
-      await redis.del(attemptKey);
-      await unregisterZoneAttacker(zoneId, userId);
-      return res.status(400).json({
-        status: false,
-        msg: "Left zone radius — capture cancelled.",
-        cancelled: true,
-      });
-    }
-
-    const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
-    const timer = getCaptureTimerMetrics(attempt);
-    await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
-
-    res.status(200).json({
-      status: true,
-      inRadius: true,
-      remainingSec: timer.remainingSec,
-      speedMultiplier: timer.speedMultiplier,
-      tapRate: timer.tapRate,
-      tapCount: timer.tapCount,
-      sessionGuardsRemaining: attempt.sessionGuardsRemaining,
-      initialGuardCount: attempt.initialGuardCount,
-      guardsEliminatedInSession: attempt.guardsEliminatedInSession,
-      eligibleToComplete: timer.eligibleToComplete,
-      canComplete: timer.canComplete,
-      showGuardElimination: timer.showGuardElimination,
-      captureProgressPercent: timer.captureProgressPercent,
-    });
-  } catch (error) {
-    res.status(500).json({ status: false, msg: error.message });
-  }
-};
-
-/**
- * @Description Report tap activity during capture (rapid tap → up to 2× timer speed)
- * @Route POST /api/single-player/zones/:id/capture/taps
- * @Access Private
- */
-export const tapCapture = async (req, res) => {
-  const { id: zoneId } = req.params;
-  const { latitude, longitude, taps: tapsRaw } = req.body;
-  const userId = req.user.id;
-  const requestedTaps = tapsRaw != null ? parseInt(tapsRaw, 10) : 1;
-
-  try {
-    if (latitude == null || longitude == null) {
-      return res.status(400).json({
-        status: false,
-        msg: "Latitude and longitude are required",
-      });
-    }
-
-    if (Number.isNaN(requestedTaps) || requestedTaps < 1) {
-      return res.status(400).json({
-        status: false,
-        msg: "taps must be a positive integer",
       });
     }
 
@@ -633,20 +559,17 @@ export const tapCapture = async (req, res) => {
 
     const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
     const nowMs = Date.now();
-    const tapResult = applyCaptureTaps(attempt, nowMs, requestedTaps);
-
-    if (tapResult.throttled) {
-      const timer = getCaptureTimerMetrics(attempt, nowMs);
-      return res.status(429).json({
-        status: false,
-        msg: "Tap requests too frequent. Slow down slightly.",
-        remainingSec: timer.remainingSec,
-        speedMultiplier: timer.speedMultiplier,
-        tapRate: timer.tapRate,
-        tapCount: timer.tapCount,
-        eligibleToComplete: timer.eligibleToComplete,
-        canComplete: timer.canComplete,
-      });
+    if (holdWallSecRaw != null) {
+      if (speedMultiplierRaw == null) {
+        return res.status(400).json({
+          status: false,
+          msg: "speedMultiplier is required when holdWallSec is sent",
+        });
+      }
+      const holdSync = syncCaptureHoldFromClient(attempt, nowMs, holdWallSecRaw, speedMultiplierRaw);
+      if (!holdSync.ok) {
+        return res.status(400).json({ status: false, msg: holdSync.msg });
+      }
     }
 
     const timer = getCaptureTimerMetrics(attempt, nowMs);
@@ -655,8 +578,113 @@ export const tapCapture = async (req, res) => {
     res.status(200).json({
       status: true,
       inRadius: true,
-      tapsAccepted: tapResult.accepted,
-      tapsRejected: tapResult.rejected,
+      remainingSec: timer.remainingSec,
+      speedMultiplier: timer.speedMultiplier,
+      tapRate: timer.tapRate,
+      tapCount: timer.tapCount,
+      sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+      initialGuardCount: attempt.initialGuardCount,
+      guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+      eligibleToComplete: timer.eligibleToComplete,
+      canComplete: timer.canComplete,
+      showGuardElimination: timer.showGuardElimination,
+      captureProgressPercent: timer.captureProgressPercent,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+/**
+ * @Description Report tap activity during capture (rapid tap → up to 2× timer speed)
+ * @Route POST /api/single-player/zones/:id/capture/taps
+ * @Access Private
+ */
+export const tapCapture = async (req, res) => {
+  const { id: zoneId } = req.params;
+  const {
+    latitude,
+    longitude,
+    taps: tapsRaw,
+    holdWallSec: holdWallSecRaw,
+    speedMultiplier: speedMultiplierRaw,
+  } = req.body;
+  const userId = req.user.id;
+  const requestedTaps = tapsRaw != null ? parseInt(tapsRaw, 10) : 1;
+  const useClientHold = holdWallSecRaw != null;
+
+  try {
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({
+        status: false,
+        msg: "Latitude and longitude are required",
+      });
+    }
+
+    if (!useClientHold && (Number.isNaN(requestedTaps) || requestedTaps < 1)) {
+      return res.status(400).json({
+        status: false,
+        msg: "taps must be a positive integer (or send holdWallSec + speedMultiplier)",
+      });
+    }
+
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    const rawAttempt = await redis.get(attemptKey);
+    if (!rawAttempt) {
+      return res.status(400).json({
+        status: false,
+        msg: "No active capture attempt.",
+      });
+    }
+
+    const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
+    if (!zone) {
+      return res.status(404).json({ status: false, msg: "Zone not found" });
+    }
+
+    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
+    if (!locationCheck.ok) {
+      await redis.del(attemptKey);
+      await unregisterZoneAttacker(zoneId, userId);
+      return res.status(400).json({
+        status: false,
+        msg: "Left zone radius — capture cancelled.",
+        cancelled: true,
+      });
+    }
+
+    const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
+    const nowMs = Date.now();
+    let tapResult = { accepted: 0, rejected: 0 };
+    let holdSync = null;
+
+    if (useClientHold) {
+      if (speedMultiplierRaw == null) {
+        return res.status(400).json({
+          status: false,
+          msg: "speedMultiplier is required when holdWallSec is sent",
+        });
+      }
+      holdSync = syncCaptureHoldFromClient(attempt, nowMs, holdWallSecRaw, speedMultiplierRaw);
+      if (!holdSync.ok) {
+        return res.status(400).json({ status: false, msg: holdSync.msg });
+      }
+    } else {
+      tapResult = applyCaptureTaps(attempt, nowMs, requestedTaps);
+    }
+
+    const timer = getCaptureTimerMetrics(attempt, nowMs);
+    await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
+
+    res.status(200).json({
+      status: true,
+      inRadius: true,
+      ...(holdSync
+        ? {
+            holdWallSec: holdSync.holdWallSec,
+            holdWallSecCredited: holdSync.holdWallSec,
+          }
+        : { tapsAccepted: tapResult.accepted, tapsRejected: tapResult.rejected }),
       remainingSec: timer.remainingSec,
       speedMultiplier: timer.speedMultiplier,
       tapRate: timer.tapRate,

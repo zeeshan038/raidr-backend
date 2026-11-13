@@ -948,9 +948,9 @@ swagger.paths["/single-player/zones/{id}/capture/start"] = {
 swagger.paths["/single-player/zones/{id}/capture/taps"] = {
   post: {
     tags: ["Single Player"],
-    summary: "Tap during capture (accelerate hold timer up to 2×)",
+    summary: "Sync snatch hold progress (recommended) or legacy per-tap",
     description:
-      "Send tap bursts while holding snatch. Server validates rate (no client speed multiplier), advances effective elapsed time by real delta × speedMultiplier (1.0–2.0 from tap rate in the last second). Returns remainingSec and canComplete for UI.",
+      "Recommended: batch sync with holdWallSec (wall seconds on snatch UI) and speedMultiplier (1–2 from local taps). Example: 60s capture, holdWallSec 30, speedMultiplier 2 → canComplete. Optional legacy: taps count without holdWallSec.",
     security: bearer,
     parameters: [pathId],
     requestBody: {
@@ -962,10 +962,21 @@ swagger.paths["/single-player/zones/{id}/capture/taps"] = {
             properties: {
               latitude: { type: "number" },
               longitude: { type: "number" },
-              taps: { type: "integer", minimum: 1, maximum: 8, default: 1, example: 1 },
+              holdWallSec: {
+                type: "number",
+                minimum: 0,
+                description: "Wall-clock seconds since capture/start on device (cumulative, non-decreasing)",
+              },
+              speedMultiplier: { type: "number", minimum: 1, maximum: 2, description: "Required with holdWallSec" },
+              taps: { type: "integer", minimum: 1, maximum: 8, description: "Legacy; omit when using holdWallSec" },
             },
           },
-          example: { latitude: 40.7829, longitude: -73.9654, taps: 1 },
+          example: {
+            latitude: 40.7829,
+            longitude: -73.9654,
+            holdWallSec: 30,
+            speedMultiplier: 2,
+          },
         },
       },
     },
@@ -995,7 +1006,6 @@ swagger.paths["/single-player/zones/{id}/capture/taps"] = {
           canComplete: false,
         }
       ),
-      429: err("Too fast", "Tap requests too frequent. Slow down slightly."),
     }),
   },
 };

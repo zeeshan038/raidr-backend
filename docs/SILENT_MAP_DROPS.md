@@ -1,6 +1,7 @@
 # Silent map drops (Single Player)
 
-**Handoff for mobile devs:** [`SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md`](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md) — endpoints, flows, errors, and env URLs.
+**Handoff for mobile devs (send this):** [`SILENT_MAP_DROPS_DEVELOPER.md`](./SILENT_MAP_DROPS_DEVELOPER.md) — quick reference.  
+**Full guide:** [`SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md`](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md) — flows, errors, checklist.
 
 Reuses **`LiveEvent`** + **`LiveEventClaim`** with `displayMode: SILENT_MAP_DROP`. Multiplayer live events are unchanged (`LIVE_MULTIPLAYER` default).
 
