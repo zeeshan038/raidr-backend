@@ -104,9 +104,24 @@ export const executeGpsInstantClaim = async ({
     return { ok: false, status: 400, msg: "alreadyClaimed" };
   }
 
+  const gpsStreetCoinsOnly =
+    requireSilent &&
+    isSilentMapDrop(event) &&
+    event.collectionMethod === LIVE_EVENT_COLLECTION.GPS_INSTANT;
+
   const assignedCode = crypto.randomBytes(4).toString("hex").toUpperCase();
-  const xpAwarded = event.xpReward || 0;
+  const xpAwarded = gpsStreetCoinsOnly ? 0 : event.xpReward || 0;
   const levelInfo = await applyXpLevelUpdate(userId, xpAwarded);
+
+  const userStatsUpdate =
+    xpAwarded > 0
+      ? {
+          xp_earned: { increment: xpAwarded },
+          xp_progress: levelInfo.bank,
+          level: levelInfo.lv,
+          rewards_claimed: { increment: 1 },
+        }
+      : { rewards_claimed: { increment: 1 } };
 
   const [claimDoc] = await prisma.$transaction([
     prisma.liveEventClaim.create({
@@ -127,33 +142,43 @@ export const executeGpsInstantClaim = async ({
     }),
     prisma.user.update({
       where: { id: userId },
-      data: {
-        xp_earned: { increment: xpAwarded },
-        xp_progress: levelInfo.bank,
-        level: levelInfo.lv,
-        rewards_claimed: { increment: 1 },
-      },
+      data: userStatsUpdate,
     }),
   ]);
 
   const economy = await getEconomyConfig(prisma);
   let coinsAwarded = 0;
-  if (economy.liveEventRedeemCoins > 0) {
+  const coinSource = gpsStreetCoinsOnly
+    ? "silent_drop_gps_collect"
+    : "live_event_redeem";
+  if (gpsStreetCoinsOnly) {
+    const configured = event.coinReward;
+    coinsAwarded =
+      configured != null && configured > 0
+        ? configured
+        : economy.liveEventRedeemCoins;
+  } else if (economy.liveEventRedeemCoins > 0) {
     coinsAwarded = economy.liveEventRedeemCoins;
-    await awardRaidrCoins(prisma, userId, coinsAwarded, "live_event_redeem");
+  }
+  if (coinsAwarded > 0) {
+    await awardRaidrCoins(prisma, userId, coinsAwarded, coinSource);
   }
 
-  tryCompleteReferralQualifyingActivity(userId).catch((err) =>
-    console.error("Referral qualifying activity (live event claim):", err)
-  );
+  if (!gpsStreetCoinsOnly) {
+    tryCompleteReferralQualifyingActivity(userId).catch((err) =>
+      console.error("Referral qualifying activity (live event claim):", err)
+    );
+  }
 
-  publishToUser(userId, {
-    type: "user_stats_updated",
-    xpAdded: xpAwarded,
-    newXpProgress: levelInfo.bank,
-    newLevel: levelInfo.lv,
-    leveledUp: levelInfo.leveledUp,
-  });
+  if (xpAwarded > 0) {
+    publishToUser(userId, {
+      type: "user_stats_updated",
+      xpAdded: xpAwarded,
+      newXpProgress: levelInfo.bank,
+      newLevel: levelInfo.lv,
+      leveledUp: levelInfo.leveledUp,
+    });
+  }
 
   return {
     ok: true,
@@ -163,6 +188,7 @@ export const executeGpsInstantClaim = async ({
     xpEarned: xpAwarded,
     claimId: claimDoc.id,
     coinsAwarded,
+    payoutType: gpsStreetCoinsOnly ? "COINS_ONLY" : "PARTNER_REWARD",
   };
 };
 
@@ -274,6 +300,30 @@ export const executeBusinessQrClaim = async ({
     xpEarned: xpAwarded,
     coinsAwarded,
     isRedeemed: true,
+    payoutType: "PARTNER_REWARD",
+  };
+};
+
+/** Dashboard map pin only — full detail: GET /single-player/silent-drops/:id */
+export const formatSilentDropMapPin = (event, userLat, userLng, claim) => {
+  let distanceMeters = null;
+  if (userLat != null && userLng != null) {
+    distanceMeters = Math.round(
+      haversineDistance(userLat, userLng, event.latitude, event.longitude)
+    );
+  }
+  const isGps =
+    event.collectionMethod === LIVE_EVENT_COLLECTION.GPS_INSTANT;
+  return {
+    type: isGps ? "SILENT_DROP_GPS" : "SILENT_DROP_QR",
+    id: event.id,
+    title: event.title,
+    latitude: event.latitude,
+    longitude: event.longitude,
+    mapIconUrl: event.commanderAvatar || event.imageUrl || null,
+    distanceMeters,
+    hasClaimed: Boolean(claim),
+    ...(isGps ? { coinReward: event.coinReward ?? null } : {}),
   };
 };
 
@@ -284,7 +334,10 @@ export const formatSilentDropForClient = (event, userLat, userLng, claim) => {
       haversineDistance(userLat, userLng, event.latitude, event.longitude)
     );
   }
+  const isGps =
+    event.collectionMethod === LIVE_EVENT_COLLECTION.GPS_INSTANT;
   return {
+    type: isGps ? "SILENT_DROP_GPS" : "SILENT_DROP_QR",
     id: event.id,
     title: event.title,
     description: event.description,
@@ -307,5 +360,13 @@ export const formatSilentDropForClient = (event, userLat, userLng, claim) => {
     isClaimed: Boolean(claim),
     hasClaimed: Boolean(claim),
     claimId: claim?.id ?? null,
+    payoutType:
+      event.collectionMethod === LIVE_EVENT_COLLECTION.BUSINESS_QR
+        ? "PARTNER_REWARD"
+        : "COINS_ONLY",
+    coinReward:
+      event.collectionMethod === LIVE_EVENT_COLLECTION.GPS_INSTANT
+        ? event.coinReward ?? null
+        : null,
   };
 };

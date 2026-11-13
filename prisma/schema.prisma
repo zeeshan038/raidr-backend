@@ -311,7 +311,7 @@ model LiveEvent {
   title           String
   description     String
   address         String                 @default("")
-  merchantId      String
+  merchantId      String?                // null for admin GPS street drops (no restaurant)
   commanderAvatar String                 @default("")
   imageUrl        String                 @default("")
   latitude        Float
@@ -328,10 +328,12 @@ model LiveEvent {
   displayMode     String                 @default("LIVE_MULTIPLAYER") // LIVE_MULTIPLAYER | SILENT_MAP_DROP
   collectionMethod String                @default("GPS_INSTANT") // GPS_INSTANT | BUSINESS_QR
   collectRadiusM  Int                    @default(20)
+  coinReward      Int?                   // GPS street drops: coins credited to wallet on collect
+  couponCode      String?                @unique // Silent BUSINESS_QR only — staff/counter display (not live raids)
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
-  merchant        Merchant               @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  merchant        Merchant?              @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   participants    LiveEventParticipant[]
   claims          LiveEventClaim[]
   creditLogs      MerchantCreditLog[]

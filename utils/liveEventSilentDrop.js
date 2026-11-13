@@ -6,7 +6,10 @@ import {
   LIVE_EVENT_COLLECTION,
   LIVE_EVENT_DISPLAY,
 } from "./liveEventModes.js";
-import { formatSilentDropForClient } from "./liveEventClaim.js";
+import {
+  formatSilentDropForClient,
+  formatSilentDropMapPin,
+} from "./liveEventClaim.js";
 
 const silentDropWindowWhere = (now = new Date()) => ({
   displayMode: LIVE_EVENT_DISPLAY.SILENT_MAP_DROP,
@@ -19,6 +22,20 @@ const silentDropWindowWhere = (now = new Date()) => ({
 export const resolveSilentDropStatus = (startTime, now = new Date()) => {
   const start = new Date(startTime);
   return start <= now ? "live" : "scheduled";
+};
+
+/** Human-readable promo id for restaurant silent drops (not used by live multiplayer raids). */
+export const generateSilentDropCouponCode = () =>
+  `RDR-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+
+/** Prisma create — link merchant via relation (works with older generated clients). */
+const liveEventCreatePayload = (fields) => {
+  const { merchantId, ...rest } = fields;
+  const data = { ...rest };
+  if (merchantId) {
+    data.merchant = { connect: { id: merchantId } };
+  }
+  return { data };
 };
 
 export const createSilentDropRecord = async ({
@@ -36,6 +53,7 @@ export const createSilentDropRecord = async ({
   commanderAvatar,
   collectionMethod,
   collectRadiusM,
+  coinReward,
   skipCredits,
 }) => {
   const parsedStart = new Date(startTime);
@@ -54,31 +72,54 @@ export const createSilentDropRecord = async ({
       ? LIVE_EVENT_COLLECTION.BUSINESS_QR
       : LIVE_EVENT_COLLECTION.GPS_INSTANT;
 
+  const rewardLabel =
+    method === LIVE_EVENT_COLLECTION.GPS_INSTANT
+      ? reward?.trim() || "Raidr Coins"
+      : reward;
+
+  if (
+    method === LIVE_EVENT_COLLECTION.BUSINESS_QR &&
+    (!merchantId || typeof merchantId !== "string")
+  ) {
+    throw new Error("Restaurant (merchant) is required for in-store QR drops");
+  }
+
   const data = {
     title,
     description,
     address: address || "",
-    merchantId,
     commanderAvatar: commanderAvatar || "",
     imageUrl: imageUrl || "",
     latitude: parseFloat(latitude),
     longitude: parseFloat(longitude),
     startTime: parsedStart,
     endTime: parsedEnd,
-    reward,
+    reward: rewardLabel,
     rewardQuantity: qty,
     remainingQty: qty,
     status,
     size: "small",
     qrCode: qrCodeToken,
-    xpReward: economy.liveEventXpReward,
+    xpReward:
+      method === LIVE_EVENT_COLLECTION.GPS_INSTANT
+        ? 0
+        : economy.liveEventXpReward,
     displayMode: LIVE_EVENT_DISPLAY.SILENT_MAP_DROP,
     collectionMethod: method,
     collectRadiusM: collectRadiusM ?? 20,
+    ...(method === LIVE_EVENT_COLLECTION.GPS_INSTANT
+      ? { coinReward: Math.max(1, parseInt(coinReward, 10) || 0) }
+      : {}),
+    ...(method === LIVE_EVENT_COLLECTION.BUSINESS_QR
+      ? { couponCode: generateSilentDropCouponCode() }
+      : {}),
+    merchantId,
   };
 
+  const createArgs = liveEventCreatePayload(data);
+
   if (skipCredits) {
-    return prisma.liveEvent.create({ data });
+    return prisma.liveEvent.create(createArgs);
   }
 
   const EVENT_COST = 10;
@@ -95,7 +136,7 @@ export const createSilentDropRecord = async ({
       where: { id: merchantId },
       data: { credits: { decrement: EVENT_COST } },
     }),
-    prisma.liveEvent.create({ data }),
+    prisma.liveEvent.create(createArgs),
   ]);
 
   await prisma.merchantCreditLog.create({
@@ -156,7 +197,7 @@ export const findNearbySilentDrops = async (userId, userLat, userLng, radiusMete
     const dist = haversineDistance(userLat, userLng, event.latitude, event.longitude);
     if (dist <= radiusMeters) {
       nearby.push(
-        formatSilentDropForClient(event, userLat, userLng, claimByEvent.get(event.id))
+        formatSilentDropMapPin(event, userLat, userLng, claimByEvent.get(event.id))
       );
     }
   }

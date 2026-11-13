@@ -1,9 +1,37 @@
 {
   "schemas": {
+    "SilentMapDropMapPin": {
+      "type": "object",
+      "description": "Minimal silent drop on GET /single-player/dashboard silentDrops[] only. Full detail: SilentMapDropClient.",
+      "required": ["type", "id", "title", "latitude", "longitude", "hasClaimed"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["SILENT_DROP_GPS", "SILENT_DROP_QR"],
+          "example": "SILENT_DROP_QR"
+        },
+        "id": { "type": "string", "format": "uuid" },
+        "title": { "type": "string", "example": "KFC crunch offer" },
+        "latitude": { "type": "number", "example": 33.5650275 },
+        "longitude": { "type": "number", "example": 73.1522898 },
+        "mapIconUrl": { "type": "string", "nullable": true },
+        "distanceMeters": { "type": "integer", "nullable": true },
+        "hasClaimed": { "type": "boolean", "example": false },
+        "coinReward": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Present when type is SILENT_DROP_GPS"
+        }
+      }
+    },
     "SilentMapDropClient": {
       "type": "object",
-      "description": "Silent map drop as returned on dashboard and GET /single-player/silent-drops/{id}. qrCode is never exposed to mobile.",
+      "description": "Full silent map drop on GET /single-player/silent-drops/{id}. qrCode and couponCode are never exposed to mobile.",
       "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["SILENT_DROP_GPS", "SILENT_DROP_QR"]
+        },
         "id": { "type": "string", "format": "uuid" },
         "title": { "type": "string", "example": "KFC" },
         "description": { "type": "string" },
@@ -28,7 +56,16 @@
         "distanceMeters": { "type": "integer", "nullable": true },
         "isClaimed": { "type": "boolean" },
         "hasClaimed": { "type": "boolean" },
-        "claimId": { "type": "string", "nullable": true }
+        "claimId": { "type": "string", "nullable": true },
+        "payoutType": {
+          "type": "string",
+          "enum": ["COINS_ONLY", "PARTNER_REWARD"]
+        },
+        "coinReward": {
+          "type": "integer",
+          "nullable": true,
+          "description": "GPS street drops — coins credited on collect"
+        }
       }
     },
     "SilentDropGpsBody": {
@@ -59,7 +96,11 @@
         "code": { "type": "string", "example": "A1B2C3D4" },
         "xpEarned": { "type": "integer" },
         "coinsAwarded": { "type": "integer" },
-        "isRedeemed": { "type": "boolean" }
+        "isRedeemed": { "type": "boolean" },
+        "payoutType": {
+          "type": "string",
+          "enum": ["COINS_ONLY", "PARTNER_REWARD"]
+        }
       }
     },
     "SilentDropProximitySuccessData": {
@@ -108,14 +149,14 @@
         "longitude",
         "startTime",
         "endTime",
-        "reward",
-        "rewardQuantity"
+        "rewardQuantity",
+        "collectionMethod"
       ],
       "properties": {
         "merchantId": {
           "type": "string",
           "format": "uuid",
-          "description": "Required when Super Admin creates on behalf of a merchant"
+          "description": "Admin Method 2 only — restaurant partner. Omitted for GPS street drops. Merchant portal: omitted (uses auth)."
         },
         "title": { "type": "string" },
         "description": { "type": "string" },
@@ -124,7 +165,15 @@
         "longitude": { "type": "number" },
         "startTime": { "type": "string", "format": "date-time" },
         "endTime": { "type": "string", "format": "date-time" },
-        "reward": { "type": "string" },
+        "reward": {
+          "type": "string",
+          "description": "Required for BUSINESS_QR (partner reward label)"
+        },
+        "coinReward": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Required for GPS_INSTANT (admin street drops)"
+        },
         "rewardQuantity": { "type": "integer", "minimum": 1 },
         "imageUrl": { "type": "string" },
         "commanderAvatar": { "type": "string" },
@@ -148,6 +197,7 @@
         "endTime": { "type": "string", "format": "date-time" },
         "reward": { "type": "string" },
         "rewardQuantity": { "type": "integer", "minimum": 1 },
+        "coinReward": { "type": "integer", "minimum": 1 },
         "imageUrl": { "type": "string" },
         "commanderAvatar": { "type": "string" },
         "collectionMethod": { "type": "string", "enum": ["GPS_INSTANT", "BUSINESS_QR"] },
@@ -157,13 +207,21 @@
     },
     "SilentDropLiveEventRecord": {
       "type": "object",
-      "description": "Full LiveEvent row for admin/merchant dashboards (includes qrCode for print UI)",
+      "description": "Full LiveEvent row for admin/merchant dashboards (includes qrCode, couponCode for print UI)",
       "properties": {
         "id": { "type": "string", "format": "uuid" },
         "title": { "type": "string" },
         "displayMode": { "type": "string", "example": "SILENT_MAP_DROP" },
         "collectionMethod": { "type": "string" },
         "collectRadiusM": { "type": "integer" },
+        "coinReward": { "type": "integer", "nullable": true },
+        "couponCode": {
+          "type": "string",
+          "nullable": true,
+          "example": "RDR-A1B2C3D4",
+          "description": "BUSINESS_QR only — staff counter code"
+        },
+        "merchantId": { "type": "string", "format": "uuid", "nullable": true },
         "qrCode": { "type": "string" },
         "status": { "type": "string" },
         "remainingQty": { "type": "integer" },
@@ -172,6 +230,23 @@
         "longitude": { "type": "number" },
         "startTime": { "type": "string", "format": "date-time" },
         "endTime": { "type": "string", "format": "date-time" }
+      }
+    },
+    "DashboardDailyDropMapPin": {
+      "type": "object",
+      "description": "dailyDrop on GET /single-player/dashboard (nullable)",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["DAILY_DROP", "DAILY_DROP_RARE"]
+        },
+        "id": { "type": "string", "format": "uuid" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "isCollected": { "type": "boolean" },
+        "rewardType": { "type": "string", "example": "100_COINS" },
+        "distanceMeters": { "type": "integer" },
+        "isNewlySpawned": { "type": "boolean" }
       }
     },
     "SilentDropGenerateImagesRequest": {
@@ -238,8 +313,8 @@
     "/single-player/silent-drops/{id}": {
       "get": {
         "tags": ["Single Player"],
-        "summary": "Silent drop detail (map pin)",
-        "description": "Do not use GET /events for these pins. qrCode is not returned.",
+        "summary": "Silent drop detail (after map tap)",
+        "description": "Full payload (not the slim dashboard pin). Do not use GET /events. qrCode and couponCode are not returned.",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {

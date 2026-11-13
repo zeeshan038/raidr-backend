@@ -1356,6 +1356,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
       );
       return {
         ...formatted,
+        type: zone.zoneType,
         isConquered: userOwnsSinglePlayerZone(zone, userId),
       };
     });
@@ -1382,16 +1383,14 @@ export const getSinglePlayerDashboard = async (req, res) => {
     let processedDailyDrop = null;
     if (dailyDrop) {
       processedDailyDrop = {
+        type: dailyDrop.isRare ? "DAILY_DROP_RARE" : "DAILY_DROP",
         id: dailyDrop.id,
-        userId: dailyDrop.userId,
         latitude: dailyDrop.latitude,
         longitude: dailyDrop.longitude,
         isCollected: dailyDrop.isCollected,
-        isRare: dailyDrop.isRare,
-        createdAt: dailyDrop.createdAt,
-        updatedAt: dailyDrop.updatedAt,
+        rewardType: dailyDrop.rewardType,
         distanceMeters: Math.round(dropDistance),
-        isNewlySpawned: isNewDrop
+        isNewlySpawned: isNewDrop,
       };
 
 

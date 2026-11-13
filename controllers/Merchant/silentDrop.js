@@ -1,7 +1,7 @@
 import { prisma } from "../../config/db.js";
 import {
-  SilentDropCreateSchema,
-  SilentDropUpdateSchema,
+  SilentDropMerchantCreateSchema,
+  SilentDropMerchantUpdateSchema,
 } from "../../schema/SilentDrop.js";
 import {
   createSilentDropRecord,
@@ -48,9 +48,10 @@ export const merchantListSilentDrops = async (req, res) => {
 
 export const merchantCreateSilentDrop = async (req, res) => {
   const merchantId = req.merchant.id;
-  const { error, value } = SilentDropCreateSchema(req.body);
+  const { error, value } = SilentDropMerchantCreateSchema(req.body, merchantId);
   if (error) {
-    return res.status(400).json({ status: false, msg: error.message });
+    const detail = error.details?.map((d) => d.message).join("; ") || error.message;
+    return res.status(400).json({ status: false, msg: detail });
   }
 
   try {
@@ -73,7 +74,7 @@ export const merchantCreateSilentDrop = async (req, res) => {
 export const merchantUpdateSilentDrop = async (req, res) => {
   const merchantId = req.merchant.id;
   const { id } = req.params;
-  const { error, value } = SilentDropUpdateSchema(req.body);
+  const { error, value } = SilentDropMerchantUpdateSchema(req.body);
   if (error) {
     return res.status(400).json({ status: false, msg: error.message });
   }

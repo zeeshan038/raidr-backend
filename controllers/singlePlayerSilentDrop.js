@@ -93,6 +93,7 @@ export const collectSilentDropGps = async (req, res) => {
       code: result.code,
       xpEarned: result.xpEarned,
       coinsAwarded: result.coinsAwarded,
+      payoutType: result.payoutType,
     },
   });
 };
@@ -135,6 +136,7 @@ export const collectSilentDropQr = async (req, res) => {
       xpEarned: result.xpEarned,
       coinsAwarded: result.coinsAwarded,
       isRedeemed: result.isRedeemed,
+      payoutType: result.payoutType,
     },
   });
 };

@@ -140,6 +140,15 @@ Object.assign(swagger.components.schemas, {
       radius: { type: "integer" },
       coinsPerHour: { type: "integer" },
       zoneType: { type: "string", enum: ["NORMAL", "B2B"] },
+      type: {
+        type: "string",
+        enum: ["NORMAL", "B2B"],
+        description: "Map layer on dashboard (mirrors zoneType)",
+      },
+      isConquered: {
+        type: "boolean",
+        description: "Present on GET /single-player/dashboard zones[]",
+      },
       imageUrl: { type: "string", nullable: true },
       brandLogoUrl: { type: "string", nullable: true },
       currentOwnerId: { type: "string", format: "uuid", nullable: true },
@@ -489,6 +498,11 @@ Object.assign(swagger.components.schemas, {
       isRare: { type: "boolean" },
       rewardType: { type: "string", example: "100_COINS" },
       createdAt: { type: "string", format: "date-time" },
+      type: {
+        type: "string",
+        enum: ["DAILY_DROP", "DAILY_DROP_RARE"],
+        description: "Present on dashboard dailyDrop",
+      },
       distanceMeters: { type: "integer", description: "Present on dashboard dailyDrop only" },
       isNewlySpawned: { type: "boolean", description: "Present on dashboard dailyDrop only" },
     },

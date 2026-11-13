@@ -2,6 +2,7 @@ import { prisma } from "../../config/db.js";
 import {
   SilentDropCreateSchema,
   SilentDropUpdateSchema,
+  normalizeSilentDropCreateBody,
 } from "../../schema/SilentDrop.js";
 import {
   createSilentDropRecord,
@@ -38,24 +39,23 @@ export const adminListSilentDrops = async (req, res) => {
 };
 
 export const adminCreateSilentDrop = async (req, res) => {
-  const { error, value } = SilentDropCreateSchema(req.body);
+  const normalized = normalizeSilentDropCreateBody(req.body);
+  const { error, value } = SilentDropCreateSchema(normalized);
   if (error) {
-    return res.status(400).json({ status: false, msg: error.message });
-  }
-
-  if (!value.merchantId) {
-    return res.status(400).json({
-      status: false,
-      msg: "merchantId is required for admin-created silent drops",
-    });
+    const detail = error.details?.map((d) => d.message).join("; ") || error.message;
+    return res.status(400).json({ status: false, msg: detail });
   }
 
   try {
-    const merchant = await prisma.merchant.findUnique({
-      where: { id: value.merchantId },
-    });
-    if (!merchant) {
-      return res.status(404).json({ status: false, msg: "Merchant not found" });
+    if (value.collectionMethod === "BUSINESS_QR") {
+      const merchant = await prisma.merchant.findUnique({
+        where: { id: value.merchantId },
+      });
+      if (!merchant) {
+        return res.status(404).json({ status: false, msg: "Merchant not found" });
+      }
+    } else {
+      value.merchantId = null;
     }
 
     const event = await createSilentDropRecord({

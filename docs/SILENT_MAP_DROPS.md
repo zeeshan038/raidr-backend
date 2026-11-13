@@ -1,18 +1,24 @@
 # Silent map drops (Single Player)
 
+**Handoff for mobile devs:** [`SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md`](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md) — endpoints, flows, errors, and env URLs.
+
 Reuses **`LiveEvent`** + **`LiveEventClaim`** with `displayMode: SILENT_MAP_DROP`. Multiplayer live events are unchanged (`LIVE_MULTIPLAYER` default).
 
 ## Admin / merchant
 
-| Role | Routes |
-|------|--------|
-| Super Admin | `GET/POST /api/admin/single-player/silent-drops`, `PUT/DELETE .../:id` |
-| Merchant | `GET/POST /api/merchant/single-player/silent-drops`, `PUT .../:id` |
+| Role | Routes | Collection methods |
+|------|--------|-------------------|
+| Super Admin | `GET/POST /api/admin/single-player/silent-drops`, `PUT/DELETE .../:id` | **Method 1** — no restaurant (`merchantId` null). **Method 2** — pick restaurant (`merchantId` required). |
+| Merchant | `GET/POST /api/merchant/single-player/silent-drops`, `PUT .../:id` | **Method 2 only** (GPS gate + cashier QR) — API forces `BUSINESS_QR` |
 
-**Collection methods**
+**Collection methods** (admin / merchant picks one at create)
 
-- `GPS_INSTANT` — player within `collectRadiusM`, then `POST .../collect`
-- `BUSINESS_QR` — `POST .../proximity` (GPS gate), open scanner, `POST .../collect-qr` with `qrCodeData` (matches `LiveEvent.qrCode` — print from admin/merchant UI)
+| Method | `collectionMethod` | Payout | Mobile flow |
+|--------|-------------------|--------|-------------|
+| **1 — Street / park** | `GPS_INSTANT` | **Coins only** — admin sets **`coinReward`** → `awardRaidrCoins` → user wallet | Tap pin → in radius → `POST .../collect` |
+| **2 — Restaurant partner** | `BUSINESS_QR` | Partner reward + claim code (`PARTNER_REWARD`) | Tap pin → `POST .../proximity` → QR scanner → `POST .../collect-qr` |
+
+Method 2 matches the demo flow: **Tap map icon → verify GPS → open QR scanner → scan to claim.** Printed QR = `LiveEvent.qrCode` (admin/merchant print UI only). Staff-facing **`couponCode`** (e.g. `RDR-A1B2C3D4`) is auto-generated on create for restaurant silent drops only — shown on print/detail, **not** sent on mobile map APIs. Live multiplayer raids do not use `couponCode`.
 
 ## Mobile (Single Player map)
 
@@ -114,4 +120,17 @@ Claims also appear in `GET /api/rewards/all` under `events` (with `event.display
 # from raidr-backend
 npx prisma migrate deploy
 # or apply prisma/migrations/20261113120000_live_event_silent_drop/migration.sql on prod
+```
+
+**Dev on VPS (`~/raidr-backend`, compose dev stack):** API uses `raidr_postgres_dev`, not host `.env` `DATABASE_URL` at `188.245.72.1:5432`. Apply SQL inside the dev container:
+
+```bash
+docker exec -i raidr_postgres_dev psql -U raidr_user -d raidr_db -v ON_ERROR_STOP=1 \
+  < prisma/migrations/20261113120000_live_event_silent_drop/migration.sql
+
+docker exec -i raidr_postgres_dev psql -U raidr_user -d raidr_db -v ON_ERROR_STOP=1 \
+  < prisma/migrations/20261114123000_live_event_coin_reward/migration.sql
+
+docker exec -i raidr_postgres_dev psql -U raidr_user -d raidr_db -v ON_ERROR_STOP=1 \
+  < prisma/migrations/20261114130000_live_event_optional_merchant/migration.sql
 ```
