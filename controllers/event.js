@@ -26,6 +26,7 @@ import {
     userControlsDiscoveryZone,
 } from "../utils/methods/methods.js";
 import { buildCoinRushCheckpointsForEventDetails } from "../utils/coinRushCheckpoints.js";
+import { LIVE_EVENT_DISPLAY } from "../utils/liveEventModes.js";
 
 /**
  * @Description Get events (live, scheduled, ended)
@@ -68,7 +69,8 @@ export const GetEvents = async (req, res) => {
         const liveEventWhere = mergeDiscoveryWhere(
             liveEventStatusWhere,
             participantFilter ? { participants: participantFilter } : null,
-            liveProximityWhere
+            liveProximityWhere,
+            { displayMode: LIVE_EVENT_DISPLAY.LIVE_MULTIPLAYER }
         );
         // Coin rush: geo filter in memory (centerLat may be null; use first checkpoint).
         const coinRushEventWhere = mergeDiscoveryWhere(

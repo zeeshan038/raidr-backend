@@ -14,6 +14,7 @@ import {
 } from "../../utils/singlePlayerNotify.js";
 import { buildPushData, EVENT_KIND, PUSH_TYPE } from "../../utils/pushNotificationPayload.js";
 import { getEconomyConfig } from "../../utils/economyConfig.js";
+import { LIVE_EVENT_DISPLAY } from "../../utils/liveEventModes.js";
 
 const EVENT_COSTS = {
     small: 10,
@@ -147,6 +148,7 @@ export const createLiveEvent = async (req, res) => {
                     size,
                     qrCode: qrCodeToken,
                     xpReward: economy.liveEventXpReward,
+                    displayMode: LIVE_EVENT_DISPLAY.LIVE_MULTIPLAYER,
                 }
             })
         ]);

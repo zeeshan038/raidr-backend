@@ -28,6 +28,8 @@ import { haversineDistance, generateDynamicXP } from "../utils/methods/methods.j
 import { publishToUser } from "../sockets/eventPublisher.js";
 import { getEconomyConfig } from "../utils/economyConfig.js";
 import { awardUserXp } from "../utils/awardUserXp.js";
+import { executeGpsInstantClaim } from "../utils/liveEventClaim.js";
+import { isSilentMapDrop } from "../utils/liveEventModes.js";
 import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.js";
 
 
@@ -937,125 +939,34 @@ export const claimLiveEventReward = async (req, res) => {
     }
 
     try {
-        // 1. Fetch the Live Event
-        const event = await prisma.liveEvent.findUnique({
-            where: { id: eventId }
-        });
-
+        const event = await prisma.liveEvent.findUnique({ where: { id: eventId } });
         if (!event) {
-            return res.status(404).json({
-                status: false,
-                msg: "Live Event not found"
-            });
+            return res.status(404).json({ status: false, msg: "Live Event not found" });
         }
-
-        // 2. Validate Event is Live
-        if (event.status !== "live") {
+        if (isSilentMapDrop(event)) {
             return res.status(400).json({
                 status: false,
-                msg: `Cannot claim reward. Event is currently "${event.status}" (must be "live").`
+                msg: "Use Single Player silent drop collect endpoints for this reward.",
             });
         }
 
-        // 3. Validate Radius (Must be within 20 meters)
-        const distance = haversineDistance(
-            parseFloat(userLat),
-            parseFloat(userLng),
-            event.latitude,
-            event.longitude
-        );
-
-        if (distance > 20) {
-            return res.status(400).json({
-                status: false,
-                msg: `Too far from event location. You are ${Math.round(distance)}m away, but you must be within 20 meters to claim.`
-            });
-        }
-
-        // 4. Check if User has already claimed this event's reward
-        const existingClaim = await prisma.liveEventClaim.findUnique({
-            where: {
-                eventId_userId: {
-                    eventId,
-                    userId
-                }
-            }
+        const result = await executeGpsInstantClaim({
+            eventId,
+            userId,
+            userLat,
+            userLng,
+            requireSilent: false,
         });
 
-        if (existingClaim) {
-            return res.status(400).json({
-                status: false,
-                msg: "alreadyClaimed"
-            });
+        if (!result.ok) {
+            return res.status(result.status).json({ status: false, msg: result.msg });
         }
-
-        // 5. Validate Reward Stock Availability
-        if (event.remainingQty <= 0) {
-            return res.status(400).json({
-                status: false,
-                msg: "soldOut"
-            });
-        }
-
-        // 6. Generate a dynamic coupon/voucher code
-        const assignedCode = crypto.randomBytes(4).toString('hex').toUpperCase();
-
-        // 7. Perform Claim in Transaction (with level-up calculation)
-        const userForLevel = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { level: true, xp_progress: true }
-        });
-
-        let lv = Math.max(1, userForLevel.level);
-        let bank = Math.max(0, userForLevel.xp_progress) + xpAwarded;
-        const xpRequired = (level) => 100 * level * level;
-        while (bank >= xpRequired(lv)) {
-            bank -= xpRequired(lv);
-            lv += 1;
-        }
-
-        const [claimDoc] = await prisma.$transaction([
-            prisma.liveEventClaim.create({
-                data: {
-                    eventId,
-                    userId,
-                    code: assignedCode,
-                    xpEarned: xpAwarded,
-                    lat: parseFloat(userLat),
-                    lng: parseFloat(userLng)
-                }
-            }),
-            prisma.liveEvent.update({
-                where: { id: eventId },
-                data: {
-                    remainingQty: { decrement: 1 }
-                }
-            }),
-            prisma.user.update({
-                where: { id: userId },
-                data: {
-                    xp_earned: { increment: xpAwarded },
-                    xp_progress: bank,
-                    level: lv,
-                    rewards_claimed: { increment: 1 }
-                }
-            })
-        ]);
-
-        // Broadcast real-time stats update to the user
-        publishToUser(userId, {
-            type: 'user_stats_updated',
-            xpAdded: xpAwarded,
-            newXpProgress: bank,
-            newLevel: lv,
-            leveledUp: lv > userForLevel.level
-        });
 
         return res.status(200).json({
             status: true,
-            msg: "success",
-            code: assignedCode,
-            xpEarned: xpAwarded
+            msg: result.msg,
+            code: result.code,
+            xpEarned: result.xpEarned,
         });
 
     } catch (error) {

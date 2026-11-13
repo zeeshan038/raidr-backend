@@ -8,6 +8,7 @@ import {
 } from '../utils/singlePlayerNotify.js';
 import { buildPushData, EVENT_KIND, PUSH_TYPE } from '../utils/pushNotificationPayload.js';
 import { calculateRadiusForUserLiveEvent } from '../utils/methods/methods.js';
+import { isLiveMultiplayerEvent, LIVE_EVENT_DISPLAY } from '../utils/liveEventModes.js';
 
 const liveRaidData = (type, eventId) =>
     buildPushData({
@@ -37,7 +38,8 @@ export const startEventStatusCron = () => {
             const events20Mins = await prisma.liveEvent.findMany({
                 where: {
                     status: 'scheduled',
-                    startTime: { gt: min20_start, lte: min20_end }
+                    startTime: { gt: min20_start, lte: min20_end },
+                    displayMode: LIVE_EVENT_DISPLAY.LIVE_MULTIPLAYER,
                 },
                 include: { participants: { include: { user: true } } }
             });
@@ -57,7 +59,8 @@ export const startEventStatusCron = () => {
             const events10Mins = await prisma.liveEvent.findMany({
                 where: {
                     status: 'scheduled',
-                    startTime: { gt: min10_start, lte: min10_end }
+                    startTime: { gt: min10_start, lte: min10_end },
+                    displayMode: LIVE_EVENT_DISPLAY.LIVE_MULTIPLAYER,
                 },
                 include: { participants: { select: { userId: true } } }
             });
@@ -107,18 +110,20 @@ export const startEventStatusCron = () => {
                         data: { status: 'live' }
                     });
                     console.log(`[Cron] Event ${event.id} is now LIVE`);
-                    publishEventStatusChanged(event.id, 'live');
+                    if (isLiveMultiplayerEvent(event)) {
+                        publishEventStatusChanged(event.id, 'live');
 
-                    const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.latitude, event.longitude, 20);
-                    for (const user of nearbyUsers) {
-                        await notifyUserIfAllowed(
-                            prisma,
-                            user.id,
-                            SP_NOTIFICATION_CATEGORIES.PROMO,
-                            "🚀 The Raid Is Live!",
-                            `"${event.title}" has officially started. Head there now and secure your rewards before others do!`,
-                            liveRaidData(PUSH_TYPE.LIVE_RAID_LIVE, event.id)
-                        );
+                        const nearbyUsers = calculateRadiusForUserLiveEvent(allUsersWithTokens, event.latitude, event.longitude, 20);
+                        for (const user of nearbyUsers) {
+                            await notifyUserIfAllowed(
+                                prisma,
+                                user.id,
+                                SP_NOTIFICATION_CATEGORIES.PROMO,
+                                "🚀 The Raid Is Live!",
+                                `"${event.title}" has officially started. Head there now and secure your rewards before others do!`,
+                                liveRaidData(PUSH_TYPE.LIVE_RAID_LIVE, event.id)
+                            );
+                        }
                     }
                 }
             }
@@ -133,7 +138,9 @@ export const startEventStatusCron = () => {
                 }
             });
             for (const event of eventsEndingSoon) {
-                publishCommanderMessage(event.id, '⏳ Hurry up! Only 5 minutes left in the event! Claim your rewards! 🎁', 'system');
+                if (isLiveMultiplayerEvent(event)) {
+                    publishCommanderMessage(event.id, '⏳ Hurry up! Only 5 minutes left in the event! Claim your rewards! 🎁', 'system');
+                }
             }
 
             // --- Event gets Completed ---
@@ -160,10 +167,13 @@ export const startEventStatusCron = () => {
                         data: { status: 'completed' }
                     });
                     console.log(`[Cron] Event ${event.id} is now COMPLETED`);
-                    publishEventStatusChanged(event.id, 'completed');
-                    publishCommanderMessage(event.id, '🛑 The event has ended! Thank you for participating! 🎉', 'system');
+                    if (isLiveMultiplayerEvent(event)) {
+                        publishEventStatusChanged(event.id, 'completed');
+                        publishCommanderMessage(event.id, '🛑 The event has ended! Thank you for participating! 🎉', 'system');
+                    }
 
                     for (const part of event.participants) {
+                        if (!isLiveMultiplayerEvent(event)) continue;
                         if (part.user) {
                             await notifyUserIfMasterEnabled(
                                 prisma,

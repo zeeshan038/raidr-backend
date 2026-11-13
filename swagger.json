@@ -3034,6 +3034,453 @@
             }
           }
         }
+      },
+      "SilentMapDropClient": {
+        "type": "object",
+        "description": "Silent map drop as returned on dashboard and GET /single-player/silent-drops/{id}. qrCode is never exposed to mobile.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "KFC"
+          },
+          "description": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 33.5650275
+          },
+          "longitude": {
+            "type": "number",
+            "example": 73.1522898
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "mapIconUrl": {
+            "type": "string"
+          },
+          "reward": {
+            "type": "string",
+            "example": "Free crunch burger"
+          },
+          "remainingQty": {
+            "type": "integer",
+            "example": 2
+          },
+          "rewardQuantity": {
+            "type": "integer",
+            "example": 2
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "live",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "displayMode": {
+            "type": "string",
+            "example": "SILENT_MAP_DROP"
+          },
+          "collectionMethod": {
+            "type": "string",
+            "enum": [
+              "GPS_INSTANT",
+              "BUSINESS_QR"
+            ]
+          },
+          "collectRadiusM": {
+            "type": "integer",
+            "example": 200
+          },
+          "xpReward": {
+            "type": "integer",
+            "example": 200
+          },
+          "distanceMeters": {
+            "type": "integer",
+            "nullable": true
+          },
+          "isClaimed": {
+            "type": "boolean"
+          },
+          "hasClaimed": {
+            "type": "boolean"
+          },
+          "claimId": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SilentDropGpsBody": {
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "example": 33.5650275
+          },
+          "longitude": {
+            "type": "number",
+            "example": 73.1522898
+          }
+        }
+      },
+      "SilentDropQrCollectBody": {
+        "type": "object",
+        "required": [
+          "qrCodeData"
+        ],
+        "properties": {
+          "qrCodeData": {
+            "type": "string",
+            "description": "Exact payload from scanned printed QR (matches LiveEvent.qrCode server-side)",
+            "example": "event-qr-a1b2c3d4e5f6789012345678abcdef12"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Required if proximity arm expired"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        }
+      },
+      "SilentDropCollectSuccessData": {
+        "type": "object",
+        "properties": {
+          "claimId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "A1B2C3D4"
+          },
+          "xpEarned": {
+            "type": "integer"
+          },
+          "coinsAwarded": {
+            "type": "integer"
+          },
+          "isRedeemed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SilentDropProximitySuccessData": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "armed": {
+            "type": "boolean",
+            "example": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "collectionMethod": {
+            "type": "string",
+            "example": "BUSINESS_QR"
+          },
+          "openQrScanner": {
+            "type": "boolean",
+            "example": true
+          },
+          "distanceMeters": {
+            "type": "integer",
+            "example": 42
+          }
+        }
+      },
+      "SilentDropMyClaimItem": {
+        "type": "object",
+        "properties": {
+          "claimId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "xpEarned": {
+            "type": "integer"
+          },
+          "isRedeemed": {
+            "type": "boolean"
+          },
+          "redeemedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "claimedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "drop": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "reward": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string"
+              },
+              "displayMode": {
+                "type": "string"
+              },
+              "collectionMethod": {
+                "type": "string"
+              },
+              "startTime": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endTime": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "SilentDropCreateRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "latitude",
+          "longitude",
+          "startTime",
+          "endTime",
+          "reward",
+          "rewardQuantity"
+        ],
+        "properties": {
+          "merchantId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Required when Super Admin creates on behalf of a merchant"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reward": {
+            "type": "string"
+          },
+          "rewardQuantity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "commanderAvatar": {
+            "type": "string"
+          },
+          "collectionMethod": {
+            "type": "string",
+            "enum": [
+              "GPS_INSTANT",
+              "BUSINESS_QR"
+            ],
+            "default": "GPS_INSTANT"
+          },
+          "collectRadiusM": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 500,
+            "default": 20
+          }
+        }
+      },
+      "SilentDropUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reward": {
+            "type": "string"
+          },
+          "rewardQuantity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "commanderAvatar": {
+            "type": "string"
+          },
+          "collectionMethod": {
+            "type": "string",
+            "enum": [
+              "GPS_INSTANT",
+              "BUSINESS_QR"
+            ]
+          },
+          "collectRadiusM": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 500
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "live",
+              "completed",
+              "cancelled"
+            ]
+          }
+        }
+      },
+      "SilentDropLiveEventRecord": {
+        "type": "object",
+        "description": "Full LiveEvent row for admin/merchant dashboards (includes qrCode for print UI)",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "displayMode": {
+            "type": "string",
+            "example": "SILENT_MAP_DROP"
+          },
+          "collectionMethod": {
+            "type": "string"
+          },
+          "collectRadiusM": {
+            "type": "integer"
+          },
+          "qrCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "remainingQty": {
+            "type": "integer"
+          },
+          "rewardQuantity": {
+            "type": "integer"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SilentDropGenerateImagesRequest": {
+        "type": "object",
+        "required": [
+          "zoneName"
+        ],
+        "properties": {
+          "zoneName": {
+            "type": "string",
+            "example": "KFC Soan Gardens"
+          },
+          "rewardTitle": {
+            "type": "string"
+          },
+          "includeRewardImage": {
+            "type": "boolean",
+            "default": true
+          }
+        }
       }
     }
   },
@@ -4643,8 +5090,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Map dashboard (stats, zones, daily drop)",
-        "description": "Requires player GPS. Brand Month progression is only on GET /single-player/brand-month/active (not included here).",
+        "summary": "Map dashboard (stats, zones, daily drop, silent map drops)",
+        "description": "Requires player GPS. Returns silentDrops[] (SILENT_MAP_DROP pins only — not GET /events). Brand Month: GET /single-player/brand-month/active.",
         "security": [
           {
             "bearerAuth": []
@@ -4675,6 +5122,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "example": 50
+            },
+            "description": "Discovery radius in km (optional; default from env)"
           }
         ],
         "responses": {
@@ -4707,6 +5163,13 @@
                           "type": "array",
                           "items": {
                             "$ref": "#/components/schemas/SinglePlayerZoneFormatted"
+                          }
+                        },
+                        "silentDrops": {
+                          "type": "array",
+                          "description": "Active silent map drops near the player",
+                          "items": {
+                            "$ref": "#/components/schemas/SilentMapDropClient"
                           }
                         }
                       }
@@ -4750,6 +5213,20 @@
                           "guardCount": 2
                         },
                         "b2b": null
+                      }
+                    ],
+                    "silentDrops": [
+                      {
+                        "id": "e1111111-1111-1111-1111-111111111111",
+                        "title": "KFC",
+                        "collectionMethod": "BUSINESS_QR",
+                        "collectRadiusM": 200,
+                        "latitude": 33.5650275,
+                        "longitude": 73.1522898,
+                        "displayMode": "SILENT_MAP_DROP",
+                        "status": "live",
+                        "isClaimed": false,
+                        "distanceMeters": 120
                       }
                     ]
                   }
@@ -15852,6 +16329,881 @@
                 "example": {
                   "status": false,
                   "msg": "Failed to send navigation test push"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/silent-drops/my-claims": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "My silent map drop claim history",
+        "description": "All LiveEventClaim rows for the current user where event.displayMode is SILENT_MAP_DROP.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Claim history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Silent drop claim history"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SilentDropMyClaimItem"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Silent drop claim history",
+                  "data": [
+                    {
+                      "claimId": "c1111111-1111-1111-1111-111111111111",
+                      "code": "A1B2C3D4",
+                      "xpEarned": 200,
+                      "isRedeemed": true,
+                      "redeemedAt": "2026-11-13T10:00:00.000Z",
+                      "claimedAt": "2026-11-13T10:00:00.000Z",
+                      "drop": {
+                        "id": "e1111111-1111-1111-1111-111111111111",
+                        "title": "KFC",
+                        "reward": "Crunch burger",
+                        "displayMode": "SILENT_MAP_DROP",
+                        "collectionMethod": "BUSINESS_QR"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/single-player/silent-drops/{id}": {
+      "get": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Silent drop detail (map pin)",
+        "description": "Do not use GET /events for these pins. qrCode is not returned.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Player GPS — fills distanceMeters"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Drop detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SilentMapDropClient"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Silent drop not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": false,
+                  "msg": "Silent drop not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/silent-drops/{id}/proximity": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "GPS gate before QR scan (BUSINESS_QR only)",
+        "description": "Verifies player is within collectRadiusM and arms QR scanner for 20 minutes (Redis). Not used for GPS_INSTANT.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropGpsBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GPS verified — open QR scanner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "GPS verified"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SilentDropProximitySuccessData"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "GPS verified",
+                  "data": {
+                    "eventId": "e1111111-1111-1111-1111-111111111111",
+                    "armed": true,
+                    "expiresAt": "2026-11-13T10:20:00.000Z",
+                    "collectionMethod": "BUSINESS_QR",
+                    "openQrScanner": true,
+                    "distanceMeters": 15
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Too far, inactive, sold out, etc.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": false,
+                  "msg": "Too far from drop. You are 350m away; must be within 200m."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/silent-drops/{id}/collect": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Collect silent drop (GPS_INSTANT)",
+        "description": "Instant collect when collectionMethod is GPS_INSTANT and player is within collectRadiusM. For BUSINESS_QR use proximity + collect-qr.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropGpsBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SilentDropCollectSuccessData"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "success",
+                  "data": {
+                    "claimId": "c1111111-1111-1111-1111-111111111111",
+                    "code": "A1B2C3D4",
+                    "xpEarned": 200,
+                    "coinsAwarded": 10
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "alreadyClaimed | soldOut | wrong collection method",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "alreadyClaimed": {
+                    "value": {
+                      "status": false,
+                      "msg": "alreadyClaimed"
+                    }
+                  },
+                  "qrRequired": {
+                    "value": {
+                      "status": false,
+                      "msg": "This drop requires in-store QR verification. Complete GPS check, then scan the business QR."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/single-player/silent-drops/{id}/collect-qr": {
+      "post": {
+        "tags": [
+          "Single Player"
+        ],
+        "summary": "Collect silent drop after QR scan (BUSINESS_QR)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropQrCollectBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed after valid QR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SilentDropCollectSuccessData"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid QR, not armed, too far",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": false,
+                  "msg": "Invalid QR Code scanned for this drop"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/single-player/silent-drops": {
+      "get": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "List silent map drops",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "merchantId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": [],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 20,
+                    "total": 0,
+                    "totalPages": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Create silent map drop",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "msg": "Silent drop created",
+                  "data": {
+                    "id": "e1111111-1111-1111-1111-111111111111",
+                    "displayMode": "SILENT_MAP_DROP",
+                    "collectionMethod": "BUSINESS_QR",
+                    "qrCode": "event-qr-a1b2c3d4e5f6789012345678abcdef12",
+                    "status": "scheduled"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/single-player/silent-drops/generate-images": {
+      "post": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "AI generate silent drop map assets",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropGenerateImagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Images generated"
+          }
+        }
+      }
+    },
+    "/admin/single-player/silent-drops/{id}": {
+      "get": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Get silent drop (with claims)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail with claims[] and merchant",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": {
+                    "id": "…",
+                    "qrCode": "event-qr-…",
+                    "claims": []
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Update silent drop (admin may edit live drops)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Single Player"
+        ],
+        "summary": "Cancel silent drop",
+        "description": "Sets status cancelled and remainingQty 0",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "msg": "Silent drop cancelled"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/merchant/single-player/silent-drops": {
+      "get": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "List my silent map drops",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": [
+                    {
+                      "id": "…",
+                      "title": "KFC",
+                      "collectionMethod": "BUSINESS_QR",
+                      "qrCode": "event-qr-…"
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "limit": 20,
+                    "total": 1,
+                    "totalPages": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "Create silent map drop (10 credits)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "msg": "Silent drop created and will appear on the Single Player map when live",
+                  "data": {
+                    "id": "…",
+                    "qrCode": "event-qr-…",
+                    "collectionMethod": "BUSINESS_QR"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Insufficient credits"
+          }
+        }
+      }
+    },
+    "/merchant/single-player/silent-drops/generate-images": {
+      "post": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "AI generate silent drop map assets",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropGenerateImagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/merchant/single-player/silent-drops/{id}": {
+      "get": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "Get silent drop with claim history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Includes claims with user name/email",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "data": {
+                    "claims": []
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "Update silent drop (not allowed while live)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilentDropUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "400": {
+            "description": "Live drops cannot be edited (merchant)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": false,
+                  "msg": "Cannot edit a live silent drop. Cancel it first or wait until it ends."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Merchant Single Player"
+        ],
+        "summary": "Cancel silent drop",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": true,
+                  "msg": "Silent drop cancelled"
                 }
               }
             }

@@ -25,6 +25,7 @@ import {
   enrichNormalPassiveEarningOnFormattedZones,
   ensureZonePassiveLedgerRow,
 } from "../utils/singlePlayerZonePassiveLedger.js";
+import { findNearbySilentDrops } from "../utils/liveEventSilentDrop.js";
 import {
   broadcastSinglePlayerZoneLeaderboard,
   enrichZoneLeaderboardOnFormattedZones,
@@ -1371,6 +1372,13 @@ export const getSinglePlayerDashboard = async (req, res) => {
       userId
     );
 
+    const silentDrops = await findNearbySilentDrops(
+      userId,
+      userLat,
+      userLng,
+      radiusMeters
+    );
+
     let processedDailyDrop = null;
     if (dailyDrop) {
       processedDailyDrop = {
@@ -1402,6 +1410,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
           daysUntilNextRareDrop: 3,
         },
         dailyDrop: processedDailyDrop,
+        silentDrops,
         zones: processedZones,
       },
     });
