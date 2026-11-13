@@ -18,4 +18,15 @@ else
   exit 1
 fi
 
-exec docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build "$@"
+COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.dev.yml)
+
+# Compose sometimes leaves *_{container_name} orphans after a failed recreate — remove them.
+for orphan in $("${COMPOSE[@]}" ps -a --format '{{.Names}}' 2>/dev/null); do
+  case "$orphan" in
+    *_raidr_api_dev|*_raidr_postgres_dev|*_raidr_redis_dev)
+      docker rm -f "$orphan" 2>/dev/null || true
+      ;;
+  esac
+done
+
+exec "${COMPOSE[@]}" up -d --build --remove-orphans --force-recreate "$@"
