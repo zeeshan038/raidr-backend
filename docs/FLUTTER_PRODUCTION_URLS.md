@@ -27,6 +27,16 @@ docker exec raidr_api sh -c 'redis-cli -u "$REDIS_URL" ping'  # PONG (if redis-c
 
 In prod `.env`, do **not** set `REDIS_URL=redis://localhost:6379` for Docker — compose overrides to `redis://redis:6379` in `docker-compose.yml`.
 
-## Optional nginx alias (only if you must keep `backend-prod` in the app)
+## Nginx for `backend-prod.raidr-app.com`
 
-Duplicate the `backend.raidr-app.com` server block with `server_name backend-prod.raidr-app.com;` and the same `proxy_pass` to port 5001 + WS to 3001.
+Full working example: **`docs/NGINX_BACKEND_PROD.conf.example`** (`/live-tracking` → 3001, `/api/` → 5001).
+
+On VPS after a bad edit:
+
+```bash
+sudo cp /etc/nginx/sites-enabled/raidr-backend-prod /etc/nginx/sites-enabled/raidr-backend-prod.bak
+# paste file from repo example, then:
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+`unexpected end of file, expecting "}"` = missing `}` — replace whole file; do not leave duplicate `location /` blocks.
