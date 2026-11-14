@@ -16,6 +16,13 @@ import {
   getUserVouchers,
 } from "../controllers/singlePlayer.js";
 import {
+  silentDropProximityCheck,
+  collectSilentDropGps,
+  collectSilentDropQr,
+  getSilentDropById,
+  getMySilentDropClaims,
+} from "../controllers/singlePlayerSilentDrop.js";
+import {
   getActiveBrandMonth,
   getBrandMonthHistory,
   claimBrandMonthReward,
@@ -62,6 +69,11 @@ router.post("/daily-drop/collect", collectDailyDrop);
 router.get("/theme", getActiveTheme);
 router.get("/history", getSinglePlayerHistory);
 router.get("/dashboard", getSinglePlayerDashboard);
+router.get("/silent-drops/my-claims", getMySilentDropClaims);
+router.get("/silent-drops/:id", getSilentDropById);
+router.post("/silent-drops/:id/proximity", silentDropProximityCheck);
+router.post("/silent-drops/:id/collect", collectSilentDropGps);
+router.post("/silent-drops/:id/collect-qr", collectSilentDropQr);
 router.get("/vouchers", getUserVouchers);
 router.get("/brand-month/active", getActiveBrandMonth);
 router.get("/brand-month/history", getBrandMonthHistory);

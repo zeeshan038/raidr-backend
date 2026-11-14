@@ -18,7 +18,7 @@ Rules:
 - Auth: Authorization: Bearer <user JWT> on every route marked Private
 - JSON envelope: success uses status: true; errors use status: false and msg (string)
 - GPS: send latitude/longitude as numbers (double), not strings
-- Capture flow requires Redis on server; poll POST .../capture/ping every 2–5s while holding
+- Capture flow requires Redis on server; snatch hold sync on POST .../capture/complete (see FLUTTER_CAPTURE_HOLD_SYNC.md)
 - Guards: buy via GET /store/all-items?itemType=GUARD + POST /store/purchase — NOT /single-player/guards/purchase (410)
 - Map: prefer GET /single-player/dashboard on home map; refresh zone detail with GET /single-player/zones/:id
 - OpenAPI: swagger.json in repo root (run node scripts/patch-swagger-user-single-player.js after backend updates)
@@ -121,7 +121,7 @@ ISO-8601 strings from server, e.g. `"2026-10-12T14:30:00.000Z"`. Use `DateTime.p
 
 ### 2.2 `SinglePlayerZone` (client-formatted)
 
-Returned from dashboard, zones list, and zone detail after `formatSinglePlayerZoneForClient`.
+**Dashboard `zones[]`** uses slim **map pins** only (`SinglePlayerZoneMapPin` — see §4.2). **Full** zone object: `GET /single-player/zones/:id` and zone list (`formatSinglePlayerZoneForClient`).
 
 | Field | Type | UI usage |
 |-------|------|----------|
@@ -375,7 +375,7 @@ sequenceDiagram
   API-->>App: shieldExpiresAt, ownedAt
 ```
 
-**Tap acceleration:** See [FLUTTER_CAPTURE_TAP_ACCELERATION.md](./FLUTTER_CAPTURE_TAP_ACCELERATION.md) — `POST .../capture/taps` while snatching; keep `capture/ping` every 2–5s.
+**Tap acceleration:** See [FLUTTER_CAPTURE_HOLD_SYNC.md](./FLUTTER_CAPTURE_HOLD_SYNC.md) — taps **local**; one `capture/complete` with `holdWallSec` + `speedMultiplier` (e.g. 60s capture: `30` and `2` on complete).
 
 **Client rules:**
 
@@ -490,7 +490,8 @@ Unless noted: **Private**, header `Authorization: Bearer <token>`, `Content-Type
       "distanceMeters": 85,
       "isNewlySpawned": true
     },
-    "zones": [ "/* SinglePlayerZone + isConquered */" ]
+    "silentDrops": [ "/* SilentMapDropMapPin */" ],
+    "zones": [ "/* SinglePlayerZoneMapPin — tap → GET /zones/:id */" ]
   }
 }
 ```
@@ -1017,7 +1018,9 @@ Other `msg` values: location required; too far (includes distance and radius).
 
 ### 4.11 `GET /single-player/history`
 
-**Query:** `type` optional — `dailyDrops` | `rareDrops` | `raidZones`
+**Query:** `type` optional — `dailyDrops` | `rareDrops` | `raidZones` | `silentDrops`
+
+See **[Silent map drops — developer handoff](./SILENT_MAP_DROPS_DEVELOPER.md)** (history + map pins) and **[full mobile guide](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md)** §3.1.
 
 **200 OK** — with `type`
 
@@ -1036,12 +1039,15 @@ Other `msg` values: location required; too far (includes distance and radius).
   "data": {
     "dailyDrops": [],
     "rareDrops": [],
-    "raidZones": []
+    "raidZones": [],
+    "silentDrops": []
   }
 }
 ```
 
 `raidZones` entries are raw DB zone rows (not client-formatted) — use for history list or re-fetch detail by id.
+
+`silentDrops` items match `SilentDropMyClaimItem` in OpenAPI (`type` `SILENT_DROP_GPS` | `SILENT_DROP_QR`, `payoutType`, nested `drop`). Same array as `GET /single-player/silent-drops/my-claims`.
 
 ---
 

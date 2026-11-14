@@ -46,9 +46,21 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config | grep -A8
 cd ~/raidr-backend
 git pull origin zeeshan-dev   # or main after merge
 
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+sh scripts/compose-dev-up.sh
 docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
+curl -s http://127.0.0.1:5002/check-server
+```
+
+### Container name conflict (`…_raidr_api_dev` already in use)
+
+After a failed recreate, Docker may leave an orphan like `43e49ccaf595_raidr_api_dev`. On the server:
+
+```bash
+cd ~/raidr-backend
+docker rm -f 43e49ccaf595_raidr_api_dev 2>/dev/null || true
+docker rm -f raidr_api_dev 2>/dev/null || true
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down --remove-orphans
+sh scripts/compose-dev-up.sh
 curl -s http://127.0.0.1:5002/check-server
 ```
 

@@ -1,0 +1,1 @@
+ALTER TABLE "LiveEvent" ALTER COLUMN "merchantId" DROP NOT NULL;

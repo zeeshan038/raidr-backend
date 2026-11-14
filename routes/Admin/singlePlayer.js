@@ -14,6 +14,14 @@ import {
   getB2bPendingSignal,
 } from "../../controllers/Admin/singlePlayerB2b.js";
 import { adminB2bAiDraft } from "../../controllers/Admin/singlePlayerAi.js";
+import {
+  adminListSilentDrops,
+  adminCreateSilentDrop,
+  adminUpdateSilentDrop,
+  adminDeleteSilentDrop,
+  adminGetSilentDrop,
+  adminGenerateSilentDropImages,
+} from "../../controllers/Admin/silentDrop.js";
 import { verifyAdmin } from "../../middlewares/verifyAdmin.js"; // Assuming you have verifyAdmin middleware
 
 const router = express.Router();
@@ -32,5 +40,12 @@ router.get("/b2b/pending", listPendingB2bZones);
 router.get("/b2b/pending/signal", getB2bPendingSignal);
 router.post("/b2b/:id/approve", approveB2bZone);
 router.post("/b2b/:id/reject", rejectB2bZone);
+
+router.get("/silent-drops", adminListSilentDrops);
+router.post("/silent-drops/generate-images", adminGenerateSilentDropImages);
+router.post("/silent-drops", adminCreateSilentDrop);
+router.get("/silent-drops/:id", adminGetSilentDrop);
+router.put("/silent-drops/:id", adminUpdateSilentDrop);
+router.delete("/silent-drops/:id", adminDeleteSilentDrop);
 
 export default router;

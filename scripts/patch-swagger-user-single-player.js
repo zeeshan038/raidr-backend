@@ -130,6 +130,33 @@ Object.assign(swagger.components.schemas, {
       winnerUserId: { type: "string", format: "uuid", nullable: true },
     },
   },
+  SinglePlayerZoneMapPin: {
+    type: "object",
+    description:
+      "GET /single-player/dashboard zones[] only. Full zone: GET /single-player/zones/{id}.",
+    required: ["id", "name", "latitude", "longitude", "mapPinType", "status"],
+    properties: {
+      id: { type: "string", format: "uuid" },
+      name: { type: "string" },
+      latitude: { type: "number" },
+      longitude: { type: "number" },
+      radius: { type: "integer" },
+      zoneType: { type: "string", enum: ["NORMAL", "B2B"] },
+      type: { type: "string", enum: ["NORMAL", "B2B"] },
+      status: { type: "string", enum: ["available", "conquered_by_me", "conquered_by_others"] },
+      mapPinType: {
+        type: "string",
+        enum: ["YOUR_ZONE", "NEUTRAL", "B2B", "VULNERABLE", "ENEMY_SHIELDED"],
+      },
+      isShieldActive: { type: "boolean" },
+      isAttackable: { type: "boolean" },
+      isConquered: { type: "boolean" },
+      coinsPerHour: { type: "integer" },
+      imageUrl: { type: "string", nullable: true },
+      brandLogoUrl: { type: "string", nullable: true },
+      meetsEligibility: { type: "boolean", nullable: true },
+    },
+  },
   SinglePlayerZoneFormatted: {
     type: "object",
     properties: {
@@ -140,6 +167,15 @@ Object.assign(swagger.components.schemas, {
       radius: { type: "integer" },
       coinsPerHour: { type: "integer" },
       zoneType: { type: "string", enum: ["NORMAL", "B2B"] },
+      type: {
+        type: "string",
+        enum: ["NORMAL", "B2B"],
+        description: "Map layer on dashboard (mirrors zoneType)",
+      },
+      isConquered: {
+        type: "boolean",
+        description: "Present on GET /single-player/dashboard zones[]",
+      },
       imageUrl: { type: "string", nullable: true },
       brandLogoUrl: { type: "string", nullable: true },
       currentOwnerId: { type: "string", format: "uuid", nullable: true },
@@ -449,10 +485,17 @@ Object.assign(swagger.components.schemas, {
   },
   SinglePlayerHistoryBundle: {
     type: "object",
+    description:
+      "GET /single-player/history without type. silentDrops = collected silent map claims (not live dashboard pins).",
     properties: {
       dailyDrops: { type: "array", items: { $ref: "#/components/schemas/DailyDropDto" } },
       rareDrops: { type: "array", items: { $ref: "#/components/schemas/DailyDropDto" } },
       raidZones: { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneFormatted" } },
+      silentDrops: {
+        type: "array",
+        description: "Collected GPS + QR silent map drops (SilentDropMyClaimItem)",
+        items: { $ref: "#/components/schemas/SilentDropMyClaimItem" },
+      },
     },
   },
   CommercialVoucherDto: {
@@ -489,6 +532,11 @@ Object.assign(swagger.components.schemas, {
       isRare: { type: "boolean" },
       rewardType: { type: "string", example: "100_COINS" },
       createdAt: { type: "string", format: "date-time" },
+      type: {
+        type: "string",
+        enum: ["DAILY_DROP", "DAILY_DROP_RARE"],
+        description: "Present on dashboard dailyDrop",
+      },
       distanceMeters: { type: "integer", description: "Present on dashboard dailyDrop only" },
       isNewlySpawned: { type: "boolean", description: "Present on dashboard dailyDrop only" },
     },
@@ -525,7 +573,18 @@ const zoneListParams = [
   { name: "latitude", in: "query", schema: { type: "number" }, description: "User GPS" },
   { name: "longitude", in: "query", schema: { type: "number" } },
   { name: "city", in: "query", schema: { type: "string" } },
-  { name: "radiusKm", in: "query", schema: { type: "number" } },
+  {
+    name: "radiusKm",
+    in: "query",
+    schema: { type: "number", maximum: 80 },
+    description: "Discovery radius in km (default 50; server caps at DISCOVERY_RADIUS_MAX_KM, default 80)",
+  },
+  {
+    name: "countryCode",
+    in: "query",
+    schema: { type: "string", example: "PK" },
+    description: "Player country (ISO2 or name). Used with GPS so PK zones do not appear in IN. Recommended from device geocoder.",
+  },
 ];
 
 const pathId = { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } };
@@ -536,6 +595,36 @@ const captureLocationBody = {
   content: {
     "application/json": {
       schema: { $ref: "#/components/schemas/CaptureLocationRequest" },
+      example: { latitude: 40.7829, longitude: -73.9654 },
+    },
+  },
+};
+
+/** Optional hold sync on ping (same fields as capture/complete). */
+const capturePingBody = {
+  required: true,
+  content: {
+    "application/json": {
+      schema: {
+        type: "object",
+        required: ["latitude", "longitude"],
+        properties: {
+          latitude: { type: "number", example: 40.7829 },
+          longitude: { type: "number", example: -73.9654 },
+          holdWallSec: {
+            type: "number",
+            minimum: 0,
+            description:
+              "Optional. Wall seconds on snatch UI × speedMultiplier updates server progress. Omit if you only sync on capture/complete.",
+          },
+          speedMultiplier: {
+            type: "number",
+            minimum: 1,
+            maximum: 2,
+            description: "Required when holdWallSec is sent.",
+          },
+        },
+      },
       example: { latitude: 40.7829, longitude: -73.9654 },
     },
   },
@@ -642,7 +731,9 @@ swagger.paths["/single-player/zones/{id}"] = {
 swagger.paths["/single-player/dashboard"] = {
   get: {
     tags: ["Single Player"],
-    summary: "Map dashboard (stats, zones, daily drop)",
+    summary: "Map dashboard (stats, zone pins, daily drop, silent drops)",
+    description:
+      "zones[] are slim map pins (SinglePlayerZoneMapPin). Tap a zone → GET /single-player/zones/{id} for capture timers, b2b hold, passive bars.",
     security: bearer,
     parameters: [
       { name: "latitude", in: "query", required: true, schema: { type: "number" } },
@@ -661,7 +752,7 @@ swagger.paths["/single-player/dashboard"] = {
               properties: {
                 dashboard: { $ref: "#/components/schemas/SinglePlayerDashboardBlock" },
                 dailyDrop: { allOf: [{ $ref: "#/components/schemas/DailyDropDto" }], nullable: true },
-                zones: { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneFormatted" } },
+                zones: { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneMapPin" } },
               },
             },
           },
@@ -886,6 +977,8 @@ swagger.paths["/single-player/zones/{id}/capture/start"] = {
   post: {
     tags: ["Single Player"],
     summary: "Start hold-to-capture / snatch",
+    description:
+      "Creates a client-hold capture session (progress starts at 0). Preferred mobile flow: local snatch timer + one POST capture/complete with holdWallSec and speedMultiplier. Snatch UI progress must be computed on device — activeCaptureSession.captureProgressPercent from GET dashboard/zone does not advance while off the snatch screen.",
     security: bearer,
     parameters: [pathId],
     requestBody: captureLocationBody,
@@ -927,9 +1020,9 @@ swagger.paths["/single-player/zones/{id}/capture/start"] = {
 swagger.paths["/single-player/zones/{id}/capture/taps"] = {
   post: {
     tags: ["Single Player"],
-    summary: "Tap during capture (accelerate hold timer up to 2×)",
+    summary: "Sync snatch hold progress (recommended) or legacy per-tap",
     description:
-      "Send tap bursts while holding snatch. Server validates rate (no client speed multiplier), advances effective elapsed time by real delta × speedMultiplier (1.0–2.0 from tap rate in the last second). Returns remainingSec and canComplete for UI.",
+      "Recommended: batch sync with holdWallSec (wall seconds on snatch UI) and speedMultiplier (1–2 from local taps). Example: 60s capture, holdWallSec 30, speedMultiplier 2 → canComplete. Optional legacy: taps count without holdWallSec.",
     security: bearer,
     parameters: [pathId],
     requestBody: {
@@ -941,10 +1034,21 @@ swagger.paths["/single-player/zones/{id}/capture/taps"] = {
             properties: {
               latitude: { type: "number" },
               longitude: { type: "number" },
-              taps: { type: "integer", minimum: 1, maximum: 8, default: 1, example: 1 },
+              holdWallSec: {
+                type: "number",
+                minimum: 0,
+                description: "Wall-clock seconds since capture/start on device (cumulative, non-decreasing)",
+              },
+              speedMultiplier: { type: "number", minimum: 1, maximum: 2, description: "Required with holdWallSec" },
+              taps: { type: "integer", minimum: 1, maximum: 8, description: "Legacy; omit when using holdWallSec" },
             },
           },
-          example: { latitude: 40.7829, longitude: -73.9654, taps: 1 },
+          example: {
+            latitude: 40.7829,
+            longitude: -73.9654,
+            holdWallSec: 30,
+            speedMultiplier: 2,
+          },
         },
       },
     },
@@ -974,7 +1078,6 @@ swagger.paths["/single-player/zones/{id}/capture/taps"] = {
           canComplete: false,
         }
       ),
-      429: err("Too fast", "Tap requests too frequent. Slow down slightly."),
     }),
   },
 };
@@ -982,12 +1085,12 @@ swagger.paths["/single-player/zones/{id}/capture/taps"] = {
 swagger.paths["/single-player/zones/{id}/capture/ping"] = {
   post: {
     tags: ["Single Player"],
-    summary: "Ping during capture (stay in radius)",
+    summary: "Optional capture ping (radius / debug)",
     description:
-      "Call every few seconds while the player holds snatch. Server checks GPS is still inside zone radius and returns remaining capture time (server-side tap acceleration included). If the player leaves the radius, returns 400 with cancelled: true and clears the Redis capture session.",
+      "Optional — not required on a timer. Use for radius check or mid-snatch server countdown. May include holdWallSec + speedMultiplier to persist progress; otherwise timer does not advance on ping. Leaving radius → 400 cancelled: true and session cleared. POST capture/cancel when user abandons snatch.",
     security: bearer,
     parameters: [pathId],
-    requestBody: captureLocationBody,
+    requestBody: capturePingBody,
     responses: withAuth({
       200: okJson(
         "Still in radius",
@@ -1036,10 +1139,37 @@ swagger.paths["/single-player/zones/{id}/capture/cancel"] = {
 swagger.paths["/single-player/zones/{id}/capture/complete"] = {
   post: {
     tags: ["Single Player"],
-    summary: "Complete capture after timer",
+    summary: "Complete capture (send holdWallSec + speedMultiplier)",
+    description:
+      "Preferred: one call at end of snatch with client hold summary. Server applies holdWallSec × speedMultiplier then validates timer and GPS radius. Both holdWallSec and speedMultiplier should be sent when using client-hold sync (started via capture/start).",
     security: bearer,
     parameters: [pathId],
-    requestBody: captureLocationBody,
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            required: ["latitude", "longitude"],
+            properties: {
+              latitude: { type: "number" },
+              longitude: { type: "number" },
+              holdWallSec: {
+                type: "number",
+                description: "Wall seconds since capture/start (send with speedMultiplier)",
+              },
+              speedMultiplier: { type: "number", minimum: 1, maximum: 2 },
+            },
+          },
+          example: {
+            latitude: 40.7829,
+            longitude: -73.9654,
+            holdWallSec: 30,
+            speedMultiplier: 2,
+          },
+        },
+      },
+    },
     responses: withAuth({
       200: okJson(
         "Capture complete",
@@ -1494,15 +1624,18 @@ swagger.paths["/single-player/daily-drop/collect"] = {
 swagger.paths["/single-player/history"] = {
   get: {
     tags: ["Single Player"],
-    summary: "Single player history",
+    summary: "Single player history (daily drops, zones, silent map drops)",
     description:
-      "Without type: returns { dailyDrops, rareDrops, raidZones }. With type query, data is an array of that type only.",
+      "Without type: returns { dailyDrops, rareDrops, raidZones, silentDrops }. type=silentDrops returns SilentDropMyClaimItem[] (alias: GET /single-player/silent-drops/my-claims).",
     security: bearer,
     parameters: [
       {
         name: "type",
         in: "query",
-        schema: { type: "string", enum: ["dailyDrops", "rareDrops", "raidZones"] },
+        schema: {
+          type: "string",
+          enum: ["dailyDrops", "rareDrops", "raidZones", "silentDrops"],
+        },
       },
     ],
     responses: withAuth({
@@ -1517,6 +1650,7 @@ swagger.paths["/single-player/history"] = {
                 { $ref: "#/components/schemas/SinglePlayerHistoryBundle" },
                 { type: "array", items: { $ref: "#/components/schemas/DailyDropDto" } },
                 { type: "array", items: { $ref: "#/components/schemas/SinglePlayerZoneFormatted" } },
+                { type: "array", items: { $ref: "#/components/schemas/SilentDropMyClaimItem" } },
               ],
             },
           },
@@ -1536,6 +1670,24 @@ swagger.paths["/single-player/history"] = {
             ],
             rareDrops: [],
             raidZones: [sampleZoneFormatted],
+            silentDrops: [
+              {
+                type: "SILENT_DROP_QR",
+                claimId: "c1111111-1111-1111-1111-111111111111",
+                code: "A1B2C3D4",
+                xpEarned: 200,
+                coinsAwarded: null,
+                payoutType: "PARTNER_REWARD",
+                isRedeemed: true,
+                claimedAt: "2026-11-13T10:00:00.000Z",
+                drop: {
+                  id: "e1111111-1111-1111-1111-111111111111",
+                  title: "KFC",
+                  collectionMethod: "BUSINESS_QR",
+                  displayMode: "SILENT_MAP_DROP",
+                },
+              },
+            ],
           },
         }
       ),
@@ -1763,6 +1915,24 @@ if (!swagger.tags.some((t) => t.name === "Test")) {
     description:
       "Push navigation QA: POST /test/push-navigation (body: PushNavigationTestRequest), GET /test/push-navigation/types.",
   });
+}
+
+const acs = swagger.components.schemas.ActiveCaptureSession;
+if (acs?.properties) {
+  acs.description =
+    "Active snatch session in Redis. On GET zone/dashboard, captureProgressPercent reflects last synced hold only (does not tick while user is off the snatch screen). Bind snatch UI to local holdWallSec × speedMultiplier; sync via capture/complete.";
+  if (acs.properties.captureProgressPercent) {
+    acs.properties.captureProgressPercent.description =
+      "Last synced snatch progress 0–100. Does not advance on GET dashboard/zone; only updates after holdWallSec on capture/complete or optional capture/ping.";
+  }
+  if (acs.properties.elapsedSec) {
+    acs.properties.elapsedSec.description =
+      "Effective elapsed seconds last stored on the server (client hold sync), not live wall clock since start.";
+  }
+  if (acs.properties.remainingSec) {
+    acs.properties.remainingSec.description =
+      "Seconds left from last synced server state. Snatch screen should use local countdown from captureTimeSec.";
+  }
 }
 
 fs.writeFileSync(swaggerPath, `${JSON.stringify(swagger, null, 2)}\n`);

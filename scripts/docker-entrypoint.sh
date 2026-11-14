@@ -13,6 +13,12 @@ npx prisma db execute --file scripts/fix-profile-preferences-schema.sql --schema
 echo "[entrypoint] Idempotent Single Player schema SQL..."
 npx prisma db execute --file scripts/apply-single-player-schema.sql --schema prisma/schema.prisma || true
 
+echo "[entrypoint] Silent map drop columns (idempotent)..."
+npx prisma db execute --file prisma/migrations/20261113120000_live_event_silent_drop/migration.sql --schema prisma/schema.prisma || true
+npx prisma db execute --file prisma/migrations/20261114123000_live_event_coin_reward/migration.sql --schema prisma/schema.prisma || true
+npx prisma db execute --file prisma/migrations/20261114130000_live_event_optional_merchant/migration.sql --schema prisma/schema.prisma || true
+npx prisma db execute --file prisma/migrations/20261114140000_live_event_silent_coupon/migration.sql --schema prisma/schema.prisma || true
+
 echo "[entrypoint] Prisma migrate deploy..."
 if npx prisma migrate deploy; then
   echo "[entrypoint] Migrations up to date."

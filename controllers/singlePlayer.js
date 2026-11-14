@@ -8,12 +8,15 @@ import {
   shouldShowSinglePlayerZoneOnMap,
   userControlsSinglePlayerZone,
   buildSinglePlayerZoneMapWhere,
+  mergeDiscoveryWhere,
 } from "../utils/methods/methods.js";
+import { resolvePlayerCountryCode } from "../utils/discoveryCountry.js";
 import {
   captureAttemptRedisKey,
   computeCaptureTimeBreakdown,
   computeRequiredCaptureSeconds,
   formatSinglePlayerZoneForClient,
+  formatSinglePlayerZoneMapPin,
   isZoneAttackable,
   userOwnsSinglePlayerZone,
   validateCaptureLocation,
@@ -25,6 +28,10 @@ import {
   enrichNormalPassiveEarningOnFormattedZones,
   ensureZonePassiveLedgerRow,
 } from "../utils/singlePlayerZonePassiveLedger.js";
+import {
+  findNearbySilentDrops,
+  fetchUserSilentDropClaimHistory,
+} from "../utils/liveEventSilentDrop.js";
 import {
   broadcastSinglePlayerZoneLeaderboard,
   enrichZoneLeaderboardOnFormattedZones,
@@ -67,6 +74,7 @@ import {
   normalizeCaptureAttempt,
   persistCaptureAttempt,
   applyCaptureTaps,
+  syncCaptureHoldFromClient,
   unregisterZoneAttacker,
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
@@ -119,6 +127,7 @@ export const getZones = async (req, res) => {
     const coords = resolveMapCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
     const city = req.query.city ? String(req.query.city).trim() : null;
+    const playerCountryCode = resolvePlayerCountryCode(req, coords);
 
     const mapDiscoveryStatuses = new Set([
       undefined,
@@ -179,7 +188,7 @@ export const getZones = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    const visibilityOpts = { coords, radiusMeters, city, userId, now };
+    const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
     const visibleZones =
       userId && status === "conquered_by_me"
         ? candidateZones
@@ -264,7 +273,8 @@ export const getZoneById = async (req, res) => {
       const coords = resolveMapCoordinates(req);
       const radiusMeters = getDiscoveryRadiusMeters(req);
       const city = req.query.city ? String(req.query.city).trim() : null;
-      const visibilityOpts = { coords, radiusMeters, city, userId, now };
+      const playerCountryCode = resolvePlayerCountryCode(req, coords);
+      const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
       if (
         coords?.lat != null &&
         coords?.lng != null &&
@@ -452,6 +462,10 @@ export const startCapture = async (req, res) => {
         initialGuardCount: zone.guardCount ?? 0,
         sessionGuardsRemaining: zone.guardCount ?? 0,
         guardsEliminatedInSession: 0,
+        initialCaptureTimeSec: captureTimeSec,
+        useClientHoldSync: true,
+        clientWallHoldSec: 0,
+        effectiveElapsedSec: 0,
       },
       zone.guardCount ?? 0
     );
@@ -516,7 +530,7 @@ export const startCapture = async (req, res) => {
  */
 export const pingCapture = async (req, res) => {
   const { id: zoneId } = req.params;
-  const { latitude, longitude } = req.body;
+  const { latitude, longitude, holdWallSec: holdWallSecRaw, speedMultiplier: speedMultiplierRaw } = req.body;
   const userId = req.user.id;
 
   try {
@@ -524,81 +538,6 @@ export const pingCapture = async (req, res) => {
       return res.status(400).json({
         status: false,
         msg: "Latitude and longitude are required",
-      });
-    }
-
-    const attemptKey = captureAttemptRedisKey(userId, zoneId);
-    const rawAttempt = await redis.get(attemptKey);
-    if (!rawAttempt) {
-      return res.status(400).json({
-        status: false,
-        msg: "No active capture attempt.",
-      });
-    }
-
-    const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
-    if (!zone) {
-      return res.status(404).json({ status: false, msg: "Zone not found" });
-    }
-
-    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
-    if (!locationCheck.ok) {
-      await redis.del(attemptKey);
-      await unregisterZoneAttacker(zoneId, userId);
-      return res.status(400).json({
-        status: false,
-        msg: "Left zone radius — capture cancelled.",
-        cancelled: true,
-      });
-    }
-
-    const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
-    const timer = getCaptureTimerMetrics(attempt);
-    await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
-
-    res.status(200).json({
-      status: true,
-      inRadius: true,
-      remainingSec: timer.remainingSec,
-      speedMultiplier: timer.speedMultiplier,
-      tapRate: timer.tapRate,
-      tapCount: timer.tapCount,
-      sessionGuardsRemaining: attempt.sessionGuardsRemaining,
-      initialGuardCount: attempt.initialGuardCount,
-      guardsEliminatedInSession: attempt.guardsEliminatedInSession,
-      eligibleToComplete: timer.eligibleToComplete,
-      canComplete: timer.canComplete,
-      showGuardElimination: timer.showGuardElimination,
-      captureProgressPercent: timer.captureProgressPercent,
-    });
-  } catch (error) {
-    res.status(500).json({ status: false, msg: error.message });
-  }
-};
-
-/**
- * @Description Report tap activity during capture (rapid tap → up to 2× timer speed)
- * @Route POST /api/single-player/zones/:id/capture/taps
- * @Access Private
- */
-export const tapCapture = async (req, res) => {
-  const { id: zoneId } = req.params;
-  const { latitude, longitude, taps: tapsRaw } = req.body;
-  const userId = req.user.id;
-  const requestedTaps = tapsRaw != null ? parseInt(tapsRaw, 10) : 1;
-
-  try {
-    if (latitude == null || longitude == null) {
-      return res.status(400).json({
-        status: false,
-        msg: "Latitude and longitude are required",
-      });
-    }
-
-    if (Number.isNaN(requestedTaps) || requestedTaps < 1) {
-      return res.status(400).json({
-        status: false,
-        msg: "taps must be a positive integer",
       });
     }
 
@@ -629,20 +568,17 @@ export const tapCapture = async (req, res) => {
 
     const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
     const nowMs = Date.now();
-    const tapResult = applyCaptureTaps(attempt, nowMs, requestedTaps);
-
-    if (tapResult.throttled) {
-      const timer = getCaptureTimerMetrics(attempt, nowMs);
-      return res.status(429).json({
-        status: false,
-        msg: "Tap requests too frequent. Slow down slightly.",
-        remainingSec: timer.remainingSec,
-        speedMultiplier: timer.speedMultiplier,
-        tapRate: timer.tapRate,
-        tapCount: timer.tapCount,
-        eligibleToComplete: timer.eligibleToComplete,
-        canComplete: timer.canComplete,
-      });
+    if (holdWallSecRaw != null) {
+      if (speedMultiplierRaw == null) {
+        return res.status(400).json({
+          status: false,
+          msg: "speedMultiplier is required when holdWallSec is sent",
+        });
+      }
+      const holdSync = syncCaptureHoldFromClient(attempt, nowMs, holdWallSecRaw, speedMultiplierRaw);
+      if (!holdSync.ok) {
+        return res.status(400).json({ status: false, msg: holdSync.msg });
+      }
     }
 
     const timer = getCaptureTimerMetrics(attempt, nowMs);
@@ -651,8 +587,113 @@ export const tapCapture = async (req, res) => {
     res.status(200).json({
       status: true,
       inRadius: true,
-      tapsAccepted: tapResult.accepted,
-      tapsRejected: tapResult.rejected,
+      remainingSec: timer.remainingSec,
+      speedMultiplier: timer.speedMultiplier,
+      tapRate: timer.tapRate,
+      tapCount: timer.tapCount,
+      sessionGuardsRemaining: attempt.sessionGuardsRemaining,
+      initialGuardCount: attempt.initialGuardCount,
+      guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+      eligibleToComplete: timer.eligibleToComplete,
+      canComplete: timer.canComplete,
+      showGuardElimination: timer.showGuardElimination,
+      captureProgressPercent: timer.captureProgressPercent,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+};
+
+/**
+ * @Description Report tap activity during capture (rapid tap → up to 2× timer speed)
+ * @Route POST /api/single-player/zones/:id/capture/taps
+ * @Access Private
+ */
+export const tapCapture = async (req, res) => {
+  const { id: zoneId } = req.params;
+  const {
+    latitude,
+    longitude,
+    taps: tapsRaw,
+    holdWallSec: holdWallSecRaw,
+    speedMultiplier: speedMultiplierRaw,
+  } = req.body;
+  const userId = req.user.id;
+  const requestedTaps = tapsRaw != null ? parseInt(tapsRaw, 10) : 1;
+  const useClientHold = holdWallSecRaw != null;
+
+  try {
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({
+        status: false,
+        msg: "Latitude and longitude are required",
+      });
+    }
+
+    if (!useClientHold && (Number.isNaN(requestedTaps) || requestedTaps < 1)) {
+      return res.status(400).json({
+        status: false,
+        msg: "taps must be a positive integer (or send holdWallSec + speedMultiplier)",
+      });
+    }
+
+    const attemptKey = captureAttemptRedisKey(userId, zoneId);
+    const rawAttempt = await redis.get(attemptKey);
+    if (!rawAttempt) {
+      return res.status(400).json({
+        status: false,
+        msg: "No active capture attempt.",
+      });
+    }
+
+    const zone = await prisma.singlePlayerZone.findUnique({ where: { id: zoneId } });
+    if (!zone) {
+      return res.status(404).json({ status: false, msg: "Zone not found" });
+    }
+
+    const locationCheck = validateCaptureLocation(zone, latitude, longitude);
+    if (!locationCheck.ok) {
+      await redis.del(attemptKey);
+      await unregisterZoneAttacker(zoneId, userId);
+      return res.status(400).json({
+        status: false,
+        msg: "Left zone radius — capture cancelled.",
+        cancelled: true,
+      });
+    }
+
+    const attempt = normalizeCaptureAttempt(JSON.parse(rawAttempt), zone.guardCount ?? 0);
+    const nowMs = Date.now();
+    let tapResult = { accepted: 0, rejected: 0 };
+    let holdSync = null;
+
+    if (useClientHold) {
+      if (speedMultiplierRaw == null) {
+        return res.status(400).json({
+          status: false,
+          msg: "speedMultiplier is required when holdWallSec is sent",
+        });
+      }
+      holdSync = syncCaptureHoldFromClient(attempt, nowMs, holdWallSecRaw, speedMultiplierRaw);
+      if (!holdSync.ok) {
+        return res.status(400).json({ status: false, msg: holdSync.msg });
+      }
+    } else {
+      tapResult = applyCaptureTaps(attempt, nowMs, requestedTaps);
+    }
+
+    const timer = getCaptureTimerMetrics(attempt, nowMs);
+    await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
+
+    res.status(200).json({
+      status: true,
+      inRadius: true,
+      ...(holdSync
+        ? {
+            holdWallSec: holdSync.holdWallSec,
+            holdWallSecCredited: holdSync.holdWallSec,
+          }
+        : { tapsAccepted: tapResult.accepted, tapsRejected: tapResult.rejected }),
       remainingSec: timer.remainingSec,
       speedMultiplier: timer.speedMultiplier,
       tapRate: timer.tapRate,
@@ -700,7 +741,12 @@ export const cancelCapture = async (req, res) => {
  */
 export const completeCapture = async (req, res) => {
   const { id: zoneId } = req.params;
-  const { latitude, longitude } = req.body;
+  const {
+    latitude,
+    longitude,
+    holdWallSec: holdWallSecRaw,
+    speedMultiplier: speedMultiplierRaw,
+  } = req.body;
   const userId = req.user.id;
   const now = new Date();
 
@@ -753,7 +799,21 @@ export const completeCapture = async (req, res) => {
       });
     }
 
-    const timer = getCaptureTimerMetrics(attempt, now.getTime());
+    const nowMs = now.getTime();
+    if (holdWallSecRaw != null) {
+      if (speedMultiplierRaw == null) {
+        return res.status(400).json({
+          status: false,
+          msg: "speedMultiplier is required when holdWallSec is sent",
+        });
+      }
+      const holdSync = syncCaptureHoldFromClient(attempt, nowMs, holdWallSecRaw, speedMultiplierRaw);
+      if (!holdSync.ok) {
+        return res.status(400).json({ status: false, msg: holdSync.msg });
+      }
+    }
+
+    const timer = getCaptureTimerMetrics(attempt, nowMs);
     await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
 
     if (!timer.eligibleToComplete) {
@@ -1142,8 +1202,9 @@ export const getActiveTheme = async (req, res) => {
 };
 
 /**
- * @Description Get user's single player history (Daily Drops, Rare Drops, and Raid Zones)
+ * @Description Get user's single player history (Daily Drops, Rare Drops, Raid Zones, Silent map drops)
  * @Route GET /api/single-player/history
+ * @Query type optional — dailyDrops | rareDrops | raidZones | silentDrops
  * @Access Private
  */
 export const getSinglePlayerHistory = async (req, res) => {
@@ -1153,41 +1214,45 @@ export const getSinglePlayerHistory = async (req, res) => {
   try {
     let data;
 
-    if (type === 'dailyDrops') {
+    if (type === "dailyDrops") {
       data = await prisma.dailyDrop.findMany({
         where: { userId, isCollected: true, isRare: false },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: "desc" },
       });
-    } else if (type === 'rareDrops') {
+    } else if (type === "rareDrops") {
       data = await prisma.dailyDrop.findMany({
         where: { userId, isCollected: true, isRare: true },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: "desc" },
       });
-    } else if (type === 'raidZones') {
+    } else if (type === "raidZones") {
       data = await prisma.singlePlayerZone.findMany({
         where: { currentOwnerId: userId },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: "desc" },
       });
+    } else if (type === "silentDrops") {
+      data = await fetchUserSilentDropClaimHistory(userId);
     } else {
-      // Fallback: return everything if no query is passed
-      const dailyDrops = await prisma.dailyDrop.findMany({
-        where: { userId, isCollected: true, isRare: false },
-        orderBy: { updatedAt: 'desc' }
-      });
-      const rareDrops = await prisma.dailyDrop.findMany({
-        where: { userId, isCollected: true, isRare: true },
-        orderBy: { updatedAt: 'desc' }
-      });
-      const raidZones = await prisma.singlePlayerZone.findMany({
-        where: { currentOwnerId: userId },
-        orderBy: { updatedAt: 'desc' }
-      });
-      data = { dailyDrops, rareDrops, raidZones };
+      const [dailyDrops, rareDrops, raidZones, silentDrops] = await Promise.all([
+        prisma.dailyDrop.findMany({
+          where: { userId, isCollected: true, isRare: false },
+          orderBy: { updatedAt: "desc" },
+        }),
+        prisma.dailyDrop.findMany({
+          where: { userId, isCollected: true, isRare: true },
+          orderBy: { updatedAt: "desc" },
+        }),
+        prisma.singlePlayerZone.findMany({
+          where: { currentOwnerId: userId },
+          orderBy: { updatedAt: "desc" },
+        }),
+        fetchUserSilentDropClaimHistory(userId),
+      ]);
+      data = { dailyDrops, rareDrops, raidZones, silentDrops };
     }
 
     res.status(200).json({
       status: true,
-      data
+      data,
     });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
@@ -1215,32 +1280,41 @@ export const getSinglePlayerDashboard = async (req, res) => {
     const radiusMeters = getDiscoveryRadiusMeters(req);
     const city = req.query.city ? String(req.query.city).trim() : null;
     const now = new Date();
+    const playerCountryCode = resolvePlayerCountryCode(req, coords);
 
     syncUserLocationFromRequest(req);
 
-    const configRow = await getSpGameConfig(prisma);
+    const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
+    const mapZoneWhere = mergeDiscoveryWhere(
+      userVisibleZoneFilter,
+      buildSinglePlayerZoneMapWhere({ userId, coords, radiusMeters, now })
+    );
+
+    const [configRow, user, empire, ownedZonesForIncome, mapCandidateZones] = await Promise.all([
+      getSpGameConfig(prisma),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          coinBoostExpiresAt: true,
+          coinBoostMultiplier: true,
+        },
+      }),
+      getEmpireStatus(prisma, userId),
+      prisma.singlePlayerZone.findMany({
+        where: { ...userVisibleZoneFilter, currentOwnerId: userId },
+        select: { coinsPerHour: true },
+      }),
+      prisma.singlePlayerZone.findMany({ where: mapZoneWhere }),
+    ]);
     const gameplay = gameplayFromConfig(configRow);
 
-    // 1. Fetch User Data (for multiplier)
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-
-    // 2. Fetch zones (all for passive income; map shows nearby + your controlled only)
-    const allActiveZones = await prisma.singlePlayerZone.findMany({
-      where: userVisibleZoneFilter,
-    });
-
-    const visibilityOpts = { coords, radiusMeters, city, userId, now };
-    const zones = allActiveZones.filter((zone) =>
+    const zones = mapCandidateZones.filter((zone) =>
       shouldShowSinglePlayerZoneOnMap(zone, visibilityOpts)
     );
 
-    // 3. Calculate Dashboard Stats (worldwide owned zones)
-    const ownedZones = allActiveZones.filter((z) =>
-      userControlsSinglePlayerZone(z, userId)
-    );
-    const empire = await getEmpireStatus(prisma, userId);
     const ownedZonesCount = empire.ownedZonesCount;
-    let passiveIncome = ownedZones.reduce((sum, zone) => sum + zone.coinsPerHour, 0);
+    let passiveIncome = ownedZonesForIncome.reduce((sum, zone) => sum + zone.coinsPerHour, 0);
 
     const hasActiveBoost = user.coinBoostExpiresAt && new Date(user.coinBoostExpiresAt) > new Date();
     if (hasActiveBoost && user.coinBoostMultiplier) {
@@ -1250,16 +1324,19 @@ export const getSinglePlayerDashboard = async (req, res) => {
       passiveIncome = Math.round(passiveIncome * empire.vipRewardMultiplier);
     }
 
-    // 4. Handle Daily Drop
+    // 4. Daily drop + silent drops (parallel)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let dailyDrop = await prisma.dailyDrop.findFirst({
-      where: {
-        userId,
-        createdAt: { gte: today }
-      }
-    });
+    let [dailyDrop, silentDrops] = await Promise.all([
+      prisma.dailyDrop.findFirst({
+        where: {
+          userId,
+          createdAt: { gte: today },
+        },
+      }),
+      findNearbySilentDrops(userId, userLat, userLng, radiusMeters, playerCountryCode),
+    ]);
 
     let isNewDrop = false;
     if (!dailyDrop) {
@@ -1345,45 +1422,21 @@ export const getSinglePlayerDashboard = async (req, res) => {
     // Calculate distance to drop
     const dropDistance = haversineDistance(dailyDrop.latitude, dailyDrop.longitude, userLat, userLng);
 
-    const processedZones = zones.map((zone) => {
-      const formatted = formatSinglePlayerZoneForClient(
-        zone,
-        userId,
-        now,
-        gameplay,
-        ownedZonesCount
-      );
-      return {
-        ...formatted,
-        isConquered: userOwnsSinglePlayerZone(zone, userId),
-      };
-    });
-    await enrichNormalPassiveEarningOnFormattedZones(
-      prisma,
-      processedZones,
-      zones,
-      userId
-    );
-    await enrichB2bPassiveIncomeOnFormattedZones(
-      prisma,
-      processedZones,
-      zones,
-      userId
+    const processedZones = zones.map((zone) =>
+      formatSinglePlayerZoneMapPin(zone, userId, now, ownedZonesCount)
     );
 
     let processedDailyDrop = null;
     if (dailyDrop) {
       processedDailyDrop = {
+        type: dailyDrop.isRare ? "DAILY_DROP_RARE" : "DAILY_DROP",
         id: dailyDrop.id,
-        userId: dailyDrop.userId,
         latitude: dailyDrop.latitude,
         longitude: dailyDrop.longitude,
         isCollected: dailyDrop.isCollected,
-        isRare: dailyDrop.isRare,
-        createdAt: dailyDrop.createdAt,
-        updatedAt: dailyDrop.updatedAt,
+        rewardType: dailyDrop.rewardType,
         distanceMeters: Math.round(dropDistance),
-        isNewlySpawned: isNewDrop
+        isNewlySpawned: isNewDrop,
       };
 
 
@@ -1402,6 +1455,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
           daysUntilNextRareDrop: 3,
         },
         dailyDrop: processedDailyDrop,
+        silentDrops,
         zones: processedZones,
       },
     });
