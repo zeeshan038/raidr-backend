@@ -5,7 +5,7 @@
 | | |
 |--|--|
 | **Dev API** | `http://188.245.72.1:5002/api` |
-| **Prod API** | `https://backend-prod.raidr-app.com/api` (confirm before release) |
+| **Prod API** | `https://backend.raidr-app.com/api` |
 | **Auth** | `Authorization: Bearer <user_jwt>` |
 | **OpenAPI** | `raidr-backend/swagger.json` (run `npm run swagger:merge-silent-drops` after pulls) |
 | **Long guide** | [`SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md`](./SILENT_MAP_DROPS_MOBILE_DEV_GUIDE.md) — flows, mermaid, errors, checklist |

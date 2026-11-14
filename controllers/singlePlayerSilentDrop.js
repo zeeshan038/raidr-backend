@@ -37,12 +37,20 @@ export const silentDropProximityCheck = async (req, res) => {
     }
 
     const expiresAt = new Date(Date.now() + QR_ARM_TTL_SEC * 1000);
+  try {
     await redis.set(
       qrArmRedisKey(userId, eventId),
       JSON.stringify({ armedAt: new Date().toISOString() }),
       "EX",
       QR_ARM_TTL_SEC
     );
+  } catch (redisErr) {
+    console.error("[silent-drop proximity] Redis arm failed:", redisErr?.message || redisErr);
+    return res.status(503).json({
+      status: false,
+      msg: "Proximity service temporarily unavailable. Check server Redis (REDIS_URL).",
+    });
+  }
 
     return res.status(200).json({
       status: true,

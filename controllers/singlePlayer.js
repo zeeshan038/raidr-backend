@@ -6,7 +6,6 @@ import {
   getDiscoveryRadiusMeters,
   syncUserLocationFromRequest,
   shouldShowSinglePlayerZoneOnMap,
-  userControlsSinglePlayerZone,
   buildSinglePlayerZoneMapWhere,
   mergeDiscoveryWhere,
 } from "../utils/methods/methods.js";
@@ -79,6 +78,7 @@ import {
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
 import { publishZoneCaptureStartedToOwner } from "../sockets/singlePlayerPublisher.js";
+
 
 /**
  * @Description Get gameplay constants for the mobile app (capture, guards, shields)
