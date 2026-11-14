@@ -233,10 +233,18 @@ export const getCaptureTimerMetrics = (attempt, nowMs = Date.now(), { tickWallCl
   const effectiveElapsedSec = Math.max(0, attempt.effectiveElapsedSec ?? 0);
   const remainingSec = Math.max(0, Math.ceil(captureTimeSec - effectiveElapsedSec));
   const eligibleToComplete = remainingSec <= 0;
+  const initialCaptureTimeSec = attempt.initialCaptureTimeSec ?? captureTimeSec;
+  const guardTimeSavedSec = Math.max(0, initialCaptureTimeSec - captureTimeSec);
+  const progressNumerator = Math.min(
+    initialCaptureTimeSec,
+    effectiveElapsedSec + guardTimeSavedSec
+  );
   const captureProgressPercent =
-    captureTimeSec > 0
-      ? Math.min(100, Math.round((effectiveElapsedSec / captureTimeSec) * 100))
-      : 0;
+    initialCaptureTimeSec > 0
+      ? Math.min(100, Math.round((progressNumerator / initialCaptureTimeSec) * 100))
+      : captureTimeSec > 0
+        ? Math.min(100, Math.round((effectiveElapsedSec / captureTimeSec) * 100))
+        : 0;
   const showGuardElimination =
     !eligibleToComplete && (attempt.sessionGuardsRemaining ?? 0) > 0;
 
@@ -290,6 +298,7 @@ export const recomputeCaptureTimeAfterGuardElimination = (
     floorTotal,
     Math.min(formulaTotal, totalFromRemaining, previousTotal)
   );
+
   return attempt.captureTimeSec;
 };
 
@@ -313,6 +322,7 @@ const buildFreshCaptureAttempt = (userId, zoneId, zone, gameplay, zoneGuardCount
       userId,
       startedAt: now,
       captureTimeSec,
+      initialCaptureTimeSec: captureTimeSec,
       targetOwnerId: zone.currentOwnerId ?? null,
       initialGuardCount: zoneGuardCount,
       sessionGuardsRemaining: zoneGuardCount,
@@ -473,6 +483,7 @@ export const formatActiveCaptureSessionFromAttempt = (attempt) => {
     initialGuardCount: attempt.initialGuardCount,
     sessionGuardsRemaining: attempt.sessionGuardsRemaining,
     guardsEliminatedInSession: attempt.guardsEliminatedInSession,
+    initialCaptureTimeSec: attempt.initialCaptureTimeSec ?? captureTimeSec,
     captureTimeSec,
     startedAt: new Date(attempt.startedAt).toISOString(),
     remainingSec: timer.remainingSec,

@@ -10,7 +10,12 @@ import {
   computeZonePassiveIncomePreview,
   formatSinglePlayerZoneForClient,
 } from "../utils/singlePlayerZone.js";
-import { formatActiveCaptureSessionFromAttempt } from "../utils/singlePlayerCapture.js";
+import {
+  formatActiveCaptureSessionFromAttempt,
+  normalizeCaptureAttempt,
+  recomputeCaptureTimeAfterGuardElimination,
+} from "../utils/singlePlayerCapture.js";
+import { SP_DEFAULTS } from "../utils/singlePlayerZone.js";
 
 const assert = (cond, msg) => {
   if (!cond) throw new Error(msg);
@@ -110,6 +115,33 @@ function runUnitTests() {
   assert(b2bCoins.maxCoinsFromHold === 240, "24h * 10/h = 240 max");
   assert(b2bCoins.coinProgressPercent === 10, "24/240 = 10%");
   assert(b2bCoins.coinsEarnedInHold === 24, "coinsEarnedInHold");
+
+  const b2bZoneForGuards = {
+    guardCount: 3,
+    currentOwnerId: "owner",
+    ownedAt: new Date(Date.now() - 3600_000),
+    zoneType: "B2B",
+  };
+  const config = { ...SP_DEFAULTS, secondsPerGuard: 30, baseCaptureTimeSec: 30 };
+  const attempt = normalizeCaptureAttempt({
+    startedAt: Date.now(),
+    captureTimeSec: 120,
+    useClientHoldSync: true,
+    effectiveElapsedSec: 0,
+    clientWallHoldSec: 0,
+    sessionGuardsRemaining: 3,
+    initialGuardCount: 3,
+    guardsEliminatedInSession: 0,
+  });
+  attempt.initialCaptureTimeSec = 120;
+  recomputeCaptureTimeAfterGuardElimination(attempt, b2bZoneForGuards, config, 1, new Date());
+  attempt.sessionGuardsRemaining = 2;
+  const afterGuard = formatActiveCaptureSessionFromAttempt(attempt);
+  assert(
+    afterGuard.captureProgressPercent > 0,
+    "eliminating 1 guard should raise captureProgressPercent vs session start"
+  );
+  assert(afterGuard.captureTimeSec < afterGuard.initialCaptureTimeSec, "captureTimeSec drops after guard elim");
 
   console.log("[OK] Unit tests passed (NORMAL competitive + B2B passive + captureProgressPercent).");
 }
