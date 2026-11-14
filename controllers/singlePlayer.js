@@ -733,7 +733,12 @@ export const cancelCapture = async (req, res) => {
  */
 export const completeCapture = async (req, res) => {
   const { id: zoneId } = req.params;
-  const { latitude, longitude } = req.body;
+  const {
+    latitude,
+    longitude,
+    holdWallSec: holdWallSecRaw,
+    speedMultiplier: speedMultiplierRaw,
+  } = req.body;
   const userId = req.user.id;
   const now = new Date();
 
@@ -786,7 +791,21 @@ export const completeCapture = async (req, res) => {
       });
     }
 
-    const timer = getCaptureTimerMetrics(attempt, now.getTime());
+    const nowMs = now.getTime();
+    if (holdWallSecRaw != null) {
+      if (speedMultiplierRaw == null) {
+        return res.status(400).json({
+          status: false,
+          msg: "speedMultiplier is required when holdWallSec is sent",
+        });
+      }
+      const holdSync = syncCaptureHoldFromClient(attempt, nowMs, holdWallSecRaw, speedMultiplierRaw);
+      if (!holdSync.ok) {
+        return res.status(400).json({ status: false, msg: holdSync.msg });
+      }
+    }
+
+    const timer = getCaptureTimerMetrics(attempt, nowMs);
     await persistCaptureAttempt(userId, zoneId, attempt, attempt.captureTimeSec);
 
     if (!timer.eligibleToComplete) {

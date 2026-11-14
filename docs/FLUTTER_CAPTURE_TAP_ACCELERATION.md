@@ -8,7 +8,7 @@
 1. Player starts capture → store `captureTimeSec` from server.
 2. On device: run a **wall stopwatch** for the snatch screen; compute **`speedMultiplier` (1.0–2.0)** from local taps (same rule: ~4 taps/sec → 2×).
 3. **Do not** call the API on every tap.
-4. Every **3–5s** (and right before complete), call **`POST .../capture/ping`** or **`POST .../capture/taps`** with GPS + progress:
+4. **Preferred:** call **`POST .../capture/complete`** once at the end with GPS + `holdWallSec` + `speedMultiplier` (see [FLUTTER_CAPTURE_HOLD_SYNC.md](./FLUTTER_CAPTURE_HOLD_SYNC.md)). Optional mid-snatch: `capture/ping` with same fields.
 
 ```json
 {
@@ -29,10 +29,10 @@
 ## Paste into Cursor
 
 ```text
-Snatch timer sync per docs/FLUTTER_CAPTURE_TAP_ACCELERATION.md (client hold sync).
+See FLUTTER_CAPTURE_HOLD_SYNC.md — end-only sync on capture/complete.
 
 - Taps are LOCAL only (UI + speedMultiplier).
-- Every 3-5s: POST capture/ping { lat, lng, holdWallSec, speedMultiplier }
+- POST capture/complete { lat, lng, holdWallSec, speedMultiplier } when local hold is done
 - holdWallSec = cumulative wall seconds since capture/start (Stopwatch), non-decreasing
 - speedMultiplier = 1.0..2.0 from local tap rate (do not exceed 2)
 - Complete when server canComplete === true (e.g. 60s capture: holdWallSec 30 + speed 2)

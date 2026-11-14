@@ -18,7 +18,7 @@ Rules:
 - Auth: Authorization: Bearer <user JWT> on every route marked Private
 - JSON envelope: success uses status: true; errors use status: false and msg (string)
 - GPS: send latitude/longitude as numbers (double), not strings
-- Capture flow requires Redis on server; poll POST .../capture/ping every 2–5s while holding
+- Capture flow requires Redis on server; snatch hold sync on POST .../capture/complete (see FLUTTER_CAPTURE_HOLD_SYNC.md)
 - Guards: buy via GET /store/all-items?itemType=GUARD + POST /store/purchase — NOT /single-player/guards/purchase (410)
 - Map: prefer GET /single-player/dashboard on home map; refresh zone detail with GET /single-player/zones/:id
 - OpenAPI: swagger.json in repo root (run node scripts/patch-swagger-user-single-player.js after backend updates)
@@ -375,7 +375,7 @@ sequenceDiagram
   API-->>App: shieldExpiresAt, ownedAt
 ```
 
-**Tap acceleration:** See [FLUTTER_CAPTURE_TAP_ACCELERATION.md](./FLUTTER_CAPTURE_TAP_ACCELERATION.md) — taps are **local**; sync every 3–5s via `capture/ping` with `holdWallSec` + `speedMultiplier` (e.g. 60s capture: send `30` and `2` → complete).
+**Tap acceleration:** See [FLUTTER_CAPTURE_HOLD_SYNC.md](./FLUTTER_CAPTURE_HOLD_SYNC.md) — taps **local**; one `capture/complete` with `holdWallSec` + `speedMultiplier` (e.g. 60s capture: `30` and `2` on complete).
 
 **Client rules:**
 

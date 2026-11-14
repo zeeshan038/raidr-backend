@@ -1096,10 +1096,37 @@ swagger.paths["/single-player/zones/{id}/capture/cancel"] = {
 swagger.paths["/single-player/zones/{id}/capture/complete"] = {
   post: {
     tags: ["Single Player"],
-    summary: "Complete capture after timer",
+    summary: "Complete capture (send holdWallSec + speedMultiplier)",
+    description:
+      "Preferred: one call at end of snatch with client hold summary. Server applies holdWallSec × speedMultiplier then validates timer.",
     security: bearer,
     parameters: [pathId],
-    requestBody: captureLocationBody,
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            required: ["latitude", "longitude"],
+            properties: {
+              latitude: { type: "number" },
+              longitude: { type: "number" },
+              holdWallSec: {
+                type: "number",
+                description: "Wall seconds since capture/start (send with speedMultiplier)",
+              },
+              speedMultiplier: { type: "number", minimum: 1, maximum: 2 },
+            },
+          },
+          example: {
+            latitude: 40.7829,
+            longitude: -73.9654,
+            holdWallSec: 30,
+            speedMultiplier: 2,
+          },
+        },
+      },
+    },
     responses: withAuth({
       200: okJson(
         "Capture complete",
