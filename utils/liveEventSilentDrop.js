@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { prisma } from "../config/db.js";
 import { getEconomyConfig } from "./economyConfig.js";
 import { haversineDistance } from "./methods/methods.js";
+import { isSameCountryForDiscovery, resolvePlayerCountryCode } from "./discoveryCountry.js";
 import {
   LIVE_EVENT_COLLECTION,
   LIVE_EVENT_DISPLAY,
@@ -177,8 +178,17 @@ export const listSilentDropsForAdmin = async ({ page = 1, limit = 20, merchantId
   return { items, total, page, limit };
 };
 
-export const findNearbySilentDrops = async (userId, userLat, userLng, radiusMeters = 15000) => {
+export const findNearbySilentDrops = async (
+  userId,
+  userLat,
+  userLng,
+  radiusMeters = 15000,
+  playerCountryCode = null
+) => {
   const now = new Date();
+  const playerCountry =
+    playerCountryCode ??
+    resolvePlayerCountryCode({ query: {} }, { lat: userLat, lng: userLng });
   const events = await prisma.liveEvent.findMany({
     where: silentDropWindowWhere(now),
     orderBy: { startTime: "asc" },
@@ -194,6 +204,14 @@ export const findNearbySilentDrops = async (userId, userLat, userLng, radiusMete
 
   const nearby = [];
   for (const event of events) {
+    if (
+      !isSameCountryForDiscovery(playerCountry, {
+        latitude: event.latitude,
+        longitude: event.longitude,
+      })
+    ) {
+      continue;
+    }
     const dist = haversineDistance(userLat, userLng, event.latitude, event.longitude);
     if (dist <= radiusMeters) {
       nearby.push(

@@ -573,7 +573,18 @@ const zoneListParams = [
   { name: "latitude", in: "query", schema: { type: "number" }, description: "User GPS" },
   { name: "longitude", in: "query", schema: { type: "number" } },
   { name: "city", in: "query", schema: { type: "string" } },
-  { name: "radiusKm", in: "query", schema: { type: "number" } },
+  {
+    name: "radiusKm",
+    in: "query",
+    schema: { type: "number", maximum: 80 },
+    description: "Discovery radius in km (default 50; server caps at DISCOVERY_RADIUS_MAX_KM, default 80)",
+  },
+  {
+    name: "countryCode",
+    in: "query",
+    schema: { type: "string", example: "PK" },
+    description: "Player country (ISO2 or name). Used with GPS so PK zones do not appear in IN. Recommended from device geocoder.",
+  },
 ];
 
 const pathId = { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } };

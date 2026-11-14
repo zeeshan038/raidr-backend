@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { prisma } from "../../config/db.js";
+import { isSameCountryForDiscovery, resolvePlayerCountryCode } from "../discoveryCountry.js";
 
 export const generateToken = (user) => {
     return jwt.sign({ user }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -283,27 +284,39 @@ export const syncUserLocationFromRequest = (req) => {
         .catch(() => {});
 };
 
-/** Default ~city-scale discovery; override with query radiusKm or DISCOVERY_RADIUS_KM env. */
+/** Hard cap so clients cannot request continent-scale discovery (e.g. radiusKm=500). */
+export const getDiscoveryRadiusMaxMeters = () => {
+    const maxKm = parseFloat(process.env.DISCOVERY_RADIUS_MAX_KM);
+    if (!isNaN(maxKm) && maxKm > 0) {
+        return maxKm * 1000;
+    }
+    return 80 * 1000;
+};
+
+const clampDiscoveryRadiusMeters = (meters) =>
+    Math.min(Math.max(meters, 1000), getDiscoveryRadiusMaxMeters());
+
+/** Default ~city-scale discovery; override with query radiusKm or DISCOVERY_RADIUS_KM env (capped). */
 export const getDiscoveryRadiusMeters = (req) => {
     const fromQuery = parseFloat(req.query?.radiusKm);
     if (!isNaN(fromQuery) && fromQuery > 0) {
-        return fromQuery * 1000;
+        return clampDiscoveryRadiusMeters(fromQuery * 1000);
     }
 
     const hasCityContext = Boolean(req.query?.city && String(req.query.city).trim());
     if (hasCityContext) {
         const cityRadius = parseFloat(process.env.DISCOVERY_CITY_RADIUS_KM);
         if (!isNaN(cityRadius) && cityRadius > 0) {
-            return cityRadius * 1000;
+            return clampDiscoveryRadiusMeters(cityRadius * 1000);
         }
-        return 80 * 1000;
+        return clampDiscoveryRadiusMeters(80 * 1000);
     }
 
     const fromEnv = parseFloat(process.env.DISCOVERY_RADIUS_KM);
     if (!isNaN(fromEnv) && fromEnv > 0) {
-        return fromEnv * 1000;
+        return clampDiscoveryRadiusMeters(fromEnv * 1000);
     }
-    return 50 * 1000;
+    return clampDiscoveryRadiusMeters(50 * 1000);
 };
 
 /**
@@ -316,7 +329,9 @@ export const shouldShowInDiscovery = ({
     eventLat,
     eventLng,
     radiusMeters,
-    alwaysShow = false
+    alwaysShow = false,
+    playerCountryCode = null,
+    entityCountry = null,
 }) => {
     if (alwaysShow) {
         return true;
@@ -330,6 +345,16 @@ export const shouldShowInDiscovery = ({
         eventLat == null || eventLng == null ||
         eventLat === undefined || eventLng === undefined ||
         isNaN(parseFloat(eventLat)) || isNaN(parseFloat(eventLng))
+    ) {
+        return false;
+    }
+
+    if (
+        !isSameCountryForDiscovery(playerCountryCode, {
+            country: entityCountry,
+            latitude: eventLat,
+            longitude: eventLng,
+        })
     ) {
         return false;
     }
@@ -364,13 +389,23 @@ export const userControlsSinglePlayerZone = (zone, userId) => {
  */
 export const shouldShowSinglePlayerZoneOnMap = (
     zone,
-    { coords, radiusMeters, city, userId, now = new Date() }
+    { coords, radiusMeters, city, userId, now = new Date(), playerCountryCode = null }
 ) => {
     if (userControlsSinglePlayerZone(zone, userId, now)) {
         return true;
     }
 
     if (!coords) {
+        return false;
+    }
+
+    if (
+        !isSameCountryForDiscovery(playerCountryCode, {
+            country: zone.country,
+            latitude: zone.latitude,
+            longitude: zone.longitude,
+        })
+    ) {
         return false;
     }
 
@@ -526,6 +561,7 @@ export const buildDiscoveryStatusWhere = (
 export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlwaysShow }) => {
     const coords = resolveRequestCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
+    const playerCountryCode = resolvePlayerCountryCode(req, coords);
 
     const filtered = events.filter((event) => {
         if (getAlwaysShow(event)) {
@@ -549,6 +585,8 @@ export const applyDiscoveryLocationFilter = (events, req, { getLatLng, getAlways
             eventLng,
             radiusMeters,
             alwaysShow: false,
+            playerCountryCode,
+            entityCountry: event.country ?? null,
         });
     });
 

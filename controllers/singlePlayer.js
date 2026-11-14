@@ -8,7 +8,9 @@ import {
   shouldShowSinglePlayerZoneOnMap,
   userControlsSinglePlayerZone,
   buildSinglePlayerZoneMapWhere,
+  mergeDiscoveryWhere,
 } from "../utils/methods/methods.js";
+import { resolvePlayerCountryCode } from "../utils/discoveryCountry.js";
 import {
   captureAttemptRedisKey,
   computeCaptureTimeBreakdown,
@@ -125,6 +127,7 @@ export const getZones = async (req, res) => {
     const coords = resolveMapCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
     const city = req.query.city ? String(req.query.city).trim() : null;
+    const playerCountryCode = resolvePlayerCountryCode(req, coords);
 
     const mapDiscoveryStatuses = new Set([
       undefined,
@@ -185,7 +188,7 @@ export const getZones = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    const visibilityOpts = { coords, radiusMeters, city, userId, now };
+    const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
     const visibleZones =
       userId && status === "conquered_by_me"
         ? candidateZones
@@ -270,7 +273,8 @@ export const getZoneById = async (req, res) => {
       const coords = resolveMapCoordinates(req);
       const radiusMeters = getDiscoveryRadiusMeters(req);
       const city = req.query.city ? String(req.query.city).trim() : null;
-      const visibilityOpts = { coords, radiusMeters, city, userId, now };
+      const playerCountryCode = resolvePlayerCountryCode(req, coords);
+      const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
       if (
         coords?.lat != null &&
         coords?.lng != null &&
@@ -1275,32 +1279,41 @@ export const getSinglePlayerDashboard = async (req, res) => {
     const radiusMeters = getDiscoveryRadiusMeters(req);
     const city = req.query.city ? String(req.query.city).trim() : null;
     const now = new Date();
+    const playerCountryCode = resolvePlayerCountryCode(req, coords);
 
     syncUserLocationFromRequest(req);
 
-    const configRow = await getSpGameConfig(prisma);
+    const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
+    const mapZoneWhere = mergeDiscoveryWhere(
+      userVisibleZoneFilter,
+      buildSinglePlayerZoneMapWhere({ userId, coords, radiusMeters, now })
+    );
+
+    const [configRow, user, empire, ownedZonesForIncome, mapCandidateZones] = await Promise.all([
+      getSpGameConfig(prisma),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          coinBoostExpiresAt: true,
+          coinBoostMultiplier: true,
+        },
+      }),
+      getEmpireStatus(prisma, userId),
+      prisma.singlePlayerZone.findMany({
+        where: { ...userVisibleZoneFilter, currentOwnerId: userId },
+        select: { coinsPerHour: true },
+      }),
+      prisma.singlePlayerZone.findMany({ where: mapZoneWhere }),
+    ]);
     const gameplay = gameplayFromConfig(configRow);
 
-    // 1. Fetch User Data (for multiplier)
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-
-    // 2. Fetch zones (all for passive income; map shows nearby + your controlled only)
-    const allActiveZones = await prisma.singlePlayerZone.findMany({
-      where: userVisibleZoneFilter,
-    });
-
-    const visibilityOpts = { coords, radiusMeters, city, userId, now };
-    const zones = allActiveZones.filter((zone) =>
+    const zones = mapCandidateZones.filter((zone) =>
       shouldShowSinglePlayerZoneOnMap(zone, visibilityOpts)
     );
 
-    // 3. Calculate Dashboard Stats (worldwide owned zones)
-    const ownedZones = allActiveZones.filter((z) =>
-      userControlsSinglePlayerZone(z, userId)
-    );
-    const empire = await getEmpireStatus(prisma, userId);
     const ownedZonesCount = empire.ownedZonesCount;
-    let passiveIncome = ownedZones.reduce((sum, zone) => sum + zone.coinsPerHour, 0);
+    let passiveIncome = ownedZonesForIncome.reduce((sum, zone) => sum + zone.coinsPerHour, 0);
 
     const hasActiveBoost = user.coinBoostExpiresAt && new Date(user.coinBoostExpiresAt) > new Date();
     if (hasActiveBoost && user.coinBoostMultiplier) {
@@ -1310,16 +1323,19 @@ export const getSinglePlayerDashboard = async (req, res) => {
       passiveIncome = Math.round(passiveIncome * empire.vipRewardMultiplier);
     }
 
-    // 4. Handle Daily Drop
+    // 4. Daily drop + silent drops (parallel)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let dailyDrop = await prisma.dailyDrop.findFirst({
-      where: {
-        userId,
-        createdAt: { gte: today }
-      }
-    });
+    let [dailyDrop, silentDrops] = await Promise.all([
+      prisma.dailyDrop.findFirst({
+        where: {
+          userId,
+          createdAt: { gte: today },
+        },
+      }),
+      findNearbySilentDrops(userId, userLat, userLng, radiusMeters, playerCountryCode),
+    ]);
 
     let isNewDrop = false;
     if (!dailyDrop) {
@@ -1407,13 +1423,6 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     const processedZones = zones.map((zone) =>
       formatSinglePlayerZoneMapPin(zone, userId, now, ownedZonesCount)
-    );
-
-    const silentDrops = await findNearbySilentDrops(
-      userId,
-      userLat,
-      userLng,
-      radiusMeters
     );
 
     let processedDailyDrop = null;
