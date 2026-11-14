@@ -304,20 +304,42 @@ export const executeBusinessQrClaim = async ({
   };
 };
 
-/** Admin/merchant: `imageUrl` = map pin asset; `commanderAvatar` = reward / product art. */
+/** Admin/merchant: `imageUrl` = map pin (`*-pin.png`); `commanderAvatar` = product (`*-icon.png`). */
+const looksLikeSilentDropMapPinAsset = (url) =>
+  /-pin\.(png|jpe?g|webp|gif)/i.test(url) || /(?:^|\/)[^/]*pin[^/]*\.(png|jpe?g|webp)/i.test(url);
+
+const looksLikeSilentDropProductAsset = (url) =>
+  /-icon\.(png|jpe?g|webp|gif)/i.test(url);
+
+/** Dashboard map only — never use reward/product art (no burger on the map). */
 export const resolveSilentDropMapIconUrl = (event) => {
-  const pin = typeof event?.imageUrl === "string" ? event.imageUrl.trim() : "";
-  const fallback =
-    typeof event?.commanderAvatar === "string" ? event.commanderAvatar.trim() : "";
-  return pin || fallback || null;
+  const mapPin = typeof event?.imageUrl === "string" ? event.imageUrl.trim() : "";
+  const product = typeof event?.commanderAvatar === "string" ? event.commanderAvatar.trim() : "";
+
+  if (mapPin) {
+    if (looksLikeSilentDropProductAsset(mapPin) && !looksLikeSilentDropMapPinAsset(mapPin)) {
+      // Mis-upload: product saved in imageUrl — do not render on map
+    } else {
+      return mapPin;
+    }
+  }
+  if (product && looksLikeSilentDropMapPinAsset(product)) {
+    return product;
+  }
+  return null;
 };
 
 /** Product / reward image on detail screens (not the map pin). */
 export const resolveSilentDropProductImageUrl = (event) => {
   const product =
     typeof event?.commanderAvatar === "string" ? event.commanderAvatar.trim() : "";
-  const fallback = typeof event?.imageUrl === "string" ? event.imageUrl.trim() : "";
-  return product || fallback || null;
+  const mapPin = typeof event?.imageUrl === "string" ? event.imageUrl.trim() : "";
+
+  if (product && looksLikeSilentDropProductAsset(product)) return product;
+  if (mapPin && looksLikeSilentDropProductAsset(mapPin)) return mapPin;
+  if (product && !looksLikeSilentDropMapPinAsset(product)) return product;
+  if (mapPin && !looksLikeSilentDropMapPinAsset(mapPin)) return mapPin;
+  return product || mapPin || null;
 };
 
 /** Dashboard map pin only — full detail: GET /single-player/silent-drops/:id */

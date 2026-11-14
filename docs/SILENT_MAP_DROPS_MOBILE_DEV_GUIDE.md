@@ -118,7 +118,7 @@ GET /single-player/dashboard?latitude=33.6844&longitude=73.0479&radiusKm=50
 | `id` | Detail / collect routes |
 | `title` | Pin label |
 | `latitude`, `longitude` | Pin position |
-| `mapIconUrl` | Map **pin** asset (`imageUrl` in admin — `*-pin.png`), not reward/product icon |
+| `mapIconUrl` | Map **pin** only (`imageUrl` / `*-pin.png`). `null` → use default pin UI (never `*-icon.png` / product) |
 | `distanceMeters` | From query lat/lng |
 | `hasClaimed` | Grey out if true |
 | `coinReward` | **GPS pins only** (optional on pin) |
