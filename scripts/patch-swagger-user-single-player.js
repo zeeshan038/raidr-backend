@@ -589,6 +589,36 @@ const captureLocationBody = {
   },
 };
 
+/** Optional hold sync on ping (same fields as capture/complete). */
+const capturePingBody = {
+  required: true,
+  content: {
+    "application/json": {
+      schema: {
+        type: "object",
+        required: ["latitude", "longitude"],
+        properties: {
+          latitude: { type: "number", example: 40.7829 },
+          longitude: { type: "number", example: -73.9654 },
+          holdWallSec: {
+            type: "number",
+            minimum: 0,
+            description:
+              "Optional. Wall seconds on snatch UI × speedMultiplier updates server progress. Omit if you only sync on capture/complete.",
+          },
+          speedMultiplier: {
+            type: "number",
+            minimum: 1,
+            maximum: 2,
+            description: "Required when holdWallSec is sent.",
+          },
+        },
+      },
+      example: { latitude: 40.7829, longitude: -73.9654 },
+    },
+  },
+};
+
 const sampleZoneFormatted = {
   id: "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
   name: "Postman Test Zone",
@@ -936,6 +966,8 @@ swagger.paths["/single-player/zones/{id}/capture/start"] = {
   post: {
     tags: ["Single Player"],
     summary: "Start hold-to-capture / snatch",
+    description:
+      "Creates a client-hold capture session (progress starts at 0). Preferred mobile flow: local snatch timer + one POST capture/complete with holdWallSec and speedMultiplier. Snatch UI progress must be computed on device — activeCaptureSession.captureProgressPercent from GET dashboard/zone does not advance while off the snatch screen.",
     security: bearer,
     parameters: [pathId],
     requestBody: captureLocationBody,
@@ -1042,12 +1074,12 @@ swagger.paths["/single-player/zones/{id}/capture/taps"] = {
 swagger.paths["/single-player/zones/{id}/capture/ping"] = {
   post: {
     tags: ["Single Player"],
-    summary: "Ping during capture (stay in radius)",
+    summary: "Optional capture ping (radius / debug)",
     description:
-      "Call every few seconds while the player holds snatch. Server checks GPS is still inside zone radius and returns remaining capture time (server-side tap acceleration included). If the player leaves the radius, returns 400 with cancelled: true and clears the Redis capture session.",
+      "Optional — not required on a timer. Use for radius check or mid-snatch server countdown. May include holdWallSec + speedMultiplier to persist progress; otherwise timer does not advance on ping. Leaving radius → 400 cancelled: true and session cleared. POST capture/cancel when user abandons snatch.",
     security: bearer,
     parameters: [pathId],
-    requestBody: captureLocationBody,
+    requestBody: capturePingBody,
     responses: withAuth({
       200: okJson(
         "Still in radius",
@@ -1098,7 +1130,7 @@ swagger.paths["/single-player/zones/{id}/capture/complete"] = {
     tags: ["Single Player"],
     summary: "Complete capture (send holdWallSec + speedMultiplier)",
     description:
-      "Preferred: one call at end of snatch with client hold summary. Server applies holdWallSec × speedMultiplier then validates timer.",
+      "Preferred: one call at end of snatch with client hold summary. Server applies holdWallSec × speedMultiplier then validates timer and GPS radius. Both holdWallSec and speedMultiplier should be sent when using client-hold sync (started via capture/start).",
     security: bearer,
     parameters: [pathId],
     requestBody: {
@@ -1872,6 +1904,24 @@ if (!swagger.tags.some((t) => t.name === "Test")) {
     description:
       "Push navigation QA: POST /test/push-navigation (body: PushNavigationTestRequest), GET /test/push-navigation/types.",
   });
+}
+
+const acs = swagger.components.schemas.ActiveCaptureSession;
+if (acs?.properties) {
+  acs.description =
+    "Active snatch session in Redis. On GET zone/dashboard, captureProgressPercent reflects last synced hold only (does not tick while user is off the snatch screen). Bind snatch UI to local holdWallSec × speedMultiplier; sync via capture/complete.";
+  if (acs.properties.captureProgressPercent) {
+    acs.properties.captureProgressPercent.description =
+      "Last synced snatch progress 0–100. Does not advance on GET dashboard/zone; only updates after holdWallSec on capture/complete or optional capture/ping.";
+  }
+  if (acs.properties.elapsedSec) {
+    acs.properties.elapsedSec.description =
+      "Effective elapsed seconds last stored on the server (client hold sync), not live wall clock since start.";
+  }
+  if (acs.properties.remainingSec) {
+    acs.properties.remainingSec.description =
+      "Seconds left from last synced server state. Snatch screen should use local countdown from captureTimeSec.";
+  }
 }
 
 fs.writeFileSync(swaggerPath, `${JSON.stringify(swagger, null, 2)}\n`);

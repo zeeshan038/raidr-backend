@@ -127,7 +127,8 @@ User keeps snatching; retry **`complete`** with updated `holdWallSec` / `speedMu
 
 - [ ] `capture/start` → store `captureTimeSec`, start stopwatch.
 - [ ] Taps → local speed only (**no HTTP**).
-- [ ] Progress bar → **local** using `captureTimeSec`, `holdWallSec`, `speedMultiplier`.
+- [ ] Progress bar → **local** using `captureTimeSec`, `holdWallSec`, `speedMultiplier` (do **not** bind the snatch bar to `activeCaptureSession.captureProgressPercent` from dashboard/GET — server does not advance that while you are off the snatch screen).
+- [ ] On **leave snatch screen** without finishing: call `capture/cancel` so the zone does not keep an active session (optional but recommended).
 - [ ] When local hold satisfied → **one** `capture/complete` with GPS + `holdWallSec` + `speedMultiplier`.
 - [ ] **Do not** ping every 3–5 s unless you need live server countdown.
 - [ ] Out of radius on `complete` → 400 message; prompt user to move back.

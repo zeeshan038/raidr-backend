@@ -135,10 +135,14 @@ export const ensureCaptureAccelState = (attempt, nowMs = Date.now()) => {
   if (attempt.lastUpdateAt == null) {
     attempt.lastUpdateAt = attempt.startedAt ?? nowMs;
   }
-  if (attempt.effectiveElapsedSec == null && attempt.startedAt != null) {
-    attempt.effectiveElapsedSec = Math.max(0, (nowMs - attempt.startedAt) / 1000);
-  } else if (attempt.effectiveElapsedSec == null) {
-    attempt.effectiveElapsedSec = 0;
+  if (attempt.effectiveElapsedSec == null) {
+    if (attempt.useClientHoldSync) {
+      attempt.effectiveElapsedSec = 0;
+    } else if (attempt.startedAt != null) {
+      attempt.effectiveElapsedSec = Math.max(0, (nowMs - attempt.startedAt) / 1000);
+    } else {
+      attempt.effectiveElapsedSec = 0;
+    }
   }
   return attempt;
 };
@@ -219,8 +223,12 @@ export const applyCaptureTaps = (attempt, nowMs = Date.now(), requestedTaps = 1)
   return { accepted, rejected: want - accepted, throttled: false };
 };
 
-export const getCaptureTimerMetrics = (attempt, nowMs = Date.now()) => {
-  advanceCaptureElapsed(attempt, nowMs);
+export const getCaptureTimerMetrics = (attempt, nowMs = Date.now(), { tickWallClock = true } = {}) => {
+  if (tickWallClock) {
+    advanceCaptureElapsed(attempt, nowMs);
+  } else {
+    ensureCaptureAccelState(attempt, nowMs);
+  }
   const captureTimeSec = attempt.captureTimeSec ?? 0;
   const effectiveElapsedSec = Math.max(0, attempt.effectiveElapsedSec ?? 0);
   const remainingSec = Math.max(0, Math.ceil(captureTimeSec - effectiveElapsedSec));
@@ -309,6 +317,9 @@ const buildFreshCaptureAttempt = (userId, zoneId, zone, gameplay, zoneGuardCount
       initialGuardCount: zoneGuardCount,
       sessionGuardsRemaining: zoneGuardCount,
       guardsEliminatedInSession: 0,
+      useClientHoldSync: true,
+      clientWallHoldSec: 0,
+      effectiveElapsedSec: 0,
     },
     zoneGuardCount
   );
@@ -455,7 +466,8 @@ export const applyCaptureSessionToZoneClientView = (
 export const formatActiveCaptureSessionFromAttempt = (attempt) => {
   if (!attempt?.startedAt) return null;
   const captureTimeSec = attempt.captureTimeSec ?? 0;
-  const timer = getCaptureTimerMetrics(attempt);
+  // Dashboard / GET zone must not advance snatch timer while user is off the snatch screen.
+  const timer = getCaptureTimerMetrics(attempt, Date.now(), { tickWallClock: false });
 
   return {
     initialGuardCount: attempt.initialGuardCount,

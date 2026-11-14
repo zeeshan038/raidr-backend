@@ -71,11 +71,28 @@ function runUnitTests() {
   const session = formatActiveCaptureSessionFromAttempt({
     startedAt: Date.now() - 45_000,
     captureTimeSec: 90,
+    useClientHoldSync: true,
+    effectiveElapsedSec: 45,
     initialGuardCount: 0,
     sessionGuardsRemaining: 0,
     guardsEliminatedInSession: 0,
   });
   assert(session.captureProgressPercent === 50, "captureProgressPercent should be 50 at 45/90s");
+
+  const frozen = formatActiveCaptureSessionFromAttempt({
+    startedAt: Date.now() - 120_000,
+    captureTimeSec: 90,
+    useClientHoldSync: true,
+    effectiveElapsedSec: 30,
+    lastUpdateAt: Date.now() - 90_000,
+    initialGuardCount: 0,
+    sessionGuardsRemaining: 0,
+    guardsEliminatedInSession: 0,
+  });
+  assert(
+    frozen.captureProgressPercent === 33,
+    "GET zone/dashboard must not advance timer after user leaves snatch screen"
+  );
 
   const b2bZone = {
     zoneType: "B2B",

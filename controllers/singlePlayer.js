@@ -458,6 +458,9 @@ export const startCapture = async (req, res) => {
         initialGuardCount: zone.guardCount ?? 0,
         sessionGuardsRemaining: zone.guardCount ?? 0,
         guardsEliminatedInSession: 0,
+        useClientHoldSync: true,
+        clientWallHoldSec: 0,
+        effectiveElapsedSec: 0,
       },
       zone.guardCount ?? 0
     );

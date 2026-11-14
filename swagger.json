@@ -1456,7 +1456,7 @@
       "ActiveCaptureSession": {
         "type": "object",
         "nullable": true,
-        "description": "Active snatch/capture attempt in Redis for the current user. Present on GET /single-player/zones/{id} when a session exists. Use sessionGuardsRemaining for AR guard UI (not guardCount on the zone).",
+        "description": "Active snatch session in Redis. On GET zone/dashboard, captureProgressPercent reflects last synced hold only (does not tick while user is off the snatch screen). Bind snatch UI to local holdWallSec × speedMultiplier; sync via capture/complete.",
         "properties": {
           "initialGuardCount": {
             "type": "integer",
@@ -1481,12 +1481,12 @@
           },
           "remainingSec": {
             "type": "integer",
-            "description": "Seconds left until capture timer completes.",
+            "description": "Seconds left from last synced server state. Snatch screen should use local countdown from captureTimeSec.",
             "example": 120
           },
           "elapsedSec": {
             "type": "integer",
-            "description": "Seconds elapsed since capture start.",
+            "description": "Effective elapsed seconds last stored on the server (client hold sync), not live wall clock since start.",
             "example": 50
           },
           "eligibleToComplete": {
@@ -1501,7 +1501,7 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 100,
-            "description": "Snatch hold timer progress 0–100 (same UX as b2b.hold.progressPercent).",
+            "description": "Last synced snatch progress 0–100. Does not advance on GET dashboard/zone; only updates after holdWallSec on capture/complete or optional capture/ping.",
             "example": 55
           },
           "tapCount": {
@@ -1629,6 +1629,18 @@
               "B2B"
             ]
           },
+          "type": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "B2B"
+            ],
+            "description": "Map layer on dashboard (mirrors zoneType)"
+          },
+          "isConquered": {
+            "type": "boolean",
+            "description": "Present on GET /single-player/dashboard zones[]"
+          },
           "imageUrl": {
             "type": "string",
             "nullable": true
@@ -1707,20 +1719,11 @@
           "b2b": {
             "$ref": "#/components/schemas/SinglePlayerB2bBlock"
           },
+          "leaderboard": {
+            "$ref": "#/components/schemas/SinglePlayerZoneLeaderboard"
+          },
           "owner": {
             "$ref": "#/components/schemas/ZoneOwnerSummary"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "NORMAL",
-              "B2B"
-            ],
-            "description": "Map layer type on dashboard (same value as zoneType)"
-          },
-          "isConquered": {
-            "type": "boolean",
-            "description": "Present on GET /single-player/dashboard zones[]"
           }
         }
       },
@@ -2687,14 +2690,6 @@
             "type": "string",
             "format": "date-time"
           },
-          "distanceMeters": {
-            "type": "integer",
-            "description": "Present on dashboard dailyDrop only"
-          },
-          "isNewlySpawned": {
-            "type": "boolean",
-            "description": "Present on dashboard dailyDrop only"
-          },
           "type": {
             "type": "string",
             "enum": [
@@ -2702,6 +2697,14 @@
               "DAILY_DROP_RARE"
             ],
             "description": "Present on dashboard dailyDrop"
+          },
+          "distanceMeters": {
+            "type": "integer",
+            "description": "Present on dashboard dailyDrop only"
+          },
+          "isNewlySpawned": {
+            "type": "boolean",
+            "description": "Present on dashboard dailyDrop only"
           }
         }
       },
@@ -2811,7 +2814,7 @@
       },
       "SinglePlayerHistoryBundle": {
         "type": "object",
-        "description": "Combined profile/history payload when GET /single-player/history is called without type.",
+        "description": "GET /single-player/history without type. silentDrops = collected silent map claims (not live dashboard pins).",
         "properties": {
           "dailyDrops": {
             "type": "array",
@@ -2833,7 +2836,7 @@
           },
           "silentDrops": {
             "type": "array",
-            "description": "Collected silent map drops (GPS coins + QR partner rewards)",
+            "description": "Collected GPS + QR silent map drops (SilentDropMyClaimItem)",
             "items": {
               "$ref": "#/components/schemas/SilentDropMyClaimItem"
             }
@@ -3676,6 +3679,167 @@
             "type": "boolean"
           }
         }
+      },
+      "SinglePlayerZoneLeaderboardEntry": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "Always set — store/equipped avatar, user.avatarFrontUrl, photoUrl, or default."
+          },
+          "coins": {
+            "type": "integer"
+          },
+          "isWinner": {
+            "type": "boolean"
+          },
+          "isYou": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SinglePlayerZoneLeaderboard": {
+        "type": "object",
+        "nullable": true,
+        "description": "Top coin earners on this zone (passive ledger). viewer set when authenticated user rank > 3.",
+        "properties": {
+          "zoneId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "zoneType": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "B2B"
+            ]
+          },
+          "sortBy": {
+            "type": "string",
+            "example": "coins_from_zone"
+          },
+          "top": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SinglePlayerZoneLeaderboardEntry"
+            }
+          },
+          "viewer": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SinglePlayerZoneLeaderboardEntry"
+              }
+            ],
+            "nullable": true
+          },
+          "winnerAnnounced": {
+            "type": "boolean"
+          },
+          "winnerUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "SinglePlayerZoneMapPin": {
+        "type": "object",
+        "description": "GET /single-player/dashboard zones[] only. Full zone: GET /single-player/zones/{id}.",
+        "required": [
+          "id",
+          "name",
+          "latitude",
+          "longitude",
+          "mapPinType",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "radius": {
+            "type": "integer"
+          },
+          "zoneType": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "B2B"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "B2B"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "conquered_by_me",
+              "conquered_by_others"
+            ]
+          },
+          "mapPinType": {
+            "type": "string",
+            "enum": [
+              "YOUR_ZONE",
+              "NEUTRAL",
+              "B2B",
+              "VULNERABLE",
+              "ENEMY_SHIELDED"
+            ]
+          },
+          "isShieldActive": {
+            "type": "boolean"
+          },
+          "isAttackable": {
+            "type": "boolean"
+          },
+          "isConquered": {
+            "type": "boolean"
+          },
+          "coinsPerHour": {
+            "type": "integer"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandLogoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "meetsEligibility": {
+            "type": "boolean",
+            "nullable": true
+          }
+        }
       }
     }
   },
@@ -4060,6 +4224,7 @@
           "Single Player"
         ],
         "summary": "Start hold-to-capture / snatch",
+        "description": "Creates a client-hold capture session (progress starts at 0). Preferred mobile flow: local snatch timer + one POST capture/complete with holdWallSec and speedMultiplier. Snatch UI progress must be computed on device — activeCaptureSession.captureProgressPercent from GET dashboard/zone does not advance while off the snatch screen.",
         "security": [
           {
             "bearerAuth": []
@@ -4406,7 +4571,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Complete capture after timer",
+        "summary": "Complete capture (send holdWallSec + speedMultiplier)",
+        "description": "Preferred: one call at end of snatch with client hold summary. Server applies holdWallSec × speedMultiplier then validates timer and GPS radius. Both holdWallSec and speedMultiplier should be sent when using client-hold sync (started via capture/start).",
         "security": [
           {
             "bearerAuth": []
@@ -4428,11 +4594,34 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CaptureLocationRequest"
+                "type": "object",
+                "required": [
+                  "latitude",
+                  "longitude"
+                ],
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  },
+                  "holdWallSec": {
+                    "type": "number",
+                    "description": "Wall seconds since capture/start (send with speedMultiplier)"
+                  },
+                  "speedMultiplier": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 2
+                  }
+                }
               },
               "example": {
                 "latitude": 40.7829,
-                "longitude": -73.9654
+                "longitude": -73.9654,
+                "holdWallSec": 30,
+                "speedMultiplier": 2
               }
             }
           }
@@ -4782,7 +4971,6 @@
           "Single Player"
         ],
         "summary": "Collect daily drop within range",
-        "description": "Awards lifetime XP and Brand Month campaign XP. Brand Month uses the request body latitude/longitude to pick the regional campaign (same geo rules as GET /single-player/brand-month/active).",
         "security": [
           {
             "bearerAuth": []
@@ -5000,7 +5188,6 @@
           "Single Player"
         ],
         "summary": "Active sponsored theme",
-        "description": "Returns the sponsored theme for the location-aware active Brand Month when one exists, otherwise the newest date-active theme. Pass lat and lng when campaigns or themes are geo-fenced (same rules as GET /single-player/brand-month/active).",
         "security": [
           {
             "bearerAuth": []
@@ -5013,15 +5200,14 @@
             "schema": {
               "type": "number"
             },
-            "description": "User latitude (alias: latitude on Brand Month endpoints)"
+            "description": "User latitude if theme is geo-fenced"
           },
           {
             "name": "lng",
             "in": "query",
             "schema": {
               "type": "number"
-            },
-            "description": "User longitude (alias: longitude on Brand Month endpoints)"
+            }
           }
         ],
         "responses": {
@@ -5123,7 +5309,7 @@
           "Single Player"
         ],
         "summary": "Single player history (daily drops, zones, silent map drops)",
-        "description": "Without `type`: returns { dailyDrops, rareDrops, raidZones, silentDrops }. With `type=silentDrops`, `data` is SilentDropMyClaimItem[] (collected GPS + QR silent map drops). Legacy alias: GET /single-player/silent-drops/my-claims.",
+        "description": "Without type: returns { dailyDrops, rareDrops, raidZones, silentDrops }. type=silentDrops returns SilentDropMyClaimItem[] (alias: GET /single-player/silent-drops/my-claims).",
         "security": [
           {
             "bearerAuth": []
@@ -5141,8 +5327,7 @@
                 "raidZones",
                 "silentDrops"
               ]
-            },
-            "description": "Filter history slice. Omit for full bundle including silentDrops (map drop claims, not live pins)."
+            }
           }
         ],
         "responses": {
@@ -5233,32 +5418,12 @@
                         "coinsAwarded": null,
                         "payoutType": "PARTNER_REWARD",
                         "isRedeemed": true,
-                        "redeemedAt": "2026-11-13T10:00:00.000Z",
                         "claimedAt": "2026-11-13T10:00:00.000Z",
                         "drop": {
                           "id": "e1111111-1111-1111-1111-111111111111",
-                          "title": "KFC crunch offer",
-                          "reward": "Free crunch burger",
-                          "displayMode": "SILENT_MAP_DROP",
-                          "collectionMethod": "BUSINESS_QR"
-                        }
-                      },
-                      {
-                        "type": "SILENT_DROP_GPS",
-                        "claimId": "c2222222-2222-2222-2222-222222222222",
-                        "code": null,
-                        "xpEarned": 0,
-                        "coinsAwarded": 50,
-                        "payoutType": "COINS_ONLY",
-                        "isRedeemed": true,
-                        "redeemedAt": "2026-11-12T08:30:00.000Z",
-                        "claimedAt": "2026-11-12T08:30:00.000Z",
-                        "drop": {
-                          "id": "e2222222-2222-2222-2222-222222222222",
-                          "title": "Park mystery coins",
-                          "coinReward": 50,
-                          "displayMode": "SILENT_MAP_DROP",
-                          "collectionMethod": "GPS_INSTANT"
+                          "title": "KFC",
+                          "collectionMethod": "BUSINESS_QR",
+                          "displayMode": "SILENT_MAP_DROP"
                         }
                       }
                     ]
@@ -5331,8 +5496,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Map dashboard (stats, zones, daily drop, silent map drops)",
-        "description": "Requires player GPS. silentDrops[] are slim map pins (SilentMapDropMapPin); tap pin → GET /single-player/silent-drops/{id}. Brand Month: GET /single-player/brand-month/active.",
+        "summary": "Map dashboard (stats, zone pins, daily drop, silent drops)",
+        "description": "zones[] are slim map pins (SinglePlayerZoneMapPin). Tap a zone → GET /single-player/zones/{id} for capture timers, b2b hold, passive bars.",
         "security": [
           {
             "bearerAuth": []
@@ -5345,8 +5510,7 @@
             "required": true,
             "schema": {
               "type": "number"
-            },
-            "description": "Player latitude for zones and daily drop distance"
+            }
           },
           {
             "name": "longitude",
@@ -5354,8 +5518,7 @@
             "required": true,
             "schema": {
               "type": "number"
-            },
-            "description": "Player longitude for zones and daily drop distance"
+            }
           },
           {
             "name": "city",
@@ -5363,15 +5526,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "radiusKm",
-            "in": "query",
-            "schema": {
-              "type": "number",
-              "example": 50
-            },
-            "description": "Discovery radius in km (optional; default from env)"
           }
         ],
         "responses": {
@@ -5395,7 +5549,7 @@
                         "dailyDrop": {
                           "allOf": [
                             {
-                              "$ref": "#/components/schemas/DashboardDailyDropMapPin"
+                              "$ref": "#/components/schemas/DailyDropDto"
                             }
                           ],
                           "nullable": true
@@ -5403,14 +5557,7 @@
                         "zones": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/components/schemas/SinglePlayerZoneFormatted"
-                          }
-                        },
-                        "silentDrops": {
-                          "type": "array",
-                          "description": "Active silent map drops near the player (map pins only)",
-                          "items": {
-                            "$ref": "#/components/schemas/SilentMapDropMapPin"
+                            "$ref": "#/components/schemas/SinglePlayerZoneMapPin"
                           }
                         }
                       }
@@ -5429,16 +5576,7 @@
                       "vipRewardMultiplier": 1,
                       "daysUntilNextRareDrop": 3
                     },
-                    "dailyDrop": {
-                      "type": "DAILY_DROP",
-                      "id": "a2222222-2222-2222-2222-222222222222",
-                      "latitude": 33.57,
-                      "longitude": 73.15,
-                      "isCollected": false,
-                      "rewardType": "100_COINS",
-                      "distanceMeters": 450,
-                      "isNewlySpawned": true
-                    },
+                    "dailyDrop": null,
                     "zones": [
                       {
                         "id": "3b0f718f-1f1b-4c6a-628a-3e727421a7e7",
@@ -5462,32 +5600,7 @@
                           "guardPenaltySec": 60,
                           "guardCount": 2
                         },
-                        "b2b": null,
-                        "type": "NORMAL",
-                        "isConquered": true
-                      }
-                    ],
-                    "silentDrops": [
-                      {
-                        "type": "SILENT_DROP_QR",
-                        "id": "e1111111-1111-1111-1111-111111111111",
-                        "title": "KFC crunch offer",
-                        "latitude": 33.5650275,
-                        "longitude": 73.1522898,
-                        "mapIconUrl": "https://cdn.example/kfc-pin.png",
-                        "distanceMeters": 120,
-                        "hasClaimed": false
-                      },
-                      {
-                        "type": "SILENT_DROP_GPS",
-                        "id": "e2222222-2222-2222-2222-222222222222",
-                        "title": "Park coins",
-                        "latitude": 33.566,
-                        "longitude": 73.153,
-                        "mapIconUrl": null,
-                        "distanceMeters": 80,
-                        "hasClaimed": false,
-                        "coinReward": 50
+                        "b2b": null
                       }
                     ]
                   }
@@ -14207,8 +14320,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Ping during capture (stay in radius)",
-        "description": "Call every few seconds while the player holds snatch. Server checks GPS is still inside zone radius and returns remaining capture time. If the player leaves the radius, returns 400 with cancelled: true and clears the Redis capture session.",
+        "summary": "Optional capture ping (radius / debug)",
+        "description": "Optional — not required on a timer. Use for radius check or mid-snatch server countdown. May include holdWallSec + speedMultiplier to persist progress; otherwise timer does not advance on ping. Leaving radius → 400 cancelled: true and session cleared. POST capture/cancel when user abandons snatch.",
         "security": [
           {
             "bearerAuth": []
@@ -14230,7 +14343,32 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CaptureLocationRequest"
+                "type": "object",
+                "required": [
+                  "latitude",
+                  "longitude"
+                ],
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "example": 40.7829
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "example": -73.9654
+                  },
+                  "holdWallSec": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Optional. Wall seconds on snatch UI × speedMultiplier updates server progress. Omit if you only sync on capture/complete."
+                  },
+                  "speedMultiplier": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 2,
+                    "description": "Required when holdWallSec is sent."
+                  }
+                }
               },
               "example": {
                 "latitude": 40.7829,
@@ -14256,13 +14394,24 @@
                     },
                     "remainingSec": {
                       "type": "integer"
+                    },
+                    "speedMultiplier": {
+                      "type": "number"
+                    },
+                    "tapRate": {
+                      "type": "number"
+                    },
+                    "canComplete": {
+                      "type": "boolean"
                     }
                   }
                 },
                 "example": {
                   "status": true,
                   "inRadius": true,
-                  "remainingSec": 45
+                  "remainingSec": 45,
+                  "speedMultiplier": 1,
+                  "canComplete": false
                 }
               }
             }
@@ -14364,8 +14513,8 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Tap during capture (accelerate hold timer up to 2×)",
-        "description": "Send tap bursts while holding snatch. Server validates tap rate (1.0–2.0 speed multiplier from taps in the last second). Do not send a client speed multiplier.",
+        "summary": "Sync snatch hold progress (recommended) or legacy per-tap",
+        "description": "Recommended: batch sync with holdWallSec (wall seconds on snatch UI) and speedMultiplier (1–2 from local taps). Example: 60s capture, holdWallSec 30, speedMultiplier 2 → canComplete. Optional legacy: taps count without holdWallSec.",
         "security": [
           {
             "bearerAuth": []
@@ -14383,7 +14532,6 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -14399,18 +14547,30 @@
                   "longitude": {
                     "type": "number"
                   },
+                  "holdWallSec": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Wall-clock seconds since capture/start on device (cumulative, non-decreasing)"
+                  },
+                  "speedMultiplier": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 2,
+                    "description": "Required with holdWallSec"
+                  },
                   "taps": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 8,
-                    "default": 1
+                    "description": "Legacy; omit when using holdWallSec"
                   }
                 }
               },
               "example": {
                 "latitude": 40.7829,
                 "longitude": -73.9654,
-                "taps": 1
+                "holdWallSec": 30,
+                "speedMultiplier": 2
               }
             }
           }
@@ -14433,9 +14593,6 @@
                     "tapsAccepted": {
                       "type": "integer"
                     },
-                    "tapsRejected": {
-                      "type": "integer"
-                    },
                     "remainingSec": {
                       "type": "integer"
                     },
@@ -14450,14 +14607,8 @@
                     "tapCount": {
                       "type": "integer"
                     },
-                    "eligibleToComplete": {
-                      "type": "boolean"
-                    },
                     "canComplete": {
                       "type": "boolean"
-                    },
-                    "captureProgressPercent": {
-                      "type": "integer"
                     }
                   }
                 },
@@ -14465,39 +14616,69 @@
                   "status": true,
                   "inRadius": true,
                   "tapsAccepted": 1,
-                  "remainingSec": 18,
+                  "remainingSec": 22,
                   "speedMultiplier": 2,
                   "tapRate": 5,
-                  "canComplete": false,
-                  "captureProgressPercent": 72
+                  "canComplete": false
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
                   "properties": {
                     "status": {
                       "type": "boolean",
                       "example": false
                     },
                     "msg": {
-                      "type": "string"
-                    },
-                    "cancelled": {
-                      "type": "boolean"
+                      "type": "string",
+                      "example": "Not authorized, token failed"
                     }
                   }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
                 }
               }
             }
           },
-          "429": {
-            "description": "Tap requests too frequent"
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
           }
         }
       }
@@ -16662,6 +16843,34 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
           }
         }
       }
@@ -16724,6 +16933,34 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Silent drop not found",
             "content": {
@@ -16731,6 +16968,34 @@
                 "example": {
                   "status": false,
                   "msg": "Silent drop not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -16814,6 +17079,62 @@
                 "example": {
                   "status": false,
                   "msg": "Too far from drop. You are 350m away; must be within 200m."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
@@ -16908,6 +17229,62 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
+                }
+              }
+            }
           }
         }
       }
@@ -16975,6 +17352,62 @@
                 "example": {
                   "status": false,
                   "msg": "Invalid QR Code scanned for this drop"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Not authorized, token failed"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Not authorized, token failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "msg"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Something went wrong"
+                    }
+                  }
+                },
+                "example": {
+                  "status": false,
+                  "msg": "Something went wrong"
                 }
               }
             }
