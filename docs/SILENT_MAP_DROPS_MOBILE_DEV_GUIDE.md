@@ -32,7 +32,7 @@ GPS does **not** grant the partner reward early — `/collect` on a `BUSINESS_QR
 | Environment | Base URL | Notes |
 |-------------|----------|--------|
 | **Dev (VPS)** | `http://188.245.72.1:5002/api` | Dev API port **5002** (not 5001). |
-| **Prod** | `https://backend-prod.raidr-app.com/api` | Confirm with team before release. |
+| **Prod** | `https://backend.raidr-app.com/api` | Do **not** use `backend-prod.raidr-app.com` unless DNS/nginx alias is configured. |
 
 All routes below are relative to `{BASE_URL}`.
 

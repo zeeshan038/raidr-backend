@@ -6,7 +6,6 @@ import {
   getDiscoveryRadiusMeters,
   syncUserLocationFromRequest,
   shouldShowSinglePlayerZoneOnMap,
-  userControlsSinglePlayerZone,
   buildSinglePlayerZoneMapWhere,
   mergeDiscoveryWhere,
 } from "../utils/methods/methods.js";
@@ -79,6 +78,14 @@ import {
   zoneForSessionCaptureTimer,
 } from "../utils/singlePlayerCapture.js";
 import { publishZoneCaptureStartedToOwner } from "../sockets/singlePlayerPublisher.js";
+
+const zoneDetailStepTimeout = (promise, ms, step) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`${step} exceeded ${ms}ms`)), ms);
+    }),
+  ]);
 
 /**
  * @Description Get gameplay constants for the mobile app (capture, guards, shields)
@@ -295,16 +302,37 @@ export const getZoneById = async (req, res) => {
 
     await enrichNormalPassiveEarningOnFormattedZones(prisma, [data], [zone], userId);
     await enrichB2bPassiveIncomeOnFormattedZones(prisma, [data], [zone], userId);
-    await enrichZoneLeaderboardOnFormattedZones(prisma, [data], [zone], userId);
+    try {
+      await zoneDetailStepTimeout(
+        enrichZoneLeaderboardOnFormattedZones(prisma, [data], [zone], userId),
+        8000,
+        "zone leaderboard"
+      );
+    } catch (enrichErr) {
+      console.warn("[getZoneById] leaderboard skipped:", enrichErr.message);
+    }
 
     if (userId) {
-      data.activeCaptureSession = await getActiveCaptureSessionForUser(
-        userId,
-        zoneId,
-        zone.guardCount ?? 0
-      );
+      try {
+        data.activeCaptureSession = await zoneDetailStepTimeout(
+          getActiveCaptureSessionForUser(userId, zoneId, zone.guardCount ?? 0),
+          5000,
+          "capture session redis"
+        );
+      } catch (sessionErr) {
+        console.warn("[getZoneById] capture session skipped:", sessionErr.message);
+        data.activeCaptureSession = null;
+      }
       if (data.activeCaptureSession) {
-        await extendCaptureSessionTtl(userId, zoneId, data.activeCaptureSession.captureTimeSec);
+        try {
+          await zoneDetailStepTimeout(
+            extendCaptureSessionTtl(userId, zoneId, data.activeCaptureSession.captureTimeSec),
+            5000,
+            "capture session ttl"
+          );
+        } catch (ttlErr) {
+          console.warn("[getZoneById] capture ttl skipped:", ttlErr.message);
+        }
         applyCaptureSessionToZoneClientView(
           data,
           data.activeCaptureSession,
