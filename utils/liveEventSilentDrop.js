@@ -1,8 +1,15 @@
 import crypto from "crypto";
 import { prisma } from "../config/db.js";
 import { getEconomyConfig } from "./economyConfig.js";
-import { haversineDistance } from "./methods/methods.js";
-import { isSameCountryForDiscovery, resolvePlayerCountryCode } from "./discoveryCountry.js";
+import {
+  getDiscoveryRadiusMaxMeters,
+  haversineDistance,
+} from "./methods/methods.js";
+import {
+  discoveryRadiusMetersForEntity,
+  isSameCountryForDiscovery,
+  resolvePlayerCountryCode,
+} from "./discoveryCountry.js";
 import {
   LIVE_EVENT_COLLECTION,
   LIVE_EVENT_DISPLAY,
@@ -213,7 +220,18 @@ export const findNearbySilentDrops = async (
       continue;
     }
     const dist = haversineDistance(userLat, userLng, event.latitude, event.longitude);
-    if (dist <= radiusMeters) {
+    const maxMeters = getDiscoveryRadiusMaxMeters();
+    const effectiveRadius = discoveryRadiusMetersForEntity(
+      playerCountry,
+      {
+        country: event.country ?? null,
+        latitude: event.latitude,
+        longitude: event.longitude,
+      },
+      radiusMeters,
+      maxMeters
+    );
+    if (dist <= effectiveRadius) {
       nearby.push(
         formatSilentDropMapPin(event, userLat, userLng, claimByEvent.get(event.id))
       );

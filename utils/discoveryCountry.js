@@ -1,6 +1,6 @@
 /**
- * Map discovery: same-country visibility (e.g. PK zones hidden in IN).
- * Prefer zone.country from DB; fallback to coarse lat/lng regions when missing.
+ * Map discovery country hints (zone.country, coarse lat/lng).
+ * Filtering: only when DISCOVERY_SAME_COUNTRY_ONLY=true (default off = cross-country OK within radius).
  */
 
 const COUNTRY_ALIASES = {
@@ -94,12 +94,55 @@ export const entityCountryCode = ({ country, latitude, longitude }) => {
   return null;
 };
 
+const discoveryRequiresSameCountry = () => {
+  const v = process.env.DISCOVERY_SAME_COUNTRY_ONLY;
+  if (v == null || String(v).trim() === "") return false;
+  const s = String(v).trim().toLowerCase();
+  return s === "1" || s === "true" || s === "yes";
+};
+
 /**
- * When both sides resolve to a country, they must match. Unknown → allow (distance filter only).
+ * When DISCOVERY_SAME_COUNTRY_ONLY=true and both sides resolve, they must match.
+ * Default: allow cross-country; distance radius still limits the map.
  */
 export const isSameCountryForDiscovery = (playerCountryCode, entity) => {
+  if (!discoveryRequiresSameCountry()) return true;
   const player = normalizeCountryCode(playerCountryCode);
   const entityCode = entityCountryCode(entity);
   if (!player || !entityCode) return true;
   return player === entityCode;
+};
+
+/** Both resolved and equal — used for wider in-country radius (e.g. Swabi ↔ Peshawar). */
+export const entitiesShareCountryForDiscovery = (playerCountryCode, entity) => {
+  const player = normalizeCountryCode(playerCountryCode);
+  const entityCode = entityCountryCode(entity);
+  if (!player || !entityCode) return true;
+  return player === entityCode;
+};
+
+/** Regional discovery within one country (km). Env DISCOVERY_SAME_COUNTRY_RADIUS_KM, default 120. */
+export const getSameCountryDiscoveryRadiusKm = () => {
+  const km = parseFloat(process.env.DISCOVERY_SAME_COUNTRY_RADIUS_KM);
+  if (Number.isFinite(km) && km > 0) return km;
+  return 120;
+};
+
+/**
+ * Per-pin radius: local nearby radius, or wider when player + entity share a country.
+ * @param {number} localRadiusMeters from getDiscoveryRadiusMeters
+ * @param {number} maxMeters hard cap (DISCOVERY_RADIUS_MAX_KM)
+ */
+export const discoveryRadiusMetersForEntity = (
+  playerCountryCode,
+  entity,
+  localRadiusMeters,
+  maxMeters
+) => {
+  const cap = Math.max(localRadiusMeters, maxMeters > 0 ? maxMeters : localRadiusMeters);
+  if (!entitiesShareCountryForDiscovery(playerCountryCode, entity)) {
+    return Math.min(localRadiusMeters, cap);
+  }
+  const regional = getSameCountryDiscoveryRadiusKm() * 1000;
+  return Math.min(Math.max(localRadiusMeters, regional), cap);
 };
