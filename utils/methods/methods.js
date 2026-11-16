@@ -1,6 +1,11 @@
 import jwt from "jsonwebtoken";
 import { prisma } from "../../config/db.js";
-import { isSameCountryForDiscovery, resolvePlayerCountryCode } from "../discoveryCountry.js";
+import {
+    discoveryRadiusMetersForEntity,
+    getSameCountryDiscoveryRadiusKm,
+    isSameCountryForDiscovery,
+    resolvePlayerCountryCode,
+} from "../discoveryCountry.js";
 
 export const generateToken = (user) => {
     return jwt.sign({ user }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -290,7 +295,7 @@ export const getDiscoveryRadiusMaxMeters = () => {
     if (!isNaN(maxKm) && maxKm > 0) {
         return maxKm * 1000;
     }
-    return 80 * 1000;
+    return 120 * 1000;
 };
 
 const clampDiscoveryRadiusMeters = (meters) =>
@@ -317,6 +322,18 @@ export const getDiscoveryRadiusMeters = (req) => {
         return clampDiscoveryRadiusMeters(fromEnv * 1000);
     }
     return clampDiscoveryRadiusMeters(50 * 1000);
+};
+
+/** Radius for Prisma bbox / dashboard fetch — includes regional same-country pins. */
+export const getDiscoveryFetchRadiusMeters = (req, coords, playerCountryCode = null) => {
+    const local = getDiscoveryRadiusMeters(req);
+    const max = getDiscoveryRadiusMaxMeters();
+    const pc =
+        playerCountryCode ??
+        (coords ? resolvePlayerCountryCode(req, coords) : null);
+    if (!pc) return Math.min(local, max);
+    const regional = Math.min(getSameCountryDiscoveryRadiusKm() * 1000, max);
+    return Math.min(Math.max(local, regional), max);
 };
 
 /**
@@ -360,7 +377,14 @@ export const shouldShowInDiscovery = ({
     }
 
     const dist = haversineDistance(userLat, userLng, parseFloat(eventLat), parseFloat(eventLng));
-    return dist <= radiusMeters;
+    const maxMeters = getDiscoveryRadiusMaxMeters();
+    const effectiveRadius = discoveryRadiusMetersForEntity(
+        playerCountryCode,
+        { country: entityCountry, latitude: eventLat, longitude: eventLng },
+        radiusMeters,
+        maxMeters
+    );
+    return dist <= effectiveRadius;
 };
 
 /** @deprecated Use shouldShowInDiscovery with getDiscoveryRadiusMeters instead */
@@ -416,7 +440,19 @@ export const shouldShowSinglePlayerZoneOnMap = (
         parseFloat(zone.longitude)
     );
 
-    if (dist <= radiusMeters) {
+    const maxMeters = getDiscoveryRadiusMaxMeters();
+    const effectiveRadius = discoveryRadiusMetersForEntity(
+        playerCountryCode,
+        {
+            country: zone.country,
+            latitude: zone.latitude,
+            longitude: zone.longitude,
+        },
+        radiusMeters,
+        maxMeters
+    );
+
+    if (dist <= effectiveRadius) {
         return true;
     }
 

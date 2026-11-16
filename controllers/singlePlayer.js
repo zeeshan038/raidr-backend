@@ -3,6 +3,7 @@ import { redis } from "../config/redis.js";
 import {
   haversineDistance,
   resolveMapCoordinates,
+  getDiscoveryFetchRadiusMeters,
   getDiscoveryRadiusMeters,
   syncUserLocationFromRequest,
   shouldShowSinglePlayerZoneOnMap,
@@ -135,6 +136,11 @@ export const getZones = async (req, res) => {
     const radiusMeters = getDiscoveryRadiusMeters(req);
     const city = req.query.city ? String(req.query.city).trim() : null;
     const playerCountryCode = resolvePlayerCountryCode(req, coords);
+    const fetchRadiusMeters = getDiscoveryFetchRadiusMeters(
+      req,
+      coords,
+      playerCountryCode
+    );
 
     const mapDiscoveryStatuses = new Set([
       undefined,
@@ -164,7 +170,7 @@ export const getZones = async (req, res) => {
       whereClause = buildSinglePlayerZoneMapWhere({
         userId,
         coords,
-        radiusMeters,
+        radiusMeters: fetchRadiusMeters,
         now,
       });
 
@@ -1312,10 +1318,15 @@ export const getSinglePlayerDashboard = async (req, res) => {
 
     syncUserLocationFromRequest(req);
 
+    const fetchRadiusMeters = getDiscoveryFetchRadiusMeters(
+      req,
+      coords,
+      playerCountryCode
+    );
     const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
     const mapZoneWhere = mergeDiscoveryWhere(
       userVisibleZoneFilter,
-      buildSinglePlayerZoneMapWhere({ userId, coords, radiusMeters, now })
+      buildSinglePlayerZoneMapWhere({ userId, coords, radiusMeters: fetchRadiusMeters, now })
     );
 
     const [configRow, user, empire, ownedZonesForIncome, mapCandidateZones] = await Promise.all([

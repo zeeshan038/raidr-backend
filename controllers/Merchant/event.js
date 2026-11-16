@@ -220,6 +220,7 @@ export const getMyEvents = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const includeClaims = req.query.includeClaims === "true";
 
     try {
         const [events, totalCount] = await Promise.all([
@@ -227,7 +228,21 @@ export const getMyEvents = async (req, res) => {
                 where: { merchantId },
                 skip,
                 take: limit,
-                orderBy: { createdAt: "desc" }
+                orderBy: { createdAt: "desc" },
+                ...(includeClaims
+                    ? {
+                          include: {
+                              claims: {
+                                  include: {
+                                      user: {
+                                          select: { id: true, name: true, email: true },
+                                      },
+                                  },
+                                  orderBy: { claimedAt: "desc" },
+                              },
+                          },
+                      }
+                    : {}),
             }),
             prisma.liveEvent.count({
                 where: { merchantId }

@@ -164,12 +164,35 @@ export const GetDashboardTotalCount = async (req, res) => {
  */
 export const GetImpressionOverTime = async (req, res) => {
     const { id } = req.merchant;
-    const days = parseInt(req.query.days) || 7;
+    const startParam = req.query.startDate;
+    const endParam = req.query.endDate;
+    let startDate;
+    let endDate;
 
     try {
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days + 1);
-        startDate.setHours(0, 0, 0, 0);
+        if (startParam && endParam) {
+            startDate = new Date(startParam);
+            endDate = new Date(endParam);
+            if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+                return res.status(400).json({ status: false, msg: "Invalid startDate or endDate" });
+            }
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            if (endDate < startDate) {
+                return res.status(400).json({ status: false, msg: "endDate must be on or after startDate" });
+            }
+            const spanDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            if (spanDays > 90) {
+                return res.status(400).json({ status: false, msg: "Date range cannot exceed 90 days" });
+            }
+        } else {
+            const days = Math.min(parseInt(req.query.days, 10) || 7, 90);
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - days + 1);
+            startDate.setHours(0, 0, 0, 0);
+        }
 
         const impressions = await prisma.adImpression.findMany({
             where: {
@@ -177,7 +200,8 @@ export const GetImpressionOverTime = async (req, res) => {
                     merchantId: id
                 },
                 createdAt: {
-                    gte: startDate
+                    gte: startDate,
+                    lte: endDate
                 }
             },
             select: {
@@ -185,15 +209,17 @@ export const GetImpressionOverTime = async (req, res) => {
             }
         });
 
-        // Initialize date map for the last X days with 0 counts
         const dateMap = {};
         const dateList = [];
-        for (let i = days - 1; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const cursor = new Date(startDate);
+        cursor.setHours(0, 0, 0, 0);
+        const endDay = new Date(endDate);
+        endDay.setHours(0, 0, 0, 0);
+        while (cursor <= endDay) {
+            const label = cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" });
             dateMap[label] = 0;
             dateList.push(label);
+            cursor.setDate(cursor.getDate() + 1);
         }
 
         // Aggregate impressions by day
