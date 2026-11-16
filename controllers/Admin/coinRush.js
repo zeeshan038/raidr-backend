@@ -1,4 +1,121 @@
 import { prisma } from "../../config/db.js";
+import {
+    CreateCoinRushEvent,
+    CreateHybridCoinRushEvent,
+    UpdateCoinRushEvent,
+    DeleteCoinRushEvent,
+    GetCoinRushQRCheckpoints,
+} from "../Merchant/coinRush.js";
+
+const attachMerchantContext = async (req, res) => {
+    const merchantId = req.body?.merchantId || req.query?.merchantId;
+    if (!merchantId) {
+        res.status(400).json({ status: false, msg: "merchantId is required" });
+        return null;
+    }
+    const merchant = await prisma.merchant.findUnique({
+        where: { id: merchantId },
+        select: { id: true, name: true, businessName: true, email: true, credits: true },
+    });
+    if (!merchant) {
+        res.status(404).json({ status: false, msg: "Merchant not found" });
+        return null;
+    }
+    req.merchant = merchant;
+    req.createdByAdmin = true;
+    return merchant;
+};
+
+/**
+ * @description Admin create coin rush for a merchant
+ * @Route POST /api/admin/coin-rush/create
+ */
+export const adminCreateCoinRush = async (req, res) => {
+    try {
+        const merchant = await attachMerchantContext(req, res);
+        if (!merchant) return;
+        const { merchantId, ...payload } = req.body;
+        req.body = payload;
+        return CreateCoinRushEvent(req, res);
+    } catch (error) {
+        console.error("Admin Create Coin Rush Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
+
+/**
+ * @description Admin create hybrid coin rush for a merchant
+ * @Route POST /api/admin/coin-rush/hybrid/create
+ */
+export const adminCreateHybridCoinRush = async (req, res) => {
+    try {
+        const merchant = await attachMerchantContext(req, res);
+        if (!merchant) return;
+        const { merchantId, ...payload } = req.body;
+        req.body = payload;
+        return CreateHybridCoinRushEvent(req, res);
+    } catch (error) {
+        console.error("Admin Create Hybrid Coin Rush Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
+
+/**
+ * @description Admin update coin rush
+ * @Route PUT /api/admin/coin-rush/update/:eventId
+ */
+export const adminUpdateCoinRush = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const existing = await prisma.coinRushEvent.findUnique({ where: { id: eventId } });
+        if (!existing) {
+            return res.status(404).json({ status: false, msg: "Coin rush event not found" });
+        }
+        req.merchant = { id: existing.merchantId };
+        return UpdateCoinRushEvent(req, res);
+    } catch (error) {
+        console.error("Admin Update Coin Rush Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
+
+/**
+ * @description Admin delete coin rush
+ * @Route DELETE /api/admin/coin-rush/delete/:eventId
+ */
+export const adminDeleteCoinRush = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const existing = await prisma.coinRushEvent.findUnique({ where: { id: eventId } });
+        if (!existing) {
+            return res.status(404).json({ status: false, msg: "Coin rush event not found" });
+        }
+        req.merchant = { id: existing.merchantId };
+        return DeleteCoinRushEvent(req, res);
+    } catch (error) {
+        console.error("Admin Delete Coin Rush Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
+
+/**
+ * @description Admin get QR checkpoints
+ * @Route GET /api/admin/coin-rush/qr-codes/:eventId
+ */
+export const adminGetCoinRushQRCheckpoints = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const existing = await prisma.coinRushEvent.findUnique({ where: { id: eventId } });
+        if (!existing) {
+            return res.status(404).json({ status: false, msg: "Coin rush event not found" });
+        }
+        req.merchant = { id: existing.merchantId };
+        return GetCoinRushQRCheckpoints(req, res);
+    } catch (error) {
+        console.error("Admin Get Coin Rush QR Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
 
 /**
  * @description List all Coin Rush events for admin

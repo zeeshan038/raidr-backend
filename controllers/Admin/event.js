@@ -1,9 +1,134 @@
 import { prisma } from "../../config/db.js";
+import {
+    createLiveEvent,
+    updateLiveEvent,
+    deleteEvent as merchantDeleteEvent,
+} from "../Merchant/event.js";
 
 const EVENT_COSTS = {
     small: 10,
     medium: 25,
     large: 50
+};
+
+const attachMerchantContext = async (req, res) => {
+    const merchantId = req.body?.merchantId || req.query?.merchantId;
+    if (!merchantId) {
+        res.status(400).json({ status: false, msg: "merchantId is required" });
+        return null;
+    }
+    const merchant = await prisma.merchant.findUnique({
+        where: { id: merchantId },
+        select: { id: true, name: true, businessName: true, email: true, credits: true },
+    });
+    if (!merchant) {
+        res.status(404).json({ status: false, msg: "Merchant not found" });
+        return null;
+    }
+    req.merchant = merchant;
+    req.createdByAdmin = true;
+    return merchant;
+};
+
+/**
+ * @description Admin creates a multiplayer live event for a merchant
+ * @Route POST /api/admin/events/create
+ */
+export const adminCreateLiveEvent = async (req, res) => {
+    try {
+        const merchant = await attachMerchantContext(req, res);
+        if (!merchant) return;
+        const { merchantId, ...payload } = req.body;
+        req.body = payload;
+        return createLiveEvent(req, res);
+    } catch (error) {
+        console.error("Admin Create Live Event Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
+
+/**
+ * @description Admin get live event by id
+ * @Route GET /api/admin/events/specific-event/:eventId
+ */
+export const adminGetEventById = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const event = await prisma.liveEvent.findUnique({
+            where: { id: eventId },
+            include: {
+                merchant: {
+                    select: { id: true, name: true, businessName: true, email: true, photoUrl: true },
+                },
+                claims: {
+                    include: {
+                        user: {
+                            select: { name: true, email: true, photoUrl: true },
+                        },
+                    },
+                    orderBy: { claimedAt: "desc" },
+                },
+            },
+        });
+
+        if (!event) {
+            return res.status(404).json({ status: false, msg: "Event not found" });
+        }
+
+        return res.status(200).json({
+            status: true,
+            msg: "Event fetched successfully",
+            event,
+        });
+    } catch (error) {
+        console.error("Admin Get Event Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
+
+/**
+ * @description Admin update live event
+ * @Route PUT /api/admin/events/update-event/:eventId
+ */
+export const adminUpdateLiveEvent = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const existing = await prisma.liveEvent.findUnique({ where: { id: eventId } });
+        if (!existing) {
+            return res.status(404).json({ status: false, msg: "Event not found" });
+        }
+        if (!existing.merchantId) {
+            return res.status(400).json({ status: false, msg: "Event has no merchant owner" });
+        }
+        req.merchant = { id: existing.merchantId };
+        req.createdByAdmin = true;
+        return updateLiveEvent(req, res);
+    } catch (error) {
+        console.error("Admin Update Live Event Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
+};
+
+/**
+ * @description Admin delete live event
+ * @Route DELETE /api/admin/events/delete/:eventId
+ */
+export const adminDeleteLiveEvent = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const existing = await prisma.liveEvent.findUnique({ where: { id: eventId } });
+        if (!existing) {
+            return res.status(404).json({ status: false, msg: "Event not found" });
+        }
+        if (!existing.merchantId) {
+            return res.status(400).json({ status: false, msg: "Event has no merchant owner" });
+        }
+        req.merchant = { id: existing.merchantId };
+        return merchantDeleteEvent(req, res);
+    } catch (error) {
+        console.error("Admin Delete Live Event Error:", error);
+        return res.status(500).json({ status: false, msg: error.message || "Internal server error" });
+    }
 };
 
 /**
