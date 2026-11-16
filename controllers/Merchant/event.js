@@ -88,7 +88,9 @@ export const createLiveEvent = async (req, res) => {
             });
         }
 
-        if (merchant.credits < cost) {
+        const skipCredits = Boolean(req.createdByAdmin);
+
+        if (!skipCredits && merchant.credits < cost) {
             return res.status(400).json({
                 status: false,
                 msg: `Insufficient credits. Creating a ${size} event requires ${cost} credits, but you only have ${merchant.credits}.`
@@ -116,53 +118,61 @@ export const createLiveEvent = async (req, res) => {
         }
 
         // Determine status: small event is auto-scheduled, medium/large need approval
-        const status = size === 'small' ? 'scheduled' : 'pending_approval';
+        // Admin-created events skip the approval queue
+        const status = skipCredits
+            ? 'scheduled'
+            : (size === 'small' ? 'scheduled' : 'pending_approval');
 
         const qrCodeToken = `event-qr-${crypto.randomBytes(16).toString('hex')}`;
         const economy = await getEconomyConfig(prisma);
 
-        // 3. Perform database operations in transaction
-        const [updatedMerchant, newEvent] = await prisma.$transaction([
-            prisma.merchant.update({
-                where: { id: merchantId },
-                data: {
-                    credits: { decrement: cost }
-                }
-            }),
-            prisma.liveEvent.create({
-                data: {
-                    title,
-                    description,
-                    address: address || "",
-                    merchantId,
-                    commanderAvatar: commanderAvatar || merchant.photoUrl || "",
-                    imageUrl: imageUrl || "",
-                    latitude: parseFloat(latitude),
-                    longitude: parseFloat(longitude),
-                    startTime: parsedStart,
-                    endTime: parsedEnd,
-                    reward,
-                    rewardQuantity: parseInt(rewardQuantity),
-                    remainingQty: parseInt(rewardQuantity),
-                    status,
-                    size,
-                    qrCode: qrCodeToken,
-                    xpReward: economy.liveEventXpReward,
-                    displayMode: LIVE_EVENT_DISPLAY.LIVE_MULTIPLAYER,
-                }
-            })
-        ]);
+        const eventCreateData = {
+            title,
+            description,
+            address: address || "",
+            merchantId,
+            commanderAvatar: commanderAvatar || merchant.photoUrl || "",
+            imageUrl: imageUrl || "",
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude),
+            startTime: parsedStart,
+            endTime: parsedEnd,
+            reward,
+            rewardQuantity: parseInt(rewardQuantity),
+            remainingQty: parseInt(rewardQuantity),
+            status,
+            size,
+            qrCode: qrCodeToken,
+            xpReward: economy.liveEventXpReward,
+            displayMode: LIVE_EVENT_DISPLAY.LIVE_MULTIPLAYER,
+        };
 
-        // Create log entry
-        await prisma.merchantCreditLog.create({
-            data: {
-                merchantId,
-                amount: -cost,
-                type: "event_creation",
-                description: `Created ${size} event "${title}" (${cost} credits deducted)`,
-                eventId: newEvent.id
-            }
-        });
+        // 3. Create event (admin create does not deduct merchant credits)
+        let newEvent;
+        if (skipCredits) {
+            newEvent = await prisma.liveEvent.create({ data: eventCreateData });
+        } else {
+            const [, createdEvent] = await prisma.$transaction([
+                prisma.merchant.update({
+                    where: { id: merchantId },
+                    data: {
+                        credits: { decrement: cost }
+                    }
+                }),
+                prisma.liveEvent.create({ data: eventCreateData })
+            ]);
+            newEvent = createdEvent;
+
+            await prisma.merchantCreditLog.create({
+                data: {
+                    merchantId,
+                    amount: -cost,
+                    type: "event_creation",
+                    description: `Created ${size} event "${title}" (${cost} credits deducted)`,
+                    eventId: newEvent.id
+                }
+            });
+        }
 
         // Notify users within 20km radius
         try {
