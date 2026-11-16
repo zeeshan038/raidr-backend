@@ -26,6 +26,7 @@ import AdminEventRoutes from "./Admin/event.js"
 import UserManagmentRoutes from "./Admin/userManagment.js"
 import MerchantManagmentRoutes from "./Admin/merchantManagement.js"
 import AdminDashboardRoutes from "./Admin/dashboard.js"
+import AdminCoinRushRoutes from "./Admin/coinRush.js"
 import AdminSinglePlayerRoutes from "./Admin/singlePlayer.js"
 import AdminSponsoredThemeRoutes from "./Admin/sponsoredTheme.js"
 import AdminCommercialVoucherRoutes from "./Admin/commercialVoucher.js"
@@ -67,6 +68,7 @@ router.use("/admin/events",AdminEventRoutes)
 router.use("/admin/user",UserManagmentRoutes)
 router.use("/admin/merchants",MerchantManagmentRoutes)
 router.use("/admin/dashboard",AdminDashboardRoutes)
+router.use("/admin/coin-rush", AdminCoinRushRoutes)
 router.use("/admin/single-player", AdminSinglePlayerRoutes);
 router.use("/admin/sponsored-themes", AdminSponsoredThemeRoutes);
 router.use('/admin/vouchers', AdminCommercialVoucherRoutes);

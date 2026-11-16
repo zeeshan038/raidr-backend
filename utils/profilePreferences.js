@@ -115,6 +115,7 @@ export const formatProfilePreferenceOption = (row) => ({
   accentColor: row.accentColor,
   slug: row.slug,
   sortOrder: row.sortOrder,
+  isActive: row.isActive,
 });
 
 export const loadGroupedProfileOptions = async (prisma) => {
