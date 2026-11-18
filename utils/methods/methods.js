@@ -1,9 +1,13 @@
 import jwt from "jsonwebtoken";
 import { prisma } from "../../config/db.js";
 import {
+    countryLookupValues,
     discoveryRadiusMetersForEntity,
+    entitiesAreConfirmedInSameCountry,
+    entityCountryCode,
     getSameCountryDiscoveryRadiusKm,
     isSameCountryForDiscovery,
+    normalizeCountryCode,
     resolvePlayerCountryCode,
 } from "../discoveryCountry.js";
 
@@ -409,11 +413,13 @@ export const userControlsSinglePlayerZone = (zone, userId) => {
 };
 
 /**
- * Map visibility for SinglePlayerZone: within radius of live GPS, same city (field + distance cap), or user controls.
+ * Map visibility for SinglePlayerZone: every zone in the player's confirmed
+ * country is visible. The local-radius fallback only protects legacy zones
+ * with no usable country metadata.
  */
 export const shouldShowSinglePlayerZoneOnMap = (
     zone,
-    { coords, radiusMeters, city, userId, now = new Date(), playerCountryCode = null }
+    { coords, radiusMeters, userId, now = new Date(), playerCountryCode = null }
 ) => {
     if (userControlsSinglePlayerZone(zone, userId, now)) {
         return true;
@@ -423,13 +429,19 @@ export const shouldShowSinglePlayerZoneOnMap = (
         return false;
     }
 
-    if (
-        !isSameCountryForDiscovery(playerCountryCode, {
-            country: zone.country,
-            latitude: zone.latitude,
-            longitude: zone.longitude,
-        })
-    ) {
+    const entity = {
+        country: zone.country,
+        latitude: zone.latitude,
+        longitude: zone.longitude,
+    };
+
+    if (entitiesAreConfirmedInSameCountry(playerCountryCode, entity)) {
+        return true;
+    }
+
+    // If both sides have a country identity, this is definitely another country.
+    // Do not let a large local radius leak a zone across a border.
+    if (normalizeCountryCode(playerCountryCode) && entityCountryCode(entity)) {
         return false;
     }
 
@@ -441,35 +453,21 @@ export const shouldShowSinglePlayerZoneOnMap = (
     );
 
     const maxMeters = getDiscoveryRadiusMaxMeters();
-    const effectiveRadius = discoveryRadiusMetersForEntity(
-        playerCountryCode,
-        {
-            country: zone.country,
-            latitude: zone.latitude,
-            longitude: zone.longitude,
-        },
-        radiusMeters,
-        maxMeters
-    );
-
-    if (dist <= effectiveRadius) {
-        return true;
-    }
-
-    if (
-        city &&
-        zone.city &&
-        String(zone.city).trim().toLowerCase() === String(city).trim().toLowerCase()
-    ) {
-        const cityCapKm = parseFloat(process.env.DISCOVERY_CITY_RADIUS_KM) || 80;
-        return dist <= cityCapKm * 1000;
-    }
-
-    return false;
+    return dist <= Math.min(radiusMeters, maxMeters);
 };
 
-/** Bounding box + owned zones for Prisma singlePlayerZone queries. */
-export const buildSinglePlayerZoneMapWhere = ({ userId, coords, radiusMeters, now = new Date() }) => {
+/**
+ * Candidate zones for map discovery. A country condition is included alongside
+ * the local bounding box, so a Karachi zone can be returned to a user anywhere
+ * in Pakistan without fetching zones from every country.
+ */
+export const buildSinglePlayerZoneMapWhere = ({
+    userId,
+    coords,
+    radiusMeters,
+    playerCountryCode = null,
+    now = new Date(),
+}) => {
     const controlledByUser =
         userId ?
             {
@@ -492,11 +490,22 @@ export const buildSinglePlayerZoneMapWhere = ({ userId, coords, radiusMeters, no
         ],
     };
 
+    const countryValues = countryLookupValues(playerCountryCode);
+    const inPlayerCountry =
+        countryValues.length > 0
+            ? {
+                OR: countryValues.map((country) => ({
+                    country: { equals: country, mode: "insensitive" },
+                })),
+            }
+            : null;
+
     return {
         isActive: true,
         OR: [
             ...(controlledByUser ? [controlledByUser] : []),
             inBoundingBox,
+            ...(inPlayerCountry ? [inPlayerCountry] : []),
         ],
     };
 };

@@ -2,6 +2,8 @@ import express from 'express';
 import { verifyMerchant } from '../../middlewares/verifyMerchant.js';
 import {
     createCoinPaymentIntent,
+    confirmCreditPurchase,
+    reconcileCreditPurchases,
     stripeWebhooks,
     getBillingHistory,
     getMerchantPurchaseHistory
@@ -13,6 +15,8 @@ router.post('/webhook', stripeWebhooks);
 
 router.use(verifyMerchant)
 router.post('/create-intent', createCoinPaymentIntent);
+router.post('/confirm', confirmCreditPurchase);
+router.post('/reconcile', reconcileCreditPurchases);
 router.get('/history', getBillingHistory);
 router.get('/purchase-history', getMerchantPurchaseHistory);
 

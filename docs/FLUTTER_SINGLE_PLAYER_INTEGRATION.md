@@ -81,9 +81,10 @@ Some **403** responses include extra fields (`ownedZonesCount`, `maxOwnedZonesPe
 - **Body:** `latitude`, `longitude` for capture and daily drop.
 - User location may be synced from headers/query via backend helpers — still send lat/lng on map APIs.
 - **Zone radius:** Each zone has `radius` (meters). Player must be within `radius` to start/complete capture or collect daily drop (collect uses **50m** fixed, not zone radius).
-- **Map visibility:** Zones outside discovery radius are hidden unless you own them. **`GET /zones?status=conquered_by_me`** returns all owned zones globally (no distance filter).
-
-Optional query: `city` (string) for city-scoped visibility where configured.
+- **Map visibility:** An active zone with a country is shown to every player in that same country, regardless of the distance between cities. It is never shown to a player in a different confirmed country. For example, a Karachi zone is visible in Lahore, and a Tel Aviv zone is visible in Eilat.
+- **No mobile update required:** Keep sending the existing `latitude` and `longitude`. The backend resolves and caches the player's country from GPS. `countryCode` remains an optional optimization if a future app version already has the device-geocoded ISO-2 code.
+- The server retains the 100/150 km radius only as a fallback for old zones with no country saved.
+- **`GET /zones?status=conquered_by_me`** returns all owned zones globally (no distance filter).
 
 ### 1.4 Pagination (zones list & store)
 
@@ -520,7 +521,7 @@ Unless noted: **Private**, header `Authorization: Bearer <token>`, `Content-Type
 | `status` | string | — | `available`, `conquered_by_me`, `conquered_by_others` |
 | `page` | int | 1 | |
 | `limit` | int | 10 | |
-| `city` | string | — | optional |
+| `countryCode` | string | — | Optional optimization; the backend resolves the country from the existing GPS values when omitted. |
 
 **200 OK**
 
@@ -545,7 +546,7 @@ Unless noted: **Private**, header `Authorization: Bearer <token>`, `Content-Type
 
 **When:** Zone detail sheet; refresh B2B hold progress; after assign guards.
 
-**Query (optional):** `latitude`, `longitude`, `city` — required for **non-owned** zones to prove you’re in discovery range; **owned zones always return**.
+**Query:** Existing `latitude` and `longitude` values are sufficient. `countryCode` is optional; **owned zones always return**.
 
 **200 OK**
 

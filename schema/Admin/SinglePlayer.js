@@ -21,7 +21,10 @@ export const CreateZoneSchema = (payload) => {
             'boolean.base': 'isActive must be a boolean'
         }),
         city: Joi.string().optional().allow("").allow(null),
-        country: Joi.string().optional().allow("").allow(null),
+        country: Joi.string().trim().min(2).required().messages({
+            "any.required": "Country is required so the zone can be shown country-wide",
+            "string.empty": "Country is required so the zone can be shown country-wide",
+        }),
         coinsPerHour: Joi.number().optional().messages({
             'number.base': 'coinsPerHour must be a number'
         })
