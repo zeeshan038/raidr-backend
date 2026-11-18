@@ -14,6 +14,7 @@
     "test:normal-passive": "node scripts/testNormalPassiveProgress.js",
     "test:guard-eliminate": "node scripts/testGuardEliminateFlow.js",
     "test:guard-eliminate:reset": "node scripts/testGuardEliminateFlow.js --cancel",
+    "test:country-discovery": "node --test test/country-wide-zone-discovery.test.js",
     "test:referral": "node scripts/testReferralService.js",
     "backfill:invite-codes": "node scripts/backfillUserInviteCodes.js",
     "fix:db-user-columns": "prisma db execute --file scripts/fix-user-model-columns.sql --schema prisma/schema.prisma",

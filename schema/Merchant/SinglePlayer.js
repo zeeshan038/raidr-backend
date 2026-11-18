@@ -7,7 +7,10 @@ export const CreateB2bZoneSchema = (payload) => {
     longitude: Joi.number().required(),
     radius: Joi.number().integer().min(10).optional(),
     city: Joi.string().optional().allow("", null),
-    country: Joi.string().optional().allow("", null),
+    country: Joi.string().trim().min(2).required().messages({
+      "any.required": "Country is required so the zone can be shown country-wide",
+      "string.empty": "Country is required so the zone can be shown country-wide",
+    }),
     imageUrl: Joi.string().uri().optional().allow("", null),
     holdDurationHours: Joi.number().integer().valid(24, 48, 72).required(),
     b2bRewardType: Joi.string()

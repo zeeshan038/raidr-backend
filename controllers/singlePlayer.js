@@ -10,7 +10,7 @@ import {
   buildSinglePlayerZoneMapWhere,
   mergeDiscoveryWhere,
 } from "../utils/methods/methods.js";
-import { resolvePlayerCountryCode } from "../utils/discoveryCountry.js";
+import { resolvePlayerCountryCodeAsync } from "../utils/discoveryCountry.js";
 import {
   captureAttemptRedisKey,
   computeCaptureTimeBreakdown,
@@ -134,8 +134,7 @@ export const getZones = async (req, res) => {
     syncUserLocationFromRequest(req);
     const coords = resolveMapCoordinates(req);
     const radiusMeters = getDiscoveryRadiusMeters(req);
-    const city = req.query.city ? String(req.query.city).trim() : null;
-    const playerCountryCode = resolvePlayerCountryCode(req, coords);
+    const playerCountryCode = await resolvePlayerCountryCodeAsync(req, coords);
     const fetchRadiusMeters = getDiscoveryFetchRadiusMeters(
       req,
       coords,
@@ -171,6 +170,7 @@ export const getZones = async (req, res) => {
         userId,
         coords,
         radiusMeters: fetchRadiusMeters,
+        playerCountryCode,
         now,
       });
 
@@ -201,7 +201,7 @@ export const getZones = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
+    const visibilityOpts = { coords, radiusMeters, userId, now, playerCountryCode };
     const visibleZones =
       userId && status === "conquered_by_me"
         ? candidateZones
@@ -285,9 +285,8 @@ export const getZoneById = async (req, res) => {
       syncUserLocationFromRequest(req);
       const coords = resolveMapCoordinates(req);
       const radiusMeters = getDiscoveryRadiusMeters(req);
-      const city = req.query.city ? String(req.query.city).trim() : null;
-      const playerCountryCode = resolvePlayerCountryCode(req, coords);
-      const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
+      const playerCountryCode = await resolvePlayerCountryCodeAsync(req, coords);
+      const visibilityOpts = { coords, radiusMeters, userId, now, playerCountryCode };
       if (
         coords?.lat != null &&
         coords?.lng != null &&
@@ -1312,9 +1311,8 @@ export const getSinglePlayerDashboard = async (req, res) => {
     const userLng = parseFloat(longitude);
     const coords = { lat: userLat, lng: userLng };
     const radiusMeters = getDiscoveryRadiusMeters(req);
-    const city = req.query.city ? String(req.query.city).trim() : null;
     const now = new Date();
-    const playerCountryCode = resolvePlayerCountryCode(req, coords);
+    const playerCountryCode = await resolvePlayerCountryCodeAsync(req, coords);
 
     syncUserLocationFromRequest(req);
 
@@ -1323,10 +1321,16 @@ export const getSinglePlayerDashboard = async (req, res) => {
       coords,
       playerCountryCode
     );
-    const visibilityOpts = { coords, radiusMeters, city, userId, now, playerCountryCode };
+    const visibilityOpts = { coords, radiusMeters, userId, now, playerCountryCode };
     const mapZoneWhere = mergeDiscoveryWhere(
       userVisibleZoneFilter,
-      buildSinglePlayerZoneMapWhere({ userId, coords, radiusMeters: fetchRadiusMeters, now })
+      buildSinglePlayerZoneMapWhere({
+        userId,
+        coords,
+        radiusMeters: fetchRadiusMeters,
+        playerCountryCode,
+        now,
+      })
     );
 
     const [configRow, user, empire, ownedZonesForIncome, mapCandidateZones] = await Promise.all([

@@ -3,6 +3,87 @@ import { prisma } from '../../config/db.js';
 import sendEmail from '../../utils/Nodemailer.js';
 import { purchaseReceiptTemplate } from '../../utils/emails/purchaseReceipt.js';
 
+const sendPurchaseReceipt = async ({ merchant, purchase, transactionId }) => {
+    try {
+        const htmlContent = purchaseReceiptTemplate({
+            name: merchant.name,
+            coinsAmount: purchase.creditsAmount,
+            priceUsd: purchase.priceUsd,
+            transactionId,
+            date: purchase.updatedAt
+        });
+        await sendEmail({
+            to: merchant.email,
+            subject: "Raidr - Coin Purchase Receipt",
+            html: htmlContent
+        });
+    } catch (emailErr) {
+        console.error('⚠️ Failed to send Stripe purchase email:', emailErr.message);
+    }
+};
+
+/**
+ * Complete a purchase exactly once. Both the authenticated confirmation route
+ * and the Stripe webhook use this function, so a webhook/HTTP race cannot add
+ * the same credits twice.
+ */
+const completeCreditPurchase = async ({ transactionId, expectedMerchantId = null }) =>
+    prisma.$transaction(async (tx) => {
+        const purchase = await tx.merchantCreditPurchase.findUnique({
+            where: { transactionId }
+        });
+
+        if (!purchase) {
+            throw new Error('Credit purchase was not found');
+        }
+        if (expectedMerchantId && purchase.merchantId !== expectedMerchantId) {
+            throw new Error('Credit purchase does not belong to this merchant');
+        }
+
+        if (purchase.status === 'completed') {
+            const merchant = await tx.merchant.findUnique({
+                where: { id: purchase.merchantId }
+            });
+            return { purchase, merchant, creditedNow: false };
+        }
+        if (purchase.status !== 'pending') {
+            throw new Error(`Credit purchase cannot be completed from status: ${purchase.status}`);
+        }
+
+        // Atomically claim the pending purchase. If the webhook and dashboard
+        // confirm simultaneously, only one transaction receives count=1.
+        const claimed = await tx.merchantCreditPurchase.updateMany({
+            where: { transactionId, status: 'pending' },
+            data: { status: 'completed' }
+        });
+
+        if (claimed.count === 0) {
+            const [currentPurchase, merchant] = await Promise.all([
+                tx.merchantCreditPurchase.findUnique({ where: { transactionId } }),
+                tx.merchant.findUnique({ where: { id: purchase.merchantId } })
+            ]);
+            return { purchase: currentPurchase, merchant, creditedNow: false };
+        }
+
+        const merchant = await tx.merchant.update({
+            where: { id: purchase.merchantId },
+            data: { credits: { increment: purchase.creditsAmount } }
+        });
+        await tx.merchantCreditLog.create({
+            data: {
+                merchantId: purchase.merchantId,
+                amount: purchase.creditsAmount,
+                type: 'purchase',
+                description: `Purchased ${purchase.creditsAmount} credits`
+            }
+        });
+        const completedPurchase = await tx.merchantCreditPurchase.findUnique({
+            where: { transactionId }
+        });
+
+        return { purchase: completedPurchase, merchant, creditedNow: true };
+    });
+
 /**
  * @description Create Payment Intent for purchasing coins
  * @route POST /api/merchant/payments/create-intent
@@ -119,68 +200,132 @@ export const stripeWebhooks = async (req, res) => {
         const paymentIntent = event.data.object;
         const transactionId = paymentIntent.id;
         const merchantId = paymentIntent.metadata.merchantId;
-        const coinsAmount = parseInt(paymentIntent.metadata.coinsAmount);
 
         try {
-            console.log(`Searching database for transaction ID: ${transactionId}`);
-            const existingPurchase = await prisma.merchantCreditPurchase.findUnique({
-                where: { transactionId }
+            const result = await completeCreditPurchase({
+                transactionId,
+                expectedMerchantId: merchantId
             });
-            console.log(`Found existingPurchase:`, existingPurchase);
-
-            // If database record is pending, complete it and update merchant coins balance
-            if (existingPurchase && existingPurchase.status === "pending") {
-                console.log("Status is pending, completing transaction...");
-                const [updatedPurchase, updatedMerchant] = await prisma.$transaction([
-                    prisma.merchantCreditPurchase.update({
-                        where: { transactionId },
-                        data: { status: "completed" }
-                    }),
-                    prisma.merchant.update({
-                        where: { id: merchantId },
-                        data: { credits: { increment: coinsAmount } }
-                    }),
-                    prisma.merchantCreditLog.create({
-                        data: {
-                            merchantId: merchantId,
-                            amount: coinsAmount,
-                            type: 'purchase',
-                            description: `Purchased ${coinsAmount} credits`
-                        }
-                    })
-                ]);
-                console.log(`Credits added! New credit balance: ${updatedMerchant.credits}`);
-
-                // Send email receipt to merchant
-                try {
-                    const htmlContent = purchaseReceiptTemplate({
-                        name: updatedMerchant.name,
-                        coinsAmount,
-                        priceUsd: existingPurchase.priceUsd,
-                        transactionId,
-                        date: updatedPurchase.updatedAt
-                    });
-                  console.log(updatedMerchant.email)
-                  console.log(coinsAmount)
-                  console.log(existingPurchase.priceUsd)
-                    
-                    await sendEmail({
-                        to: updatedMerchant.email,
-                        subject: "Raidr - Coin Purchase Receipt",
-                        html: htmlContent
-                    });
-                } catch (emailErr) {
-                    console.error('⚠️ Failed to send Stripe purchase email:', emailErr.message);
-                }
-
-                console.log(`Successfully completed payment: ${transactionId} & credited ${coinsAmount} coins to merchant: ${merchantId}`);
+            if (result.creditedNow) {
+                await sendPurchaseReceipt({
+                    merchant: result.merchant,
+                    purchase: result.purchase,
+                    transactionId
+                });
+                console.log(`Successfully credited ${result.purchase.creditsAmount} credits to merchant: ${merchantId}`);
             }
         } catch (error) {
             console.error(`Error processing Stripe Webhook transaction:`, error.message);
+            return res.sendStatus(500);
         }
     }
 
     return res.sendStatus(200);
+};
+
+/**
+ * @description Confirm a successful Stripe PaymentIntent and immediately credit the merchant
+ * @route POST /api/merchant/payments/confirm
+ * @access Private
+ */
+export const confirmCreditPurchase = async (req, res) => {
+    const merchantId = req.merchant.id;
+    const { paymentIntentId } = req.body;
+
+    if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+        return res.status(400).json({ status: false, msg: 'paymentIntentId is required' });
+    }
+
+    try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(409).json({
+                status: false,
+                msg: `Payment has not succeeded (status: ${paymentIntent.status})`
+            });
+        }
+        if (paymentIntent.metadata?.merchantId !== merchantId) {
+            return res.status(403).json({
+                status: false,
+                msg: 'Payment does not belong to this merchant'
+            });
+        }
+
+        const result = await completeCreditPurchase({
+            transactionId: paymentIntent.id,
+            expectedMerchantId: merchantId
+        });
+        if (result.creditedNow) {
+            await sendPurchaseReceipt({
+                merchant: result.merchant,
+                purchase: result.purchase,
+                transactionId: paymentIntent.id
+            });
+        }
+
+        return res.status(200).json({
+            status: true,
+            msg: result.creditedNow ? 'Credits added successfully' : 'Credits were already added',
+            credits: result.merchant.credits,
+            creditsAdded: result.purchase.creditsAmount,
+            purchaseStatus: result.purchase.status
+        });
+    } catch (error) {
+        console.error('Error confirming credit purchase:', error.message);
+        return res.status(500).json({ status: false, msg: error.message });
+    }
+};
+
+/**
+ * Reconcile older pending purchases whose webhook was missed. This lets an
+ * already-paid merchant recover credits simply by reopening the payments page.
+ */
+export const reconcileCreditPurchases = async (req, res) => {
+    const merchantId = req.merchant.id;
+
+    try {
+        const pendingPurchases = await prisma.merchantCreditPurchase.findMany({
+            where: {
+                merchantId,
+                status: 'pending',
+                transactionId: { not: null }
+            },
+            orderBy: { createdAt: 'asc' },
+            take: 20
+        });
+
+        let reconciledCount = 0;
+        for (const purchase of pendingPurchases) {
+            const paymentIntent = await stripe.paymentIntents.retrieve(purchase.transactionId);
+            if (paymentIntent.status !== 'succeeded') continue;
+
+            const result = await completeCreditPurchase({
+                transactionId: purchase.transactionId,
+                expectedMerchantId: merchantId
+            });
+            if (result.creditedNow) {
+                reconciledCount += 1;
+                await sendPurchaseReceipt({
+                    merchant: result.merchant,
+                    purchase: result.purchase,
+                    transactionId: purchase.transactionId
+                });
+            }
+        }
+
+        const merchant = await prisma.merchant.findUnique({
+            where: { id: merchantId },
+            select: { credits: true }
+        });
+        return res.status(200).json({
+            status: true,
+            credits: merchant?.credits ?? 0,
+            reconciledCount
+        });
+    } catch (error) {
+        console.error('Error reconciling credit purchases:', error.message);
+        return res.status(500).json({ status: false, msg: error.message });
+    }
 };
 
 /**
