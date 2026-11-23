@@ -33,9 +33,20 @@ export const CreateHybridCoinRushEventSchema = (payload) => {
         }),
         answer: Joi.when('type', {
             is: 'QA',
-            then: Joi.string().required().messages({ 'any.required': 'answer is required for QA checkpoints' }),
+            then: Joi.string().optional().allow('', null),
             otherwise: Joi.forbidden()
         }),
+        answerLocales: Joi.when('type', {
+            is: 'QA',
+            then: Joi.object().pattern(
+                Joi.string().min(2).max(8),
+                Joi.string().allow('', null)
+            ).optional(),
+            otherwise: Joi.forbidden()
+        }),
+        // At least one of answer / answerLocales.en / any locale value
+        // enforced in custom below after object validate via .custom on parent array item
+
         photoRequirements: Joi.alternatives().conditional('type', {
             is: 'PHOTO',
             then: Joi.string().optional().allow(''),
@@ -46,6 +57,15 @@ export const CreateHybridCoinRushEventSchema = (payload) => {
             then: Joi.string().optional().allow(''),
             otherwise: Joi.forbidden()
         })
+    }).custom((value, helpers) => {
+        if (value.type !== 'QA') return value;
+        const hasAnswer = Boolean(value.answer && String(value.answer).trim());
+        const locales = value.answerLocales || {};
+        const hasLocale = Object.values(locales).some((v) => v && String(v).trim());
+        if (!hasAnswer && !hasLocale) {
+            return helpers.message('QA checkpoints need an answer (or localized answers)');
+        }
+        return value;
     });
 
     const schema = Joi.object({
@@ -65,6 +85,7 @@ export const CreateHybridCoinRushEventSchema = (payload) => {
             'number.min': 'There must be at least 1 winner',
             'number.max': 'There can be at most 5 winners'
         }),
+        lockRaidOnWinner: Joi.boolean().optional().default(false),
         duration: Joi.number().integer().min(1).required().messages({
             'number.base': 'Duration must be a number (minutes)',
             'any.required': 'Duration is required',
@@ -121,6 +142,7 @@ export const CreateCoinRushEventSchema = (payload) => {
             'number.min': 'There must be at least 1 winner',
             'number.max': 'There can be at most 5 winners'
         }),
+        lockRaidOnWinner: Joi.boolean().optional().default(false),
         duration: Joi.number().integer().min(1).required().messages({
             'number.base': 'Duration must be a number (minutes)',
             'any.required': 'Duration is required',

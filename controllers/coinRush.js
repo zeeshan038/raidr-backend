@@ -17,6 +17,7 @@ import {
     buildCoinRushCheckpointsPayload,
     sanitizeCoinRushCheckpointForClient,
 } from '../utils/coinRushCheckpoints.js';
+import { answersMatch } from '../utils/coinRushAnswers.js';
 import {
     getEconomyConfig,
     randomCoinRushCheckpointXp,
@@ -26,6 +27,13 @@ import { tryCompleteReferralQualifyingActivity } from '../utils/referralService.
 // Custom publisher function for Coin Rush to distinct from normal live event rooms
 const publishToCoinRushRoom = (eventId, payload) => {
     publishToCoinRush(eventId, payload);
+};
+
+const ordinalPlace = (position) => {
+    if (position === 1) return '1st';
+    if (position === 2) return '2nd';
+    if (position === 3) return '3rd';
+    return `${position}th`;
 };
 
 const getCoinRushLeaderboard = async (eventId) => {
@@ -105,16 +113,37 @@ const getCoinRushLeaderboard = async (eventId) => {
     return leaderboard;
 };
 
-const broadcastCoinRushLeaderboard = async (eventId) => {
+const broadcastCoinRushLeaderboard = async (eventId, extra = {}) => {
     try {
-        const leaderboard = await getCoinRushLeaderboard(eventId);
+        const [leaderboard, event, claimsCount] = await Promise.all([
+            getCoinRushLeaderboard(eventId),
+            prisma.coinRushEvent.findUnique({
+                where: { id: eventId },
+                select: {
+                    winnersCount: true,
+                    lockRaidOnWinner: true,
+                    status: true,
+                },
+            }),
+            prisma.coinRushClaim.count({ where: { eventId } }),
+        ]);
+
         publishToCoinRushRoom(eventId, {
             type: 'coinrush_leaderboard_updated',
             eventId,
-            leaderboard
+            leaderboard,
+            winnersCount: event?.winnersCount ?? 1,
+            claimsCount,
+            lockRaidOnWinner: Boolean(event?.lockRaidOnWinner),
+            raidLocked: event?.status === 'completed' || event?.status === 'cancelled',
+            raidStatus: event?.status ?? null,
+            updatedAt: new Date().toISOString(),
+            ...extra,
         });
+        return leaderboard;
     } catch (err) {
         console.error('[CoinRush] Error broadcasting leaderboard:', err);
+        return null;
     }
 };
 
@@ -506,7 +535,7 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             if (!answer) {
                 return res.status(400).json({ status: false, msg: "answer is required for Q&A checkpoints" });
             }
-            if (answer.trim().toLowerCase() !== (checkpoint.answer || "").trim().toLowerCase()) {
+            if (!answersMatch(answer, checkpoint)) {
                 return res.status(400).json({ status: false, msg: "Incorrect answer" });
             }
         } else if (actualType === 'SECRET_CODE') {
@@ -628,8 +657,8 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             progress: progressMessage
         });
 
-        // Broadcast updated leaderboard
-        await broadcastCoinRushLeaderboard(eventId);
+        // Broadcast updated leaderboard (live scoreboard for all players in the room)
+        const liveLeaderboard = await broadcastCoinRushLeaderboard(eventId);
 
         if (completedCount === totalCheckpoints) {
             const freshEvent = await prisma.coinRushEvent.findUnique({
@@ -643,8 +672,11 @@ export const SubmitCheckpointCompletion = async (req, res) => {
             if (existingClaimsCount < freshEvent.winnersCount) {
                 const uniqueCode = `CLAIM-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${Date.now().toString().slice(-4)}`;
                 const position = existingClaimsCount + 1;
-                let positionText = position === 1 ? "1st" : position === 2 ? "2nd" : position === 3 ? "3rd" : `${position}th`;
-                
+                const positionText = ordinalPlace(position);
+                const prizesFilled = position >= freshEvent.winnersCount;
+                const shouldLockRaid =
+                    Boolean(freshEvent.lockRaidOnWinner) && prizesFilled;
+
                 const newClaim = await prisma.coinRushClaim.create({
                     data: {
                         eventId,
@@ -653,35 +685,94 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     }
                 });
 
-                // Broadcast winner announced
-                publishToCoinRushRoom(eventId, {
+                let raidLocked = false;
+                if (shouldLockRaid) {
+                    await prisma.coinRushEvent.update({
+                        where: { id: eventId },
+                        data: { status: 'completed' },
+                    });
+                    raidLocked = true;
+                    publishToCoinRushRoom(eventId, {
+                        type: 'coinrush_raid_locked',
+                        eventId,
+                        reason: 'prizes_filled',
+                        winnersCount: freshEvent.winnersCount,
+                        message: 'All prizes claimed — this raid is now locked for everyone.',
+                    });
+                }
+
+                const rewardPayload = {
+                    type: event.rewardType,
+                    title: event.rewardTitle,
+                    description: event.rewardDescription,
+                    imageUrl: event.rewardImageUrl,
+                    value: event.rewardValue,
+                    claimInstructions: event.rewardClaimInstructions,
+                };
+
+                const winnerPayload = {
                     type: 'coinrush_winner_announced',
                     eventId,
                     winnerId: userId,
                     winnerName: req.user.name || "",
+                    winnerPhotoUrl: req.user.photoUrl || null,
                     position: positionText,
-                    reward: {
-                        type: event.rewardType,
-                        title: event.rewardTitle,
-                        value: event.rewardValue
-                    }
-                });
+                    prizePosition: position,
+                    winnersCount: freshEvent.winnersCount,
+                    prizesRemaining: Math.max(0, freshEvent.winnersCount - position),
+                    showWinnerPopup: true,
+                    lockRaidOnWinner: Boolean(freshEvent.lockRaidOnWinner),
+                    raidLocked,
+                    claimCode: uniqueCode,
+                    reward: rewardPayload,
+                    leaderboard: liveLeaderboard,
+                    updatedAt: new Date().toISOString(),
+                };
 
-                // Broadcast non-intrusive notification to other players
+                // Room broadcast — all clients update scoreboard / winner UI
+                publishToCoinRushRoom(eventId, winnerPayload);
+
+                // Direct push to winner device for instant Winner! popup
+                try {
+                    publishToUser(userId, {
+                        ...winnerPayload,
+                        type: 'coinrush_you_won',
+                        showWinnerPopup: true,
+                    });
+                } catch (notifyErr) {
+                    console.warn('[CoinRush] winner direct notify failed:', notifyErr?.message);
+                }
+
+                // Others: non-intrusive toast (unless raid just locked)
                 publishToCoinRushRoom(eventId, {
                     type: 'coinrush_position_claimed',
                     eventId,
-                    message: `${positionText} Place Claimed! Keep Going!`
+                    winnerId: userId,
+                    winnerName: req.user.name || "",
+                    position: positionText,
+                    prizePosition: position,
+                    raidLocked,
+                    message: raidLocked
+                        ? `${positionText} place claimed — raid locked.`
+                        : `${positionText} Place Claimed! Keep Going!`,
                 });
+
+                await broadcastCoinRushLeaderboard(eventId, { raidLocked });
 
                 return res.status(200).json({
                     status: true,
                     msg: `Congratulations! You finished in ${positionText} place and won a prize!`,
                     completedAll: true,
                     isWinner: true,
+                    showWinnerPopup: true,
                     claimId: newClaim.id,
                     claimCode: uniqueCode,
                     prizePosition: position,
+                    position: positionText,
+                    raidLocked,
+                    lockRaidOnWinner: Boolean(freshEvent.lockRaidOnWinner),
+                    reward: rewardPayload,
+                    leaderboard: liveLeaderboard,
                     isAchieved: true,
                     xpEarned: xpAmount
                 });
@@ -692,8 +783,11 @@ export const SubmitCheckpointCompletion = async (req, res) => {
                     msg: "You completed the raid! All prizes were already claimed.",
                     completedAll: true,
                     isWinner: false,
+                    showWinnerPopup: false,
+                    raidLocked: freshEvent.status === 'completed',
                     isAchieved: true,
-                    xpEarned: xpAmount
+                    xpEarned: xpAmount,
+                    leaderboard: liveLeaderboard,
                 });
             }
         }

@@ -44,15 +44,12 @@ export const parseBrandMonthCoords = (source = {}) => {
 };
 
 /**
- * Location tier for picking the right regional campaign:
- * 2 = inside linked SponsoredTheme radius
- * 0 = linked theme has no lat/lng (explicit worldwide theme)
- * -1 = excluded (no theme link, outside fence, or coords required but missing)
- *
- * Campaigns with sponsoredThemeId null are NOT global — admin must link a theme.
+ * Location tier for a Sponsored Day Theme (and Brand Month via its linked theme):
+ * 2 = inside theme radius
+ * 0 = theme has no lat/lng (explicit worldwide)
+ * -1 = excluded (outside fence, or coords required but missing)
  */
-const campaignLocationTier = (campaign, coords) => {
-  const theme = campaign.sponsoredTheme;
+export const themeLocationTier = (theme, coords) => {
   if (!theme) {
     return -1;
   }
@@ -75,6 +72,35 @@ const campaignLocationTier = (campaign, coords) => {
     theme.longitude
   );
   return distance <= radius ? 2 : -1;
+};
+
+/**
+ * Campaigns with sponsoredThemeId null are NOT global — admin must link a theme.
+ */
+const campaignLocationTier = (campaign, coords) => {
+  if (!campaign?.sponsoredTheme) {
+    return -1;
+  }
+  return themeLocationTier(campaign.sponsoredTheme, coords);
+};
+
+/** Pick best standalone Sponsored Day Theme for the player's location. */
+export const pickSponsoredThemeForLocation = (themes, coords) => {
+  if (!themes?.length) {
+    return null;
+  }
+
+  const ranked = themes
+    .map((theme) => ({ theme, tier: themeLocationTier(theme, coords) }))
+    .filter((row) => row.tier >= 0)
+    .sort((a, b) => {
+      if (b.tier !== a.tier) {
+        return b.tier - a.tier;
+      }
+      return new Date(b.theme.createdAt) - new Date(a.theme.createdAt);
+    });
+
+  return ranked[0]?.theme ?? null;
 };
 
 /** Pick best campaign among date-active rows (regional beats global; then newest). */

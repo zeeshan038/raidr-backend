@@ -3840,6 +3840,281 @@
             "nullable": true
           }
         }
+      },
+      "NfcTagDto": {
+        "type": "object",
+        "description": "Merchant NFC sticker programming payload",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "example": "Counter"
+          },
+          "token": {
+            "type": "string",
+            "example": "_-B63cm6jBpilt84ECE9OQ"
+          },
+          "chipUid": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "payloadUri": {
+            "type": "string",
+            "example": "raidr://nfc/v1?token=_-B63cm6jBpilt84ECE9OQ&merchantId=74c46e56-6df8-41b0-b873-5d2fd80d6464",
+            "description": "URI NDEF record to write on the physical NFC sticker"
+          },
+          "programmingHint": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NfcVisitDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "latitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "missionCompleted": {
+            "type": "boolean",
+            "description": "True when this tap awarded the once-per-day visit reward"
+          },
+          "coinsAwarded": {
+            "type": "integer",
+            "example": 5
+          },
+          "xpAwarded": {
+            "type": "integer",
+            "example": 15
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "nullable": true
+              },
+              "photoUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "merchant": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "businessName": {
+                "type": "string"
+              }
+            }
+          },
+          "tag": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "label": {
+                "type": "string"
+              },
+              "token": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "NfcVerifyRequest": {
+        "type": "object",
+        "description": "Provide payload URI and/or token from the NFC read",
+        "properties": {
+          "payload": {
+            "type": "string",
+            "example": "raidr://nfc/v1?token=_-B63cm6jBpilt84ECE9OQ&merchantId=74c46e56-6df8-41b0-b873-5d2fd80d6464"
+          },
+          "token": {
+            "type": "string",
+            "example": "_-B63cm6jBpilt84ECE9OQ"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "nfcPayload": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 32.0853
+          },
+          "longitude": {
+            "type": "number",
+            "example": 34.7818
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "chipUid": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional hardware chip UID; bound on first tap if tag has none"
+          }
+        }
+      },
+      "NfcVerifyResponseData": {
+        "type": "object",
+        "properties": {
+          "visitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tappedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "missionCompleted": {
+            "type": "boolean"
+          },
+          "alreadyVisitedToday": {
+            "type": "boolean"
+          },
+          "coinsAwarded": {
+            "type": "integer"
+          },
+          "xpAwarded": {
+            "type": "integer"
+          },
+          "brandMonth": {
+            "nullable": true
+          },
+          "promptReceipt": {
+            "type": "boolean",
+            "example": true,
+            "description": "Flutter should show optional receipt CTA"
+          },
+          "receiptUploadReady": {
+            "type": "boolean",
+            "example": false,
+            "description": "false until Phase 2 receipt upload API"
+          },
+          "merchant": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "businessName": {
+                "type": "string"
+              },
+              "photoUrl": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              }
+            }
+          },
+          "tag": {
+            "$ref": "#/components/schemas/NfcTagDto"
+          }
+        }
+      },
+      "CreateNfcTagRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "example": "Counter 2"
+          },
+          "chipUid": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "NfcPagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "example": 20
+          },
+          "total": {
+            "type": "integer",
+            "example": 3
+          },
+          "totalPages": {
+            "type": "integer",
+            "example": 1
+          }
+        }
       }
     }
   },
@@ -17911,6 +18186,716 @@
           }
         }
       }
+    },
+    "/nfc/verify": {
+      "post": {
+        "tags": [
+          "NFC Visits"
+        ],
+        "summary": "Verify NFC tap (visit mission)",
+        "description": "Player taps a partner counter NFC tag. Logs a visit; awards coins/XP once per merchant per UTC day. Returns promptReceipt for Phase 2 receipt CTA.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NfcVerifyRequest"
+              },
+              "examples": {
+                "fullUri": {
+                  "summary": "Full payload URI from NFC read",
+                  "value": {
+                    "payload": "raidr://nfc/v1?token=_-B63cm6jBpilt84ECE9OQ&merchantId=74c46e56-6df8-41b0-b873-5d2fd80d6464",
+                    "latitude": 32.0853,
+                    "longitude": 34.7818
+                  }
+                },
+                "tokenOnly": {
+                  "summary": "Token only",
+                  "value": {
+                    "token": "_-B63cm6jBpilt84ECE9OQ"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Visit logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "Visit verified — mission complete"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/NfcVerifyResponseData"
+                    }
+                  }
+                },
+                "example": {
+                  "status": true,
+                  "msg": "Visit verified — mission complete",
+                  "data": {
+                    "visitId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "missionCompleted": true,
+                    "alreadyVisitedToday": false,
+                    "coinsAwarded": 5,
+                    "xpAwarded": 15,
+                    "promptReceipt": true,
+                    "receiptUploadReady": false,
+                    "merchant": {
+                      "id": "74c46e56-6df8-41b0-b873-5d2fd80d6464",
+                      "businessName": "Softmint"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload or chip UID mismatch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tag not found or inactive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nfc/my-visits": {
+      "get": {
+        "tags": [
+          "NFC Visits"
+        ],
+        "summary": "Player NFC visit history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visit list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NfcVisitDto"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/NfcPagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/nfc/merchants/{merchantId}/tags": {
+      "get": {
+        "tags": [
+          "Admin - NFC"
+        ],
+        "summary": "List merchant NFC tags (auto-provisions default)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "merchantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tags for merchant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "merchant": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "businessName": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NfcTagDto"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Merchant not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin - NFC"
+        ],
+        "summary": "Create NFC tag for merchant",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "merchantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNfcTagRequest"
+              },
+              "example": {
+                "label": "Counter 2"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tag created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "NFC tag created"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/NfcTagDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Merchant not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/nfc/merchants/{merchantId}/visits": {
+      "get": {
+        "tags": [
+          "Admin - NFC"
+        ],
+        "summary": "List NFC visits for a merchant",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "merchantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visit list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "merchant": {
+                      "type": "object"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NfcVisitDto"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/NfcPagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Merchant not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/merchant/nfc/tags": {
+      "get": {
+        "tags": [
+          "Merchant - NFC"
+        ],
+        "summary": "List my NFC tags (auto-provisions default)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merchant tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NfcTagDto"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Merchant - NFC"
+        ],
+        "summary": "Create NFC tag for my business",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNfcTagRequest"
+              },
+              "example": {
+                "label": "Front counter"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tag created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "NFC tag created"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/NfcTagDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/merchant/nfc/visits": {
+      "get": {
+        "tags": [
+          "Merchant - NFC"
+        ],
+        "summary": "List NFC visits to my business",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visit list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NfcVisitDto"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/NfcPagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "/admin/sponsored-theme": {
@@ -18747,6 +19732,18 @@
     {
       "name": "Test",
       "description": "Push notification navigation QA (FCM). Not for production unless PUSH_NAV_TEST_SECRET is configured."
+    },
+    {
+      "name": "NFC Visits",
+      "description": "Player NFC tap at partner counters — visit verification (Phase 1). Receipt photo upload is Phase 2."
+    },
+    {
+      "name": "Admin - NFC",
+      "description": "Admin manage merchant NFC tags and visit history"
+    },
+    {
+      "name": "Merchant - NFC",
+      "description": "Merchant manage own NFC tags and visit history"
     }
   ]
 }

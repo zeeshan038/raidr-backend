@@ -35,7 +35,10 @@ export const CreateBrandMonthSchema = (payload) => {
     rewardDescription: Joi.string().optional().allow("", null),
     rewardImageUrl: Joi.string().uri().optional().allow("", null),
     rewardRedemptionCode: Joi.string().optional().allow("", null),
-    sponsoredThemeId: Joi.string().uuid().optional().allow(null),
+    sponsoredThemeId: Joi.string().uuid().required().messages({
+      "any.required": "Link a Sponsored Day Theme — Brand Month is invisible without one",
+      "string.empty": "Link a Sponsored Day Theme — Brand Month is invisible without one",
+    }),
     isActive: Joi.boolean().optional(),
   }).unknown(false);
 

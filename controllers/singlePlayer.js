@@ -64,6 +64,7 @@ import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.
 import {
   findActiveBrandMonthCampaign,
   parseBrandMonthCoords,
+  pickSponsoredThemeForLocation,
 } from "../utils/brandMonth.js";
 import {
   applyCaptureSessionToZoneClientView,
@@ -1181,7 +1182,6 @@ export const collectDailyDrop = async (req, res) => {
  */
 export const getActiveTheme = async (req, res) => {
   try {
-    const { lat, lng } = req.query;
     const now = new Date();
     const coords = parseBrandMonthCoords(req.query);
 
@@ -1189,7 +1189,7 @@ export const getActiveTheme = async (req, res) => {
     let activeTheme = activeBrandMonth?.sponsoredTheme ?? null;
 
     if (!activeTheme) {
-      activeTheme = await prisma.sponsoredTheme.findFirst({
+      const candidates = await prisma.sponsoredTheme.findMany({
         where: {
           isActive: true,
           startDate: { lte: now },
@@ -1197,39 +1197,34 @@ export const getActiveTheme = async (req, res) => {
         },
         orderBy: { createdAt: "desc" },
       });
+      activeTheme = pickSponsoredThemeForLocation(candidates, coords);
     }
 
     if (activeTheme) {
-      if (activeTheme.latitude !== null && activeTheme.longitude !== null) {
-        if (!lat || !lng) {
-          return res.status(200).json({ status: true, data: null, msg: "Theme requires location. Please provide lat and lng." });
-        }
-
-        const userLat = parseFloat(lat);
-        const userLng = parseFloat(lng);
-        const radius = activeTheme.radius || 5000;
-
-        const distance = haversineDistance(userLat, userLng, activeTheme.latitude, activeTheme.longitude);
-
-        if (distance > radius) {
-          return res.status(200).json({ status: true, data: null, msg: `You are too far away from the active theme. Distance: ${Math.round(distance)}m, Radius: ${radius}m` });
-        }
+      const hasGeo =
+        activeTheme.latitude !== null && activeTheme.longitude !== null;
+      if (hasGeo && !coords) {
+        return res.status(200).json({
+          status: true,
+          data: null,
+          msg: "Theme requires location. Please provide latitude/longitude (or lat/lng).",
+        });
       }
       return res.status(200).json({
         status: true,
-        data: activeTheme
-      });
-    } else {
-      return res.status(200).json({
-        status: false,
-        data: null,
-        msg: "No active theme"
+        data: activeTheme,
       });
     }
+
+    return res.status(200).json({
+      status: true,
+      data: null,
+      msg: "No active theme",
+    });
   } catch (error) {
     res.status(500).json({
       status: false,
-      msg: error.message
+      msg: error.message,
     });
   }
 };
