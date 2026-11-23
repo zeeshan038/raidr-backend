@@ -26,3 +26,14 @@ export const CreateNfcTagSchema = (payload) => {
 
   return schema.validate(payload ?? {}, { abortEarly: false });
 };
+
+export const NfcReceiptSubmitSchema = (payload) => {
+  const schema = Joi.object({
+    visitId: Joi.string().uuid().required(),
+    imageUrl: Joi.string().uri().optional(),
+    captureSource: Joi.string().valid("camera").required(),
+  })
+    .unknown(true);
+
+  return schema.validate(payload ?? {}, { abortEarly: false });
+};

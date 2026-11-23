@@ -19,7 +19,7 @@
     "test:brand-month": "node --test test/brand-month-sponsored-theme.test.js",
     "test:brand-month:live": "node scripts/testBrandMonthThemeLive.js",
     "test:coin-rush-answers": "node --test test/coin-rush-answers-winner.test.js",
-    "test:nfc": "node --test test/nfc-payload.test.js",
+    "test:nfc": "node --test test/nfc-payload.test.js test/nfc-receipt-rewards.test.js",
     "test:referral": "node scripts/testReferralService.js",
     "backfill:invite-codes": "node scripts/backfillUserInviteCodes.js",
     "fix:db-user-columns": "prisma db execute --file scripts/fix-user-model-columns.sql --schema prisma/schema.prisma",

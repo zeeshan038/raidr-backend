@@ -3926,6 +3926,10 @@
             "type": "string",
             "format": "date-time"
           },
+          "receipt": {
+            "nullable": true,
+            "$ref": "#/components/schemas/NfcReceiptDto"
+          },
           "user": {
             "type": "object",
             "nullable": true,
@@ -4053,8 +4057,12 @@
           },
           "receiptUploadReady": {
             "type": "boolean",
-            "example": false,
-            "description": "false until Phase 2 receipt upload API"
+            "example": true,
+            "description": "true when POST /nfc/receipt is available"
+          },
+          "receiptSubmitPath": {
+            "type": "string",
+            "example": "/api/nfc/receipt"
           },
           "merchant": {
             "type": "object",
@@ -4113,6 +4121,104 @@
           "totalPages": {
             "type": "integer",
             "example": 1
+          }
+        }
+      },
+      "NfcReceiptDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountIls": {
+            "type": "number",
+            "example": 48.9
+          },
+          "currency": {
+            "type": "string",
+            "example": "ILS"
+          },
+          "coinsAwarded": {
+            "type": "integer",
+            "example": 48
+          },
+          "xpAwarded": {
+            "type": "integer",
+            "example": 97
+          },
+          "status": {
+            "type": "string",
+            "example": "approved"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "receiptDatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NfcReceiptSubmitResponseData": {
+        "type": "object",
+        "properties": {
+          "receiptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountIls": {
+            "type": "number",
+            "example": 48.9
+          },
+          "currency": {
+            "type": "string",
+            "example": "ILS"
+          },
+          "receiptDatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "coinsAwarded": {
+            "type": "integer",
+            "example": 48
+          },
+          "xpAwarded": {
+            "type": "integer",
+            "example": 97
+          },
+          "brandMonth": {
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "example": "approved"
+          },
+          "merchant": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "businessName": {
+                "type": "string"
+              }
+            }
           }
         }
       }
@@ -18193,7 +18299,7 @@
           "NFC Visits"
         ],
         "summary": "Verify NFC tap (visit mission)",
-        "description": "Player taps a partner counter NFC tag. Logs a visit; awards coins/XP once per merchant per UTC day. Returns promptReceipt for Phase 2 receipt CTA.",
+        "description": "Player taps a partner counter NFC tag. Logs a visit; awards coins/XP once per merchant per UTC day. Returns promptReceipt + receiptUploadReady for optional receipt photo.",
         "security": [
           {
             "bearerAuth": []
@@ -18256,7 +18362,8 @@
                     "coinsAwarded": 5,
                     "xpAwarded": 15,
                     "promptReceipt": true,
-                    "receiptUploadReady": false,
+                    "receiptUploadReady": true,
+                    "receiptSubmitPath": "/api/nfc/receipt",
                     "merchant": {
                       "id": "74c46e56-6df8-41b0-b873-5d2fd80d6464",
                       "businessName": "Softmint"
@@ -18886,6 +18993,139 @@
           },
           "500": {
             "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nfc/receipt": {
+      "post": {
+        "tags": [
+          "NFC Visits"
+        ],
+        "summary": "Submit receipt photo (bonus coins)",
+        "description": "After NFC verify, player snaps a live-camera receipt photo. Vision AI extracts total + date. Rejects gallery uploads, old dates, and duplicate receipts. Awards bonus coins/XP per ₪.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "visitId",
+                  "captureSource",
+                  "image"
+                ],
+                "properties": {
+                  "visitId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "captureSource": {
+                    "type": "string",
+                    "enum": [
+                      "camera"
+                    ],
+                    "description": "Must be camera (not gallery)"
+                  },
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Live camera receipt photo"
+                  }
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "visitId",
+                  "captureSource",
+                  "imageUrl"
+                ],
+                "properties": {
+                  "visitId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "captureSource": {
+                    "type": "string",
+                    "enum": [
+                      "camera"
+                    ]
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL from POST /upload/image (camera-captured only)"
+                  }
+                }
+              },
+              "example": {
+                "visitId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "captureSource": "camera",
+                "imageUrl": "https://fsn1.your-objectstorage.com/images/nfc-receipts/example.jpg"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Receipt approved and bonus awarded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/NfcReceiptSubmitResponseData"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid capture source, window expired, or receipt not today",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate receipt / already submitted for visit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "AI could not read receipt",
             "content": {
               "application/json": {
                 "schema": {

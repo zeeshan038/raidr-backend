@@ -118,7 +118,7 @@ const hasEarnedVisitRewardToday = async (userId, merchantId) => {
 
 /**
  * Log visit + optionally award once-per-day mission reward.
- * Receipt photo flow is Phase 2 — we only return promptReceipt: true.
+ * Flutter should prompt for optional receipt photo when receiptUploadReady is true.
  */
 export const verifyNfcVisit = async ({
   userId,
@@ -202,7 +202,8 @@ export const verifyNfcVisit = async ({
       brandMonth: xpResult?.brandMonth ?? null,
       /** Flutter should show receipt-photo CTA after a successful tap */
       promptReceipt: true,
-      receiptUploadReady: false, // Phase 2
+      receiptUploadReady: true,
+      receiptSubmitPath: "/api/nfc/receipt",
       merchant: {
         id: tag.merchant.id,
         name: tag.merchant.name,
@@ -240,6 +241,19 @@ export const listNfcVisits = async ({
           select: { id: true, name: true, businessName: true },
         },
         tag: { select: { id: true, label: true, token: true } },
+        receipt: {
+          select: {
+            id: true,
+            amountIls: true,
+            currency: true,
+            coinsAwarded: true,
+            xpAwarded: true,
+            status: true,
+            imageUrl: true,
+            receiptDatedAt: true,
+            createdAt: true,
+          },
+        },
       },
     }),
     prisma.nfcVisit.count({ where }),

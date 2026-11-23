@@ -80,6 +80,7 @@ model User {
   referralRewardAsInvitee  ReferralReward?  @relation("ReferralInvitee")
   coinTransactions       CoinTransaction[]
   nfcVisits              NfcVisit[]
+  nfcReceipts            NfcReceipt[]
 
   @@index([referredByUserId])
 }
@@ -232,6 +233,7 @@ model Merchant {
   singlePlayerZones  SinglePlayerZone[]
   nfcTags            MerchantNfcTag[]
   nfcVisits          NfcVisit[]
+  nfcReceipts        NfcReceipt[]
 }
 
 model MerchantAds {
@@ -935,8 +937,43 @@ model NfcVisit {
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   merchant Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   tag      MerchantNfcTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  receipt  NfcReceipt?
 
   @@index([userId, merchantId, createdAt])
   @@index([merchantId, createdAt])
   @@index([tagId, createdAt])
+}
+
+/// Phase 2 — receipt photo after NFC visit (purchase attribution + bonus coins).
+model NfcReceipt {
+  id             String   @id @default(uuid())
+  visitId        String   @unique
+  userId         String
+  merchantId     String
+  imageUrl       String
+  /// SHA-256 of image bytes — blocks re-uploading the same photo
+  imageSha256    String   @unique
+  /// merchantId|YYYY-MM-DD|amountCents — blocks same spend fingerprint per user
+  fingerprint    String
+  amountIls      Float
+  currency       String   @default("ILS")
+  /// Date/time extracted from the receipt (must be "today" Asia/Jerusalem)
+  receiptDatedAt DateTime
+  /// Client must send "camera" (not gallery)
+  captureSource  String
+  status         String   @default("approved") // approved | rejected
+  rejectReason   String?
+  coinsAwarded   Int      @default(0)
+  xpAwarded      Int      @default(0)
+  aiConfidence   Float?
+  createdAt      DateTime @default(now())
+
+  visit    NfcVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprint])
+  @@index([merchantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([imageSha256])
 }
