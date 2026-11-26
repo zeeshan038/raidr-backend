@@ -19,6 +19,13 @@ npx prisma db execute --file prisma/migrations/20261114123000_live_event_coin_re
 npx prisma db execute --file prisma/migrations/20261114130000_live_event_optional_merchant/migration.sql --schema prisma/schema.prisma || true
 npx prisma db execute --file prisma/migrations/20261114140000_live_event_silent_coupon/migration.sql --schema prisma/schema.prisma || true
 
+echo "[entrypoint] Coin rush lock + answer locales (idempotent)..."
+npx prisma db execute --file prisma/migrations/20261123180000_coin_rush_winner_lock_answer_locales/migration.sql --schema prisma/schema.prisma || true
+
+echo "[entrypoint] NFC visit/receipt tables (idempotent)..."
+npx prisma db execute --file prisma/migrations/20261123220000_nfc_visit_tags/migration.sql --schema prisma/schema.prisma || true
+npx prisma db execute --file prisma/migrations/20261124010000_nfc_receipt_phase2/migration.sql --schema prisma/schema.prisma || true
+
 echo "[entrypoint] Prisma migrate deploy..."
 if npx prisma migrate deploy; then
   echo "[entrypoint] Migrations up to date."
