@@ -18,6 +18,7 @@ import {
     getEconomyConfig,
     randomCoinRushCheckpointXp,
 } from '../../utils/economyConfig.js';
+import { normalizeAnswerLocales } from '../../utils/coinRushAnswers.js';
 
 
 
@@ -56,7 +57,8 @@ export const CreateCoinRushEvent = async (req, res) => {
         rewardDescription,
         rewardClaimInstructions,
         rewardValue,
-        winnersCount
+        winnersCount,
+        lockRaidOnWinner,
     } = result.value;
 
     const parsedStart = startTime ? new Date(startTime) : new Date();
@@ -153,6 +155,7 @@ export const CreateCoinRushEvent = async (req, res) => {
                 rewardClaimInstructions,
                 rewardValue: parseFloat(rewardValue),
                 winnersCount: parseInt(winnersCount) || 1,
+                lockRaidOnWinner: Boolean(lockRaidOnWinner),
                 status: "scheduled", // default active status
                 checkpoints: {
                     create: createdCheckpoints
@@ -372,6 +375,9 @@ export const UpdateCoinRushEvent = async (req, res) => {
         if (updateData.winnersCount !== undefined) {
             updateData.winnersCount = parseInt(updateData.winnersCount);
         }
+        if (updateData.lockRaidOnWinner !== undefined) {
+            updateData.lockRaidOnWinner = Boolean(updateData.lockRaidOnWinner);
+        }
         if (updateData.startTime !== undefined) {
             updateData.startTime = updateData.startTime ? new Date(updateData.startTime) : null;
         }
@@ -405,10 +411,20 @@ export const UpdateCoinRushEvent = async (req, res) => {
                     qrCode: cp.qrCode || (cpType === 'QR' ? `cr_${crypto.randomBytes(12).toString('hex')}` : null),
                     question: cp.question || null,
                     answer: cp.answer || null,
+                    answerLocales: null,
                     secretCode: cp.secretCode || null,
                     photoRequirements: cp.photoRequirements || cp.aiPrompt || null,
                     referencePhotoUrl: cp.referencePhotoUrl || null
                 };
+                if (cpType === 'QNA' || cpType === 'QA') {
+                    const normalized = normalizeAnswerLocales({
+                        answer: cp.answer,
+                        answerLocales: cp.answerLocales,
+                    });
+                    cpData.type = 'QNA';
+                    cpData.answer = normalized.answer;
+                    cpData.answerLocales = normalized.answerLocales;
+                }
                 return cpData;
             });
 
@@ -580,11 +596,16 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
                 cpData.secretCode = cp.secretCode;
             } else if (cpData.type === 'QNA' || cpData.type === 'QA') {
                 cpData.type = 'QNA';
-                if (!cp.question || !cp.answer) {
+                const normalized = normalizeAnswerLocales({
+                    answer: cp.answer,
+                    answerLocales: cp.answerLocales,
+                });
+                if (!cp.question || !normalized.answer) {
                     throw new Error(`Question and answer are required for QA checkpoint ${idx + 1}`);
                 }
                 cpData.question = cp.question;
-                cpData.answer = cp.answer;
+                cpData.answer = normalized.answer;
+                cpData.answerLocales = normalized.answerLocales;
             } else if (cpData.type === 'PHOTO') {
                 cpData.photoRequirements = cp.photoRequirements || cp.aiPrompt || null;
                 if (cp.referencePhotoUrl) {
@@ -630,6 +651,7 @@ export const CreateHybridCoinRushEvent = async (req, res) => {
                 rewardClaimInstructions:payload.rewardClaimInstructions,
                 rewardValue: parseFloat(payload.rewardValue),
                 winnersCount: payload.winnersCount ? parseInt(payload.winnersCount) : 1,
+                lockRaidOnWinner: Boolean(payload.lockRaidOnWinner),
                 status: "scheduled", 
                 checkpoints: {
                     create: createdCheckpoints

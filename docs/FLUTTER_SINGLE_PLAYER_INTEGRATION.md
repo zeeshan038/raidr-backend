@@ -80,8 +80,8 @@ Some **403** responses include extra fields (`ownedZonesCount`, `maxOwnedZonesPe
 - **Query params:** `latitude`, `longitude` (dashboard, zones list) or `lat`, `lng` (theme only).
 - **Body:** `latitude`, `longitude` for capture and daily drop.
 - User location may be synced from headers/query via backend helpers — still send lat/lng on map APIs.
-- **Zone radius:** Each zone has `radius` (meters). Player must be within `radius` to start/complete capture or collect daily drop (collect uses **50m** fixed, not zone radius).
-- **Map visibility:** An active zone with a country is shown to every player in that same country, regardless of the distance between cities. It is never shown to a player in a different confirmed country. For example, a Karachi zone is visible in Lahore, and a Tel Aviv zone is visible in Eilat.
+- **Zone radius:** Each zone has `radius` (meters). Player must be within `radius` to start/complete capture. Daily / rare drop collect uses a fixed **20m** early-reward radius (`collectRadiusMeters`), not the zone radius.
+- **Map visibility:** An active zone with a country is shown to every player in that same country, regardless of the distance between cities. It is never shown to a player in a different confirmed country. For example, a Karachi zone is visible in Lahore, and a Tel Aviv zone is visible in Eilat.  
 - **No mobile update required:** Keep sending the existing `latitude` and `longitude`. The backend resolves and caches the player's country from GPS. `countryCode` remains an optional optimization if a future app version already has the device-geocoded ISO-2 code.
 - The server retains the 100/150 km radius only as a fallback for old zones with no country saved.
 - **`GET /zones?status=conquered_by_me`** returns all owned zones globally (no distance filter).
@@ -489,6 +489,7 @@ Unless noted: **Private**, header `Authorization: Bearer <token>`, `Content-Type
       "createdAt": "2026-10-12T00:00:00.000Z",
       "updatedAt": "2026-10-12T00:00:00.000Z",
       "distanceMeters": 85,
+      "collectRadiusMeters": 20,
       "isNewlySpawned": true
     },
     "silentDrops": [ "/* SilentMapDropMapPin */" ],
@@ -972,7 +973,7 @@ Boost:
 }
 ```
 
-| 400 | Too far (>50m); already collected |
+| 400 | Too far (>20m); already collected |
 | 403 | Not your drop |
 | 404 | Drop not found |
 

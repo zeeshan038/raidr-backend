@@ -41,6 +41,7 @@ import {
   gameplayFromConfig,
   userVisibleZoneFilter,
 } from "../utils/singlePlayerConfig.js";
+import { DAILY_DROP_COLLECT_RADIUS_METERS } from "../utils/dailyDropCollect.js";
 import { parseJsonIntArray } from "../utils/configJson.js";
 import {
   countOwnedZones,
@@ -64,6 +65,7 @@ import { tryCompleteReferralQualifyingActivity } from "../utils/referralService.
 import {
   findActiveBrandMonthCampaign,
   parseBrandMonthCoords,
+  pickSponsoredThemeForLocation,
 } from "../utils/brandMonth.js";
 import {
   applyCaptureSessionToZoneClientView,
@@ -1002,7 +1004,13 @@ export const getDailyDrop = async (req, res) => {
     });
 
     if (dailyDrop) {
-      return res.status(200).json({ status: true, data: dailyDrop });
+      return res.status(200).json({
+        status: true,
+        data: {
+          ...dailyDrop,
+          collectRadiusMeters: DAILY_DROP_COLLECT_RADIUS_METERS,
+        },
+      });
     }
 
     const dropLocation = generateNearbyCoordinates(parseFloat(latitude), parseFloat(longitude), 50, 150);
@@ -1036,7 +1044,14 @@ export const getDailyDrop = async (req, res) => {
       );
     }
 
-    res.status(201).json({ status: true, msg: "New daily drop spawned", data: dailyDrop });
+    res.status(201).json({
+      status: true,
+      msg: "New daily drop spawned",
+      data: {
+        ...dailyDrop,
+        collectRadiusMeters: DAILY_DROP_COLLECT_RADIUS_METERS,
+      },
+    });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
   }
@@ -1077,10 +1092,10 @@ export const collectDailyDrop = async (req, res) => {
       parseFloat(longitude)
     );
 
-    if (distance > 50) {
+    if (distance > DAILY_DROP_COLLECT_RADIUS_METERS) {
       return res.status(400).json({
         status: false,
-        msg: `Too far away to collect. Distance: ${distance.toFixed(2)}m`
+        msg: `Too far away to collect. Distance: ${distance.toFixed(2)}m (must be within ${DAILY_DROP_COLLECT_RADIUS_METERS}m).`
       });
     }
 
@@ -1181,7 +1196,6 @@ export const collectDailyDrop = async (req, res) => {
  */
 export const getActiveTheme = async (req, res) => {
   try {
-    const { lat, lng } = req.query;
     const now = new Date();
     const coords = parseBrandMonthCoords(req.query);
 
@@ -1189,7 +1203,7 @@ export const getActiveTheme = async (req, res) => {
     let activeTheme = activeBrandMonth?.sponsoredTheme ?? null;
 
     if (!activeTheme) {
-      activeTheme = await prisma.sponsoredTheme.findFirst({
+      const candidates = await prisma.sponsoredTheme.findMany({
         where: {
           isActive: true,
           startDate: { lte: now },
@@ -1197,39 +1211,34 @@ export const getActiveTheme = async (req, res) => {
         },
         orderBy: { createdAt: "desc" },
       });
+      activeTheme = pickSponsoredThemeForLocation(candidates, coords);
     }
 
     if (activeTheme) {
-      if (activeTheme.latitude !== null && activeTheme.longitude !== null) {
-        if (!lat || !lng) {
-          return res.status(200).json({ status: true, data: null, msg: "Theme requires location. Please provide lat and lng." });
-        }
-
-        const userLat = parseFloat(lat);
-        const userLng = parseFloat(lng);
-        const radius = activeTheme.radius || 5000;
-
-        const distance = haversineDistance(userLat, userLng, activeTheme.latitude, activeTheme.longitude);
-
-        if (distance > radius) {
-          return res.status(200).json({ status: true, data: null, msg: `You are too far away from the active theme. Distance: ${Math.round(distance)}m, Radius: ${radius}m` });
-        }
+      const hasGeo =
+        activeTheme.latitude !== null && activeTheme.longitude !== null;
+      if (hasGeo && !coords) {
+        return res.status(200).json({
+          status: true,
+          data: null,
+          msg: "Theme requires location. Please provide latitude/longitude (or lat/lng).",
+        });
       }
       return res.status(200).json({
         status: true,
-        data: activeTheme
-      });
-    } else {
-      return res.status(200).json({
-        status: false,
-        data: null,
-        msg: "No active theme"
+        data: activeTheme,
       });
     }
+
+    return res.status(200).json({
+      status: true,
+      data: null,
+      msg: "No active theme",
+    });
   } catch (error) {
     res.status(500).json({
       status: false,
-      msg: error.message
+      msg: error.message,
     });
   }
 };
@@ -1479,6 +1488,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
         isCollected: dailyDrop.isCollected,
         rewardType: dailyDrop.rewardType,
         distanceMeters: Math.round(dropDistance),
+        collectRadiusMeters: DAILY_DROP_COLLECT_RADIUS_METERS,
         isNewlySpawned: isNewDrop,
       };
 

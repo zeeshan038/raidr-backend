@@ -32,6 +32,9 @@ import AdminSponsoredThemeRoutes from "./Admin/sponsoredTheme.js"
 import AdminCommercialVoucherRoutes from "./Admin/commercialVoucher.js"
 import AdminBrandMonthRoutes from "./Admin/brandMonth.js"
 import AdminProfilePreferenceOptionsRoutes from "./Admin/profilePreferenceOptions.js"
+import AdminNfcRoutes from "./Admin/nfc.js"
+import MerchantNfcRoutes from "./Merchant/nfc.js"
+import NfcRoutes from "./nfc.js"
 
 //Merchant Routes 
 router.use('/merchant/ads',AdsRoutes);
@@ -40,6 +43,7 @@ router.use('/merchant/payments', PaymentRoutes);
 router.use('/merchant/events', MerchantEventRoutes);
 router.use('/merchant/coin-rush', MerchantCoinRushRoutes);
 router.use('/merchant/single-player', MerchantSinglePlayerRoutes);
+router.use('/merchant/nfc', MerchantNfcRoutes);
 router.use('/merchant',MerchantRoutes);
 
 
@@ -60,10 +64,11 @@ router.use('/rewards', RewardsRoutes)
 router.use('/review', ReviewRoutes)
 router.use('/referral', ReferralRoutes)
 router.use('/single-player', SinglePlayerRoutes)
+router.use('/nfc', NfcRoutes)
 
-//Admin 
+//Admin — mount specific paths before generic /admin auth router
 router.use("/admin/store",AdminStoreRoutes)
-router.use("/admin",AdminAuthRoutes)
+router.use('/admin/nfc', AdminNfcRoutes);
 router.use("/admin/events",AdminEventRoutes)
 router.use("/admin/user",UserManagmentRoutes)
 router.use("/admin/merchants",MerchantManagmentRoutes)
@@ -74,6 +79,7 @@ router.use("/admin/sponsored-themes", AdminSponsoredThemeRoutes);
 router.use('/admin/vouchers', AdminCommercialVoucherRoutes);
 router.use('/admin/brand-months', AdminBrandMonthRoutes);
 router.use('/admin/profile-preference-options', AdminProfilePreferenceOptionsRoutes);
+router.use("/admin",AdminAuthRoutes)
 
 //Test
 router.use("/test", TestRoutes)

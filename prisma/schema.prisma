@@ -79,6 +79,8 @@ model User {
   referralRewardsAsInviter ReferralReward[] @relation("ReferralInviter")
   referralRewardAsInvitee  ReferralReward?  @relation("ReferralInvitee")
   coinTransactions       CoinTransaction[]
+  nfcVisits              NfcVisit[]
+  nfcReceipts            NfcReceipt[]
 
   @@index([referredByUserId])
 }
@@ -229,6 +231,9 @@ model Merchant {
   creditPurchases    MerchantCreditPurchase[]
   creditLogs         MerchantCreditLog[]
   singlePlayerZones  SinglePlayerZone[]
+  nfcTags            MerchantNfcTag[]
+  nfcVisits          NfcVisit[]
+  nfcReceipts        NfcReceipt[]
 }
 
 model MerchantAds {
@@ -481,6 +486,9 @@ model CoinRushEvent {
   rewardValue             Float                  @default(0.0)
 
   winnersCount            Int                    @default(1)
+  /// When true, raid status becomes completed after all prize slots are filled (others cannot continue).
+  /// When false, others may finish the route after prizes are claimed.
+  lockRaidOnWinner        Boolean                @default(false)
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
 
@@ -503,7 +511,9 @@ model CoinRushCheckpoint {
   longitude         Float?             // For GPS
   qrCode            String?            @unique // Unique code to scan for QR
   question          String?            // For QNA
-  answer            String?            // For QNA
+  answer            String?            // For QNA (primary / default locale)
+  /// Localized accepted answers, e.g. { "en": "coffee", "he": "קפה", "ar": "قهوة" }
+  answerLocales     Json?
   secretCode        String?            // For SECRET_CODE
   photoRequirements String?            // For PHOTO
   referencePhotoUrl String?            // For PHOTO
@@ -888,4 +898,82 @@ model UserProfilePreference {
   updatedAt         DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Physical NFC sticker at a partner counter (visit verification).
+model MerchantNfcTag {
+  id         String   @id @default(uuid())
+  merchantId String
+  /// Opaque token embedded in the NFC NDEF / deep link payload
+  token      String   @unique
+  label      String   @default("Counter")
+  /// Optional hardware chip UID if the tag exposes one
+  chipUid    String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  merchant Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  visits   NfcVisit[]
+
+  @@index([merchantId])
+  @@index([isActive])
+}
+
+/// Logged when a player taps a merchant NFC tag (foot-traffic attribution).
+model NfcVisit {
+  id               String   @id @default(uuid())
+  userId           String
+  merchantId       String
+  tagId            String
+  latitude         Float?
+  longitude        Float?
+  /// True when this tap awarded the daily visit mission reward
+  missionCompleted Boolean  @default(false)
+  coinsAwarded     Int      @default(0)
+  xpAwarded        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  tag      MerchantNfcTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  receipt  NfcReceipt?
+
+  @@index([userId, merchantId, createdAt])
+  @@index([merchantId, createdAt])
+  @@index([tagId, createdAt])
+}
+
+/// Phase 2 — receipt photo after NFC visit (purchase attribution + bonus coins).
+model NfcReceipt {
+  id             String   @id @default(uuid())
+  visitId        String   @unique
+  userId         String
+  merchantId     String
+  imageUrl       String
+  /// SHA-256 of image bytes — blocks re-uploading the same photo
+  imageSha256    String   @unique
+  /// merchantId|YYYY-MM-DD|amountCents — blocks same spend fingerprint per user
+  fingerprint    String
+  amountIls      Float
+  currency       String   @default("ILS")
+  /// Date/time extracted from the receipt (must be "today" Asia/Jerusalem)
+  receiptDatedAt DateTime
+  /// Client must send "camera" (not gallery)
+  captureSource  String
+  status         String   @default("approved") // approved | rejected
+  rejectReason   String?
+  coinsAwarded   Int      @default(0)
+  xpAwarded      Int      @default(0)
+  aiConfidence   Float?
+  createdAt      DateTime @default(now())
+
+  visit    NfcVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprint])
+  @@index([merchantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([imageSha256])
 }

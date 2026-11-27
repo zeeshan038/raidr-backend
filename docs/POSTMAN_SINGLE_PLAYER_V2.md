@@ -497,7 +497,7 @@ No body (check controller if extra fields required).
 }
 ```
 
-Use drop coordinates from previous response; must be within ~50m.
+Use drop coordinates from previous response; must be within ~20m.
 
 ---
 

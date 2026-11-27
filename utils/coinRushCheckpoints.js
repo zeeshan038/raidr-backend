@@ -5,6 +5,7 @@ export function sanitizeCoinRushCheckpointForClient(checkpoint, isAchieved = fal
     const safeCp = { ...checkpoint, isAchieved };
     delete safeCp.qrCode;
     delete safeCp.answer;
+    delete safeCp.answerLocales;
     delete safeCp.secretCode;
 
     const instruction = checkpoint.description || '';
@@ -21,7 +22,11 @@ export function sanitizeCoinRushCheckpointForClient(checkpoint, isAchieved = fal
 export function buildCoinRushCheckpointsForEventDetails(checkpoints, completedCheckpointIds) {
     const completedCount = completedCheckpointIds.length;
     const safeCheckpoints = checkpoints.map((cp) => {
-        const { qrCode, ...rest } = cp;
+        const { qrCode, answer, answerLocales, secretCode, ...rest } = cp;
+        void qrCode;
+        void answer;
+        void answerLocales;
+        void secretCode;
         const instruction = cp.description || '';
         return {
             ...rest,
