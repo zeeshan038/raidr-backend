@@ -41,6 +41,7 @@ import {
   gameplayFromConfig,
   userVisibleZoneFilter,
 } from "../utils/singlePlayerConfig.js";
+import { DAILY_DROP_COLLECT_RADIUS_METERS } from "../utils/dailyDropCollect.js";
 import { parseJsonIntArray } from "../utils/configJson.js";
 import {
   countOwnedZones,
@@ -1003,7 +1004,13 @@ export const getDailyDrop = async (req, res) => {
     });
 
     if (dailyDrop) {
-      return res.status(200).json({ status: true, data: dailyDrop });
+      return res.status(200).json({
+        status: true,
+        data: {
+          ...dailyDrop,
+          collectRadiusMeters: DAILY_DROP_COLLECT_RADIUS_METERS,
+        },
+      });
     }
 
     const dropLocation = generateNearbyCoordinates(parseFloat(latitude), parseFloat(longitude), 50, 150);
@@ -1037,7 +1044,14 @@ export const getDailyDrop = async (req, res) => {
       );
     }
 
-    res.status(201).json({ status: true, msg: "New daily drop spawned", data: dailyDrop });
+    res.status(201).json({
+      status: true,
+      msg: "New daily drop spawned",
+      data: {
+        ...dailyDrop,
+        collectRadiusMeters: DAILY_DROP_COLLECT_RADIUS_METERS,
+      },
+    });
   } catch (error) {
     res.status(500).json({ status: false, msg: error.message });
   }
@@ -1078,10 +1092,10 @@ export const collectDailyDrop = async (req, res) => {
       parseFloat(longitude)
     );
 
-    if (distance > 50) {
+    if (distance > DAILY_DROP_COLLECT_RADIUS_METERS) {
       return res.status(400).json({
         status: false,
-        msg: `Too far away to collect. Distance: ${distance.toFixed(2)}m`
+        msg: `Too far away to collect. Distance: ${distance.toFixed(2)}m (must be within ${DAILY_DROP_COLLECT_RADIUS_METERS}m).`
       });
     }
 
@@ -1474,6 +1488,7 @@ export const getSinglePlayerDashboard = async (req, res) => {
         isCollected: dailyDrop.isCollected,
         rewardType: dailyDrop.rewardType,
         distanceMeters: Math.round(dropDistance),
+        collectRadiusMeters: DAILY_DROP_COLLECT_RADIUS_METERS,
         isNewlySpawned: isNewDrop,
       };
 

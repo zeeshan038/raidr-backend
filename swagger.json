@@ -2705,6 +2705,11 @@
           "isNewlySpawned": {
             "type": "boolean",
             "description": "Present on dashboard dailyDrop only"
+          },
+          "collectRadiusMeters": {
+            "type": "integer",
+            "example": 20,
+            "description": "Early reward GPS radius (meters). Player wins when within this distance of the pin."
           }
         }
       },
@@ -5355,7 +5360,7 @@
         "tags": [
           "Single Player"
         ],
-        "summary": "Collect daily drop within range",
+        "summary": "Collect daily / rare drop within 20m (early reward)",
         "security": [
           {
             "bearerAuth": []
@@ -5564,7 +5569,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Player must be within collectRadiusMeters (20m) of the drop pin. Applies to both normal and rare daily drops."
       }
     },
     "/single-player/theme": {

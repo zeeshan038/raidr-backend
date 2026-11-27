@@ -538,6 +538,11 @@ Object.assign(swagger.components.schemas, {
         description: "Present on dashboard dailyDrop",
       },
       distanceMeters: { type: "integer", description: "Present on dashboard dailyDrop only" },
+      collectRadiusMeters: {
+        type: "integer",
+        example: 20,
+        description: "Early reward GPS radius (meters). Player wins when within this distance of the pin.",
+      },
       isNewlySpawned: { type: "boolean", description: "Present on dashboard dailyDrop only" },
     },
   },
@@ -1573,7 +1578,9 @@ swagger.paths["/single-player/daily-drop"] = {
 swagger.paths["/single-player/daily-drop/collect"] = {
   post: {
     tags: ["Single Player"],
-    summary: "Collect daily drop within range",
+    summary: "Collect daily / rare drop within 20m (early reward)",
+    description:
+      "Player must be within collectRadiusMeters (20m) of the drop pin. Applies to both normal and rare daily drops.",
     security: bearer,
     requestBody: {
       required: true,
